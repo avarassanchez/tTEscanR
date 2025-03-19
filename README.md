@@ -1,9 +1,10 @@
+<p align="right">
+  <img width="120" alt="tTEscanR_logo" src="https://github.com/user-attachments/assets/213de690-12cd-4fa8-862a-cadbd8872bf4">
+</p> 
+
 # tTEscanR
 
 ### 1. What is tTEscanR?
-<p align="right">
-  <img width="160" alt="tTEscanR_logo" src="https://github.com/user-attachments/assets/213de690-12cd-4fa8-862a-cadbd8872bf4">
-</p>
 
 **tTEscanR** is a versatile and user-friendly **R package** designed to quantify and analyze the relationship between codon usage in mRNA and the availability of corresponding anticodons in tRNA. The package computes a **theoretical translation efficiency (tTE)** score as a proxy of translation efficiency. As a result, both gene expression and chromatin accessibility profile data are required.
 
