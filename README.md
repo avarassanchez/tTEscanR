@@ -1,7 +1,7 @@
 # tTEscanR
 
 ### 1. What is tTEscanR?
-<img width="365" alt="tTEscanR_logo" 
+<img width="180" alt="tTEscanR_logo" 
      src="https://github.com/user-attachments/assets/213de690-12cd-4fa8-862a-cadbd8872bf4" 
      style="position: absolute; top: 0; right: 0;">
 
