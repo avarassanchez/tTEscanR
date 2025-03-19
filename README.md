@@ -34,7 +34,7 @@ The **tTEscanR** object is dynamically updated to store matrices and metadata at
 
 **Function:** `Create_tTEscanR_Object()`. 
 
-Creates a **tTEscanR** object that will contain an assays and meta.data slot and individual slots as specified in the parameters. 
+Creates a **tTEscanR** object that will contain an "assays" and "meta.data" slot and in each individual sections as specified in the parameters. 
 **Parameters:**
 - `counts`: Count matrix (or list of matrices). 
 - `assay`: Label(s) to identify the `counts`. 
