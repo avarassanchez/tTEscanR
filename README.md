@@ -173,7 +173,11 @@ tTEobject <- Compute_tTE(object = tTEobject,
 
 ### 3.5. Helper functions
 
-**Gene annotation**
+**tTEscanR** provides supplementary functions designed to enhance and streamline analysis. These functions are organized into modules and can be used independently or as part of the core functions described above.
+
+mRNA transcripts are typically annotated using either Ensembl IDs or gene names. To maintain **consistent annotation** throughout the analysis, a dedicated function has been developed to verify and, if necessary, translate gene annotations across multiple vectors or data frames. This function is particularly important for codon usage assessment, where genes must be consistently annotated to enable matrix multiplication between the codon frequency per gene table and the mRNA gene expression count matrix.
+
+<hr>
 
 **Function:** `TranslateGeneName()`
 
