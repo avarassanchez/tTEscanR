@@ -1,4 +1,5 @@
-# tTEscanR <p align="right"><img width="120" alt="tTEscanR_logo" src="https://github.com/user-attachments/assets/213de690-12cd-4fa8-862a-cadbd8872bf4"></p> 
+# tTEscanR <a href="https://your-link-here"><img src="https://github.com/user-attachments/assets/213de690-12cd-4fa8-862a-cadbd8872bf4" alt="tTEscanR_logo" align="right" width="120"></a>
+<img src="https://img.shields.io/badge/Language-R-blue.svg" style="zoom:100%;" />
 
 ## 1. What is tTEscanR?
 
