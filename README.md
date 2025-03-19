@@ -8,6 +8,8 @@ The analysis can be carried out across three hierarchical layers of informaiton:
 
 With its modular structure, the **tTEscanR** package allows to run specific compoennts independently or as part of a comprehensive pipeline, offering flexibility to enhance and complement the analysis of **codon-anticodon dynamics** across various biological contexts.
 
+![tTEscanR_workflow](https://github.com/user-attachments/assets/b74af6d7-3d89-46df-8885-98104b448d36)
+
 ## 2. Setup
 
 The tTEscanR source code is entirely written in R. The latest full distribution release can be downloaded from GitHub:
