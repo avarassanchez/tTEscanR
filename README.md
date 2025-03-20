@@ -76,7 +76,7 @@ tTEobject_paired <- Create_tTEscanR_Object(counts = list(mRNA_data, tRNA_data),
 
 ### 3.2. Codon-anticodon usage assessment
 
-**Codon usage** is computed through matrix multiplication between the mRNA data (genes as rows and conditions as columns) and a reference **codon frequency per gene** table. This reference table consists of **Ensembl** protein-coding genes formatted as a gene matrix, with the 61 sense codons as rows and each  gene as column. As a result, the codon usage calculation produces a matrix where **codons are represented as rows and conditions as columns**. This transformation enables downstream analysis of codon preferences across different conditions.
+**Codon usage** is computed through matrix multiplication between the mRNA gene expression data (genes as rows and conditions as columns) and a **codon frequency per gene** table. This table represents the codon distribution of each protein-coding gene in a reference genome, and includes   protein-coding genes from **Ensembl** formatted as a gene matrix, with the 61 sense codons as rows and each gene as columns. As a result, the codon usage calculation produces a matrix where **codons are represented as rows and conditions as columns**. This transformation enables downstream analysis of codon preferences across different conditions.
 
 **Function:** `ComputeCodonUsage()`. 
 
@@ -113,7 +113,7 @@ tTEobject <- ComputeCodonUsage(object = tTEobject,
 
 <hr>
 
-**Anticodon usage** is computed from a tRNA gene expression matrix including high-confidence tRNA genes predicted using tRNAscan-SE [Addd reference] as rows, and conditions as columns. Details on how to pre-process the tRNA data described in [Helper functions](#35-helper-functions). To create a more concise representation, tRNA genes sharing the same anticodon are grouped together by **tRNA isotypes**, producing a reduced matrix. 
+**Anticodon usage** is computed from a tRNA gene expression matrix including high-confidence tRNA genes predicted using [tRNAscan-SE](https://trna.ucsc.edu/tRNAscan-SE/) as rows, and conditions as columns. Details on how to pre-process the tRNA data described in [Helper functions](#35-helper-functions). To create a more concise representation, tRNA genes sharing the same anticodon are grouped together by **tRNA isotypes**, producing a reduced matrix. 
 
 **Function:** `ComputeAnticodonUsage()`.
 
@@ -170,10 +170,10 @@ The **Theoretical Translation Efficiency (tTE)** is assessed by calculating Spea
 Computes the tTE score across matching conditions at the codon-anticodon usage level and/or amino acid demand and supply level.
 
 **Parameters:**
--`object`: The existing **tTEscanR** object containing both codon-anticodon or amino acid demand-supply assays.
--`conditions`:
--`name_sep`:
--`formula`:
+- `object`: The existing **tTEscanR** object containing both codon-anticodon or amino acid demand-supply assays.
+- `conditions`:
+- `name_sep`:
+- `formula`:
 
 ```{r}
 tTEobject <- Compute_tTE(object = tTEobject, 
@@ -186,9 +186,9 @@ tTEobject <- Compute_tTE(object = tTEobject,
 
 **tTEscanR** provides supplementary functions designed to enhance and streamline analysis. These functions are organized into modules and can be used independently or as part of the core functions described above.
 
-<hr>
+-------- **Pre-processing module** --------
 
-**Pre-processing module.** The tRNAscanR pipeline requires pre-processed files, as outlined in [Gao et al., 2022](#5-references). However, this module includes several functions designed to assist the user with pre-processing tasks. For mRNA data, the funcitons focus on trimming protein-coding genes (or any user-defined list of targeted genes) and ensuring consistent gene annotations across different nomenclature formats. For tRNA data, the pre-processing steps necessary for running tTEscanR involve filtering out low tRNA cuts and preducting hihg-confidence tRNA genes using tRNAscan-SE.
+The tRNAscanR pipeline requires pre-processed files, as outlined in [Gao et al., 2022](#5-references). However, this module includes several functions designed to assist the user with pre-processing tasks. For mRNA data, the funcitons focus on trimming protein-coding genes (or any user-defined list of targeted genes) and ensuring consistent gene annotations across different nomenclature formats. For tRNA data, the pre-processing steps necessary for running tTEscanR involve filtering out low tRNA cuts and preducting hihg-confidence tRNA genes using tRNAscan-SE.
 
 **Function:** `tRNACutsFilter()`
 
@@ -202,9 +202,9 @@ Removes conditions where tRNA gene expression falls below a specified threshold.
 tRNA_data_filtered <- tRNACutsFilter(tRNA_data = tRNA_data, cutoff = 5000)
 ```
 
-<hr>
+-------- **Gene annotation** --------
 
-**Gene annotation.** mRNA transcripts are typically annotated using either Ensembl IDs or gene names. To maintain **consistent annotation** throughout the analysis, a dedicated functions has been developed to verify and, if necessary, translate gene annotations across multiple vectors or data frames. This function is particularly important for codon usage assessment, where genes must be consistently annotated to enable matrix multiplication between the codon frequency per gene table and the mRNA gene expression count matrix.
+mRNA transcripts are typically annotated using either Ensembl IDs or gene names. To maintain **consistent annotation** throughout the analysis, a dedicated functions has been developed to verify and, if necessary, translate gene annotations across multiple vectors or data frames. This function is particularly important for codon usage assessment, where genes must be consistently annotated to enable matrix multiplication between the codon frequency per gene table and the mRNA gene expression count matrix.
 
 **Function:** `TranslateGeneName()`
 
@@ -222,16 +222,21 @@ Translates genes from the Ensembl id annotation to the gene name format, and vic
 transalted_mRNA_genes <- TranslateGeneName(data_to_translate = mRNA_data, species = "hg38", position = "row", notation = "id")
 ```
 
-<hr>
+-------- **Codon frequency table module** --------
 
-**Codon frequency table module.** To complement the codon usage analysis we have developed an independent module to retrieve the **codon frequency per gene matrix** from reference organisms. This table can be computed using Ensembl (though biomaRt) to access the reference sequence of an organisms or by directly imputing the reference genome or sequence of interest files. It is worth mentioning that the approach using Ensembl can give connection errors to the platform itself, unrelated to **tTEscanR**. In order to enable a more straight forward analysis we have incorporated as default the human ("hg38") and mouse ("mm39") codon frequency per gene matrices. 
+To complement the codon usage analysis, we have developed an independent module to generate the **codon frequency per gene matrix** for reference organisms. This matrix can be obtained using Ensembl (through **biomaRt**) to access the reference sequence of an organism or by directly providing a reference genome or sequence files of interest. This flexibility allows users to retrieve codon freqeuncy per gene matrices for any organim available in Ensembl, enabling broad applicability of the computations. However, it is worth mentioning that accessing Ensembl may occasionally result in connection errors due to platform-related issues unrelated to **tTEscanR**. To facilitate a smoother analysis, we have included pre-computed codon frequency per gene matrices for human ("hg38") and mouse ("mm39") as default options. 
 
 **Function:** `ObtainCodonComposition()`
 
 Based on a Ensembl dataset name retrieves the reference genome of the organism and computes the codon frequency per gene matrix. This function can also be used in a targeted mode by using the "transcripts" parameter to give a vector of gene ids to retrieve. 
 
 **Parameters:**
-
+- `dataset_name`:
+- `transcripts`:
+- `filter`:
+- `annotation`:
+- `verbose`:
+- 
 ```{r}
 # To check the list of Ensembl dataset names
 datasets <- biomaRt::listDatasets(useEnsembl(biomart = "ensembl"))
@@ -247,7 +252,8 @@ targeted_genes_codon_freq_per_gene_matrix <- ObtainCodonFreqPerGene(dataset_name
 
 <hr>
 
-**Function:** 
+**Function:** `ExtractCodonComposition()`
+
 ## 4. Usage
 
 ```{r}
