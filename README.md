@@ -20,9 +20,7 @@ library(tTEscanR)
 
 ### 2.1. Data specifications
 
-The **input** data is expected to be **already pre-processed** following the steps outlined in [Add reference] or other desired user-custom pipelines to obtain gene expression count matrices. Both mRNA and tRNA inputs should be given as gene expression count matrices with features as rows and conditions as columns. In this context, features represent mRNA transcripts or tRNA genes. The conditions will differ based on the data source.  In **bulk** datasets, conditions typically represent a combination of model and replicate, whereas in **single-cell** datasets, conditions correspond to specific tissue and cell type designations. For the features **tTEscanR** considers mRNA genes and confidently predicted tRNA genes.
-
-Further details can be found in the article referenced.
+The **input** data is expected to be **already pre-processed** following the steps outlined in [Gao et al., 2022](#5-references) or other desired user-custom pipelines to obtain gene expression count matrices. Both mRNA and tRNA inputs should be given as gene expression count matrices with features as rows and conditions as columns. In this context, features represent mRNA transcripts or tRNA genes. The conditions will differ based on the data source.  In **bulk** datasets, conditions typically represent a combination of model and replicate, whereas in **single-cell** datasets, conditions correspond to specific tissue and cell type designations. For the features **tTEscanR** considers mRNA genes and confidently predicted tRNA genes. For simplicity, some functions have been incorporated into the pre-processing module, as described in the [Helper functions](#35-helper-functions) section.
 
 ## 3. Workflow functionalities
 
@@ -35,16 +33,20 @@ The **tTEscanR** object is dynamically updated to store matrices and metadata at
 **Function:** `Create_tTEscanR_Object()`. 
 
 Creates a **tTEscanR** object that will contain an "assays" and "meta.data" slot and in each individual sections as specified in the parameters. 
+
 **Parameters:**
 - `counts`: Count matrix (or list of matrices). 
 - `assay`: Label(s) to identify the `counts`. 
 - `meta.data`: Additional data to include in the object. 
 - `meta.data.ids`: Label(s) to identify the `meta.data`. 
 - `verbose`: Logical, if TRUE, displays information messages. 
-    
+
+<hr>
+
 **Function:** `Update_tTEscanR_Object()`. 
 
 Updates an existing **tTEscanR** object by overwriting existing sections or adding new ones, as specified in the parameters.
+
 **Parameters:**
 - `object`: The existing tTEscanR object to be updated.
 - `counts`: Count matrix (or list of matrices).
@@ -79,6 +81,7 @@ tTEobject_paired <- Create_tTEscanR_Object(counts = list(mRNA_data, tRNA_data),
 **Function:** `ComputeCodonUsage()`. 
 
 Updates the **tTEscanR** object by computing the codon usage of the mRNA data using matrix multiplication with a reference codon frequency table. The function allows for customization using a user-provided codon frequency per gene table (`codon_freq`) or default species-specific tables available in **tTEscanR**. 
+
 **Parameters:**
 - `object`: The existing **tTEscanR** object containing a mRNA assay.
 - `codon_freq`: User-provided codon frequency per gene table.
@@ -110,11 +113,12 @@ tTEobject <- ComputeCodonUsage(object = tTEobject,
 
 <hr>
 
-**Anticodon usage** is computed from a tRNA gene expression matrix including high-confidence tRNA genes predicted using tRNAscan-SE [Addd reference] as rows, and conditions as columns. To create a more concise representation, tRNA genes sharing the same anticodon are grouped together by **tRNA isotypes**, producing a reduced matrix. 
+**Anticodon usage** is computed from a tRNA gene expression matrix including high-confidence tRNA genes predicted using tRNAscan-SE [Addd reference] as rows, and conditions as columns. Details on how to pre-process the tRNA data described in [Helper functions](#35-helper-functions). To create a more concise representation, tRNA genes sharing the same anticodon are grouped together by **tRNA isotypes**, producing a reduced matrix. 
 
 **Function:** `ComputeAnticodonUsage()`.
 
 Updates the **tTEscanR** object by computing the anticodon usage from the tRNA expression data. It groups tRNA genes that share the same anticodon, generating a reduced expression matrix where tRNA isotypes are represented as rows and conditions as columns.
+
 **Parameters:**
 - `object`: The existing **tTEscanR** object containing a tRNA assay.
 - `overwrite.assay`: Logical, if TRUE, overwrites the codon usage assay present in the object.
@@ -131,7 +135,8 @@ The **amino acid level** assessment involves calculating amino acid **demand** a
 
 **Function:** `ComputeAAUsage()`.
 
-Description: Computes the amino acid usage, either by assessing the `demand` based on codon usage, or the `supply` based on anticodon usage. You can compute both demand and supply simultaenously, depending on the specified action.
+Computes the amino acid usage, either by assessing the `demand` based on codon usage, or the `supply` based on anticodon usage. You can compute both demand and supply simultaenously, depending on the specified action.
+
 **Parameters:**
 - `object`: The existing **tTEscanR** object containing a codon usage and/or anticodon usage assay.
 - `action`: Label action-specific:
@@ -162,7 +167,13 @@ The **Theoretical Translation Efficiency (tTE)** is assessed by calculating Spea
 
 **Function:** `Compute_tTE()`
 
-Description: Computes the tTE score across matching conditions at the codon-anticodon usage level and/or amino acid demand and supply level.
+Computes the tTE score across matching conditions at the codon-anticodon usage level and/or amino acid demand and supply level.
+
+**Parameters:**
+-`object`: The existing **tTEscanR** object containing both codon-anticodon or amino acid demand-supply assays.
+-`conditions`:
+-`name_sep`:
+-`formula`:
 
 ```{r}
 tTEobject <- Compute_tTE(object = tTEobject, 
@@ -175,14 +186,37 @@ tTEobject <- Compute_tTE(object = tTEobject,
 
 **tTEscanR** provides supplementary functions designed to enhance and streamline analysis. These functions are organized into modules and can be used independently or as part of the core functions described above.
 
-mRNA transcripts are typically annotated using either Ensembl IDs or gene names. To maintain **consistent annotation** throughout the analysis, a dedicated function has been developed to verify and, if necessary, translate gene annotations across multiple vectors or data frames. This function is particularly important for codon usage assessment, where genes must be consistently annotated to enable matrix multiplication between the codon frequency per gene table and the mRNA gene expression count matrix.
+<hr>
+
+**Pre-processing module.** The tRNAscanR pipeline requires pre-processed files, as outlined in [Gao et al., 2022](#5-references). However, this module includes several functions designed to assist the user with pre-processing tasks. For mRNA data, the funcitons focus on trimming protein-coding genes (or any user-defined list of targeted genes) and ensuring consistent gene annotations across different nomenclature formats. For tRNA data, the pre-processing steps necessary for running tTEscanR involve filtering out low tRNA cuts and preducting hihg-confidence tRNA genes using tRNAscan-SE.
+
+**Function:** `tRNACutsFilter()`
+
+Removes conditions where tRNA gene expression falls below a specified threshold. It helps ensure that only conditions with sufficient tRNA counts are included in downstream analyses. 
+
+**Parameters:**
+- `tRNA_data`: The tRNA gene expression data containing tRNA cuts as rows and conditions as columns.
+- `cutoff`: Integer specifying the minimum expression level required for a condition to be retained.
+
+```{r}
+tRNA_data_filtered <- tRNACutsFilter(tRNA_data = tRNA_data, cutoff = 5000)
+```
 
 <hr>
 
+**Gene annotation.** mRNA transcripts are typically annotated using either Ensembl IDs or gene names. To maintain **consistent annotation** throughout the analysis, a dedicated functions has been developed to verify and, if necessary, translate gene annotations across multiple vectors or data frames. This function is particularly important for codon usage assessment, where genes must be consistently annotated to enable matrix multiplication between the codon frequency per gene table and the mRNA gene expression count matrix.
+
 **Function:** `TranslateGeneName()`
 
-Description: Translates genes from the Ensembl id annotation to the gene name format, and vice-versa.
-Parameters: data_to_translate, translator_table, species, position, notation, verbose
+Translates genes from the Ensembl id annotation to the gene name format, and vice-versa.
+
+**Parameters:** 
+- `data_to_translate`:
+- `translator_table`:
+- `species`:
+- `position`:
+- `notation`:
+- `verbose`:
 
 ```{r}
 transalted_mRNA_genes <- TranslateGeneName(data_to_translate = mRNA_data, species = "hg38", position = "row", notation = "id")
@@ -190,11 +224,13 @@ transalted_mRNA_genes <- TranslateGeneName(data_to_translate = mRNA_data, specie
 
 <hr>
 
-To complement the codon usage analysis we have developed an independent module to retrieve the **codon frequency per gene matrix** from reference organisms. This table can be computed using Ensembl (though biomaRt) to access the reference sequence of an organisms or by directly imputing the reference genome or sequence of interest files. It is worth mentioning that the approach using Ensembl can give connection errors to the platform itself, unrelated to **tTEscanR**. In order to enable a more straight forward analysis we have incorporated as default the human ("hg38") and mouse ("mm39") codon frequency per gene matrices. 
+**Codon frequency table module.** To complement the codon usage analysis we have developed an independent module to retrieve the **codon frequency per gene matrix** from reference organisms. This table can be computed using Ensembl (though biomaRt) to access the reference sequence of an organisms or by directly imputing the reference genome or sequence of interest files. It is worth mentioning that the approach using Ensembl can give connection errors to the platform itself, unrelated to **tTEscanR**. In order to enable a more straight forward analysis we have incorporated as default the human ("hg38") and mouse ("mm39") codon frequency per gene matrices. 
 
 **Function:** `ObtainCodonComposition()`
 
-Description: Based on a Ensembl dataset name retrieves the reference genome of the organism and computes the codon frequency per gene matrix. This function can also be used in a targeted mode by using the "transcripts" parameter to give a vector of gene ids to retrieve. 
+Based on a Ensembl dataset name retrieves the reference genome of the organism and computes the codon frequency per gene matrix. This function can also be used in a targeted mode by using the "transcripts" parameter to give a vector of gene ids to retrieve. 
+
+**Parameters:**
 
 ```{r}
 # To check the list of Ensembl dataset names
@@ -209,6 +245,9 @@ targeted_genes <- head(rownames(mRNA_data))
 targeted_genes_codon_freq_per_gene_matrix <- ObtainCodonFreqPerGene(dataset_name = "hsapiens_gene_ensembl", transcripts = targeted_genes)
 ```
 
+<hr>
+
+**Function:** 
 ## 4. Usage
 
 ```{r}
@@ -253,3 +292,5 @@ tTEobject <- Compute_tTE(object = tTEobject,
 ```
 
 ## 5. References
+
+Gao W, Gallardo-Dodd CJ, Kutter C. *Cell type-specific analysis by single-cell profiling identifies a stable mammalian tRNA-mRNA interface and increased translation efficiency in neurons.* Genome Res. 2022;32(1):97-110. [doi:10.1101/gr.275944.121](https://doi.org/10.1101/gr.275944.121)
