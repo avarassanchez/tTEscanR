@@ -264,28 +264,89 @@ To complement the codon usage analysis, we have developed an independent module 
 Based on a Ensembl dataset name retrieves the reference genome of the organism and computes the codon frequency per gene matrix. This function can also be used in a targeted mode by using the "transcripts" parameter to give a vector of gene ids to retrieve. 
 
 **Parameters:**
-- `dataset_name`:
-- `transcripts`:
-- `filter`:
-- `annotation`:
-- `verbose`:
-- 
+- `dataset_name`: String specifying the Ensembl dataset name for the species.
+- `genome_file`: File containing the full DNA sequence of a genome.
+- `genes_file`: File containing gene IDs along with their corresponding sequences.
+- `transcripts`: Vector of genes to subset the analyses. 
+- `filter`: String defining the criteria ("canonical" or "length") to select a transcript if several are available for the same gene.
+- `verbose`: Logical, if TRUE, displays information messages.
+
 ```{r}
 # To check the list of Ensembl dataset names
 datasets <- biomaRt::listDatasets(useEnsembl(biomart = "ensembl"))
 datasets$dataset
 
 # Retrieving the codon frequency per gene matrix from the human reference genome
-human_codon_freq_per_gene_matrix <- ObtainCodonFreqPerGene(dataset_name = "hsapiens_gene_ensembl")
+human_codon_freq_per_gene_matrix <- ObtainCodonFreqPerGene(dataset_name = "hsapiens_gene_ensembl", filter = "canonical")
 
 # Using a targeted approach to get the codon frequency of the genes included in the mRNA data 
-targeted_genes <- head(rownames(mRNA_data))
+targeted_genes <- c("ENSG00000059588", "ENSG00000052841", "ENSG00000173153", "ENSG00000058799", "ENSG00000071203")
 targeted_genes_codon_freq_per_gene_matrix <- ObtainCodonFreqPerGene(dataset_name = "hsapiens_gene_ensembl", transcripts = targeted_genes)
 ```
 
 <hr>
 
 **Function:** `ExtractCodonComposition()`
+
+Computes the codon composition of a given set of DNA sequences, analyzing the frequency of codons within each sequence.  
+
+**Parameters:**
+- `sequences`: A vector or list of DNA sequences to analyze.  
+- `verbose`: Logical, if TRUE, displays information messages. 
+
+```{r}
+codon_composition <- extract_codon_composition(c("ATGCGTACG", "TTAAGGCCG"))
+```
+
+-------- **Differential expression analysis module** --------
+
+The differential expression analysis module provides a comprehensive ser of functions for identifying and analyzing differentially expressed features across multiple biological levels, including gene expression, codon-anticodon interactions, and amino acid usage. It supports various statistical frameworks, normalization techniques, and visualization tools to ensure accurate and comprehensive analysis.
+
+**Function:** `DESeq2runner()`
+
+Performs differential expression analysis using the DESeq2 package and provides several output visualizations (heatmap, PCA plot and/or volcano plot), as well as normalizes the input data and gives the corrected data object. 
+
+**Parameters:**
+- `data`: Matrix with features as rows and conditions as columns.
+- `conditions`: A vector with the labels for each section of the conditions labels.
+- `name_sep`: Specification of the notation separation used in the condition labels to run a DESeq2 analysis.
+- `formula`: Design formula to use for the DESeq2 analysis. The names need to be consistent with the columns in `data`.
+- `targets`: Dataset with two columns: (i)conditions to select, and (ii) labels to use for the comparisons.
+- `fc_threshold`: Fold change threshold to be used in the volcano plot (applicable for targeted approach).
+- `pval_threshold`: P-value threshold to be used in the volcano plot (applicable for targeted approach).
+- `reduce`:  Integer specifying a factor to divide codon usage values if they exceed R's maximum allowed values.
+- `heatmap`: Logical, if TRUE, a heatmap should will be displayed (not applicable for targeted approach).
+- `PCA`: Logical, if TRUE, the principal component analysis will be computed (not applicable for targeted approach).
+- `numPC`: Number of principal components to consider in the PCA analysis (if PCA is TRUE).
+- `color_factor`: Column name of `data` to use to define the groups (if PCA is TRUE.
+- `labels Boolean variable to indicate if labels should be included in the PCA plots (if \code{PCA} is TRUE).
+- `verbose`: Logical, if TRUE, displays information messages. 
+
+```{r}
+differential_expression_mRNA_analysis <- DESeq2runner(data = mRNA_data,
+                                                      conditions = c("tissue", "cell.type"),
+                                                      name_sep = "-",
+                                                      formula = ~ tissue,
+                                                      heatmap = TRUE,
+                                                      PCA = TRUE,
+                                                      numPC = 5,
+                                                      color_factor = "tissue",
+                                                      labels = FALSE)
+# List of outputs: (i) Heatmap, (ii) PCA plot, and (iii) Size corrected data.
+# Each element stored in the list of outputs can be accessed using '$'.
+
+# Targeted approach
+targets_neuron <- data.frame(search = c("neuron", "ENS neurons"),
+                                      class = c("neuron", "other"))
+differential_expression_mRNA_analysis_targeted <- DESeq2runner(data = mRNA_data,
+                                                               conditions = c("tissue", "cell.type"),
+                                                               name_sep = "-",
+                                                               formula = ~ class,
+                                                               targets = targets_neuron,
+                                                               fc_threshold = 1,
+                                                               pval_threshold = 0.05)
+```
+
 
 ## 4. Usage
 
