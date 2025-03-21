@@ -14,7 +14,7 @@ With its modular structure, the **tTEscanR** package allows to run specific comp
 The **tTEscanR** source code is entirely written in R. The latest full distribution release can be downloaded from GitHub:
 
 ```{r}
-install.packages("(avarassanchez/tTEscanR")
+install.packages("/avarassanchez/tTEscanR")
 library(tTEscanR)
 ```
 
@@ -24,7 +24,7 @@ The **input** data is expected to be **already pre-processed** following the ste
 
 ## 3. Workflow functionalities
 
-![tTEscanR_workflow](https://github.com/user-attachments/assets/b74af6d7-3d89-46df-8885-98104b448d36)
+![tTEscanR_workflow](https://github.com/user-attachments/assets/2cf26e1c-5e48-40d6-b81b-300e6293c98a)
 
 ### 3.1. Defining the tTEscanR object
 
@@ -32,7 +32,7 @@ The **tTEscanR** object is dynamically updated to store matrices and metadata at
 
 **Function:** `Create_tTEscanR_Object()`. 
 
-Creates a **tTEscanR** object that will contain an "assays" and "meta.data" slot and in each individual sections as specified in the parameters. 
+Creates a **tTEscanR** object that will contain an "assays" and "meta.data" slots and in each individual sections as specified in the parameters. 
 
 **Parameters:**
 - `counts`: Count matrix (or list of matrices). 
@@ -188,7 +188,42 @@ tTEobject <- Compute_tTE(object = tTEobject,
 
 -------- **Pre-processing module** --------
 
-The tRNAscanR pipeline requires pre-processed files, as outlined in [Gao et al., 2022](#5-references). However, this module includes several functions designed to assist the user with pre-processing tasks. For mRNA data, the funcitons focus on trimming protein-coding genes (or any user-defined list of targeted genes) and ensuring consistent gene annotations across different nomenclature formats. For tRNA data, the pre-processing steps necessary for running tTEscanR involve filtering out low tRNA cuts and preducting hihg-confidence tRNA genes using tRNAscan-SE.
+The tRNAscanR pipeline requires pre-processed files, as outlined in [Gao et al., 2022](#5-references). However, this module includes several functions designed to assist the user with pre-processing tasks. 
+- For **tRNA data**, the pre-processing steps necessary for running tTEscanR involve: (i) create of a tRNA expression matrix, (ii) filter out low tRNA cuts, and (iii) prediction of high-confidence tRNA genes using [tRNAscan-SE](https://trna.ucsc.edu/tRNAscan-SE/).
+- For **mRNA data**, the funcitons focus on: (i) trimming protein-coding genes (or any user-defined list of targeted genes), and (ii) ensuring consistent gene annotations across different nomenclature formats.
+
+**Function:** `Get_tRNAexpressionMatrix()`
+
+Extracts tRNA expression data from a Chromatin Assay or a Seurat object and converts it into a structured expression matrix. Optionally, the output can be saved to a specified directory.
+
+**Parameters:**
+- `chrom`: ChromatinAssay or Seurat object containing tRNA data.
+- `assay`: The name of the assay to extract if `chrom` is a Seurat object.
+- `tRNA_annotations` List of tRNA gene annotations.
+- `species`: The reference genome version of the species, required if tRNA_annotations is not provided.
+- `name_sep`: The delimeter used to format tRNA gene names in the output matrix.
+- `save`: Logical, if TRUE, saves the tRNA expression matrix into a .rds file.
+- `out_name`: String parameter specifying the output name (if save is TRUE).
+- `out_directory`: String parameter specifying the output directory name if save is TRUE).
+- `verbose`: Logical, if TRUE, displays information messages.
+
+```{r}
+# Here we use: 
+# - The Seurat object obtained after integrating the fragment files to the scATAC-seq peak matrix
+#   - The file has been extracted from Gao et al., 2022
+# - Default human hg38 tRNA annotation file
+# - The output matrix will not be saved
+
+chromatin_object <- readRDS()
+tRNA_expression_matrix <- Get_tRNAexpressionMatrix(chrom = chromatin_object,
+                                                   assay = "peaks",
+                                                   species = "hg38",
+                                                   name_sep = c("-", "-"),
+                                                   save = FALSE)
+# The generated tRNA_expression_matrix corresponds to the tRNA_data available in tTEscanR
+```
+
+<hr>
 
 **Function:** `tRNACutsFilter()`
 
@@ -202,24 +237,22 @@ Removes conditions where tRNA gene expression falls below a specified threshold.
 tRNA_data_filtered <- tRNACutsFilter(tRNA_data = tRNA_data, cutoff = 5000)
 ```
 
--------- **Gene annotation** --------
-
-mRNA transcripts are typically annotated using either Ensembl IDs or gene names. To maintain **consistent annotation** throughout the analysis, a dedicated functions has been developed to verify and, if necessary, translate gene annotations across multiple vectors or data frames. This function is particularly important for codon usage assessment, where genes must be consistently annotated to enable matrix multiplication between the codon frequency per gene table and the mRNA gene expression count matrix.
+<hr>
 
 **Function:** `TranslateGeneName()`
 
-Translates genes from the Ensembl id annotation to the gene name format, and vice-versa.
+Verifies and, if necessary, translates gene annotations across multiple vectors or data frames, from Ensembl IDs to gene names, or vice-versa. Enables to maintan **consistent annotations** throught the analysis.
 
 **Parameters:** 
-- `data_to_translate`:
-- `translator_table`:
-- `species`:
-- `position`:
-- `notation`:
-- `verbose`:
+- `data_to_translate`: Vector or dataframe containing gene names to be translated.
+- `translator_table`: User-provided reference table for gene translation (first column: Ensembl IDs, second column: gene symbols).
+- `species`: The reference genome version of the species (required if translator_table is not provided).
+- `position`: Location of the genes ("row" or "column") if data_to_translate is a dataframe.
+- `notation`:  The gene annotation format ("symbol" or "id") to resolve inconsistencies in data_to_translate.
+- `verbose`: Logical, if TRUE, displays information messages.
 
 ```{r}
-transalted_mRNA_genes <- TranslateGeneName(data_to_translate = mRNA_data, species = "hg38", position = "row", notation = "id")
+translated_mRNA_genes <- TranslateGeneName(data_to_translate = mRNA_data, species = "hg38", position = "row", notation = "id")
 ```
 
 -------- **Codon frequency table module** --------
