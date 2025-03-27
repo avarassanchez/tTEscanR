@@ -36,7 +36,7 @@ Creates a **tTEscanR** object that will contain an "assays" and "meta.data" slot
 
 **Parameters:**
 - `counts`: Count matrix (or list of matrices). 
-- `assay`: Label(s) to identify the `counts`. 
+- `assay`: Label (or list of labels) to identify the `counts`. 
 - `meta.data`: Additional data to include in the object. 
 - `meta.data.ids`: Label(s) to identify the `meta.data`. 
 - `verbose`: Logical, if TRUE, displays information messages. 
@@ -104,6 +104,7 @@ Updates the **tTEscanR** object by computing the codon usage of the mRNA data us
 # - Default human hg38 codon frequency per gene table
 # - Canonical setting to filter potential mRNA transcript repetitions
 # - Enable to translate the genes if no matching formats are detected
+
 tTEobject <- ComputeCodonUsage(object = tTEobject, 
                                codon_freq = NULL, 
                                species = "hg38", 
