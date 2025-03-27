@@ -38,7 +38,7 @@ Creates a **tTEscanR** object that will contain an "assays" and "meta.data" slot
 - `counts`: Count matrix (or list of matrices). 
 - `assay`: Label (or list of labels) to identify the `counts`. 
 - `meta.data`: Additional data to include in the object. 
-- `meta.data.ids`: Label(s) to identify the `meta.data`. 
+- `meta.data.ids`: List of labels to identify the `meta.data`. 
 - `verbose`: Logical, if TRUE, displays information messages. 
 
 <hr>
@@ -50,9 +50,9 @@ Updates an existing **tTEscanR** object by overwriting existing sections or addi
 **Parameters:**
 - `object`: The existing tTEscanR object to be updated.
 - `counts`: Count matrix (or list of matrices).
-- `assay`: Label(s) to identify the `counts`.
-- `meta.data`: Additional data  to include in the object.
-- `meta.data.ids`: Label(s) to identify the `meta.data`.
+- `assay`:  Label (or list of labels) to identify the `counts`. 
+- `meta.data`: Additional data to include in the object.
+- `meta.data.ids`: List of labels to identify the `meta.data`. 
 - `overwrite.assay`: Logical, if TRUE, overwrites the assays (repeated `assay`) present in the object.
 - `overwrite.metadata`: Logical, if TRUE, overwrites the metadata (repeated `meta.data.ids`) present in the object.
 - `verbose`: Logical, if TRUE, displays information messages. 
@@ -76,7 +76,7 @@ tTEobject_paired <- Create_tTEscanR_Object(counts = list(mRNA_data, tRNA_data),
 
 ### 3.2. Codon-anticodon usage assessment
 
-**Codon usage** is computed through matrix multiplication between the mRNA gene expression data (genes as rows and conditions as columns) and a **codon frequency per gene** table. This table represents the codon distribution of each protein-coding gene in a reference genome, and includes   protein-coding genes from **Ensembl** formatted as a gene matrix, with the 61 sense codons as rows and each gene as columns. As a result, the codon usage calculation produces a matrix where **codons are represented as rows and conditions as columns**. This transformation enables downstream analysis of codon preferences across different conditions.
+**Codon usage** is computed through matrix multiplication between the mRNA gene expression data (genes as rows and conditions as columns) and a **codon frequency per gene** table. This table represents the codon distribution of each protein-coding gene in a reference genome, and includes protein-coding genes from **Ensembl** formatted as a gene matrix, with the 61 sense codons as rows and each gene as columns. As a result, the codon usage calculation produces a matrix where **codons are represented as rows and conditions as columns**. This transformation enables downstream analysis of codon preferences across different conditions.
 
 **Function:** `ComputeCodonUsage()`. 
 
@@ -145,7 +145,6 @@ Computes the amino acid usage, either by assessing the `demand` based on codon u
     - "supply", computes amino acid supply from the anticodon usage matrix.</li>
     - "both", computes both amino acid demand and supply.</li>
 - `overwrite.assay`: Logical, if TRUE, overwrites the codon usage assay present in the object.
-- `overwrite.metadata`: Logical, if TRUE, overwrites the metadata present in the object.
 - `verbose`: Logical, if TRUE, displays information messages.
 
 ```{r}
@@ -158,8 +157,7 @@ tTEobject <- ComputeAAUsage(object = tTEobject,
 # If we wanted to compute the AA demand and supply simultaneously
 tTEobject <- ComputeAAUsage(object = tTEobject, 
                             action = "both", 
-                            overwrite.assay = TRUE, 
-                            overwrite.metadata = TRUE)
+                            overwrite.assay = TRUE)
 ```
   
 ### 3.4. tTE computation
@@ -235,7 +233,8 @@ Removes conditions where tRNA gene expression falls below a specified threshold.
 - `cutoff`: Integer specifying the minimum expression level required for a condition to be retained.
 
 ```{r}
-tRNA_data_filtered <- tRNACutsFilter(tRNA_data = tRNA_data, cutoff = 5000)
+tRNA_data_filtered <- tRNACutsFilter(tRNA_data = tRNA_data,
+                                     cutoff = 5000)
 ```
 
 <hr>
@@ -249,11 +248,14 @@ Verifies and, if necessary, translates gene annotations across multiple vectors 
 - `translator_table`: User-provided reference table for gene translation (first column: Ensembl IDs, second column: gene symbols).
 - `species`: The reference genome version of the species (required if translator_table is not provided).
 - `position`: Location of the genes ("row" or "column") if data_to_translate is a dataframe.
-- `notation`:  The gene annotation format ("symbol" or "id") to resolve inconsistencies in data_to_translate.
+- `notation`: The gene annotation format ("symbol" or "id") to resolve inconsistencies in data_to_translate.
 - `verbose`: Logical, if TRUE, displays information messages.
 
 ```{r}
-translated_mRNA_genes <- TranslateGeneName(data_to_translate = mRNA_data, species = "hg38", position = "row", notation = "id")
+translated_mRNA_genes <- TranslateGeneName(data_to_translate = mRNA_data,
+                                           species = "hg38",
+                                           position = "row",
+                                           notation = "id")
 ```
 
 -------- **Codon frequency table module** --------
@@ -356,13 +358,8 @@ library(tTEscanR)
 data(mRNA_data)
 data(tRNA_data)
 
-# Adding the mRNA dataset to the object
-tTEobject <- Create_tTEscanR_Object(counts = mRNA_data, assay = "mRNA") 
-
-# Updating the object created before with the tRNA dataset
-tTEobject <- Update_tTEscanR_Object(object = tTEobject, counts = tRNA_data, assay = "tRNA", 
-                                    meta.data = NULL, meta.data.ids = NULL,
-                                    overwrite.assay = FALSE, overwrite.metadata = FALSE)
+# Adding the mRNA and tRNA datasets to the object
+tTEobject <- Create_tTEscanR_Object(counts = c(mRNA_data, tRNA_data), assay = c("mRNA", "tRNA)) 
 
 # Adding metadata to the object
 matching_celltypes <- intersect(colnames(mRNA_data), colnames(tRNA_data)) # We are defining a vector of strings
@@ -371,10 +368,7 @@ tTEobject <- Update_tTEscanR_Object(object = tTEobject,
                                     meta.data.ids = list("matching_celltypes"), 
                                     overwrite.metadata = TRUE)
 
-# Here we use: 
-# - Default human hg38 codon frequency per gene table
-# - Canonical setting to filter potential mRNA transcript repetitions
-# - Enable to translate the genes if no matching formats are detected
+# Compute codon usage with default hg38 canonical codon frequency per gene table.
 tTEobject <- ComputeCodonUsage(object = tTEobject, 
                                codon_freq = NULL, 
                                species = "hg38", 
