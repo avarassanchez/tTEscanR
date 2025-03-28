@@ -93,7 +93,6 @@ Updates the **tTEscanR** object by computing the codon usage of the mRNA data us
 - `compute_mean_codon_usage`: Logical, if TRUE, computes the mean codon usage across conditions.
 - `conditions`:
 - `name_sep`:
-- `formula`:
 - `compute_correlation_background_mean`: Logical, if TRUE, computes the exonic background and meand codon usage correlation.
 - `overwrite.assay`: Logical, if TRUE, overwrites the codon usage assay present in the object.
 - `overwrite.metadata`: Logical, if TRUE, overwrites the metadata present in the object.
@@ -172,13 +171,11 @@ Computes the tTE score across matching conditions at the codon-anticodon usage l
 - `object`: The existing **tTEscanR** object containing both codon-anticodon or amino acid demand-supply assays.
 - `conditions`:
 - `name_sep`:
-- `formula`:
 
 ```{r}
 tTEobject <- Compute_tTE(object = tTEobject, 
                          conditions = c("tissue", "cell.type"),
-                         name_sep = "-",
-                         formula = ~ tissue)
+                         name_sep = "-")
 ```
 
 ### 3.5. Helper functions
@@ -197,13 +194,13 @@ Extracts tRNA expression data from a Chromatin Assay or a Seurat object and conv
 
 **Parameters:**
 - `chrom`: ChromatinAssay or Seurat object containing tRNA data.
-- `assay`: The name of the assay to extract if `chrom` is a Seurat object.
+- `assay`: Assay name to extract from the `chrom` in a Seurat object.
 - `tRNA_annotations` List of tRNA gene annotations.
-- `species`: The reference genome version of the species, required if tRNA_annotations is not provided.
-- `name_sep`: The delimeter used to format tRNA gene names in the output matrix.
+- `species`: Reference genome version (if `tRNA_annotations` not provided).
+- `name_sep`: Delimeter used to format tRNA gene names in the output matrix.
 - `save`: Logical, if TRUE, saves the tRNA expression matrix into a .rds file.
-- `out_name`: String parameter specifying the output name (if save is TRUE).
-- `out_directory`: String parameter specifying the output directory name if save is TRUE).
+- `out_name`: User-defined output name (if save is TRUE).
+- `out_directory`: User-defined output directory name if save is TRUE).
 - `verbose`: Logical, if TRUE, displays information messages.
 
 ```{r}
@@ -230,7 +227,7 @@ Removes conditions where tRNA gene expression falls below a specified threshold.
 
 **Parameters:**
 - `tRNA_data`: The tRNA gene expression data containing tRNA cuts as rows and conditions as columns.
-- `cutoff`: Integer specifying the minimum expression level required for a condition to be retained.
+- `cutoff`: Minimum expression level required for a condition to be retained.
 
 ```{r}
 tRNA_data_filtered <- tRNACutsFilter(tRNA_data = tRNA_data,
@@ -246,9 +243,9 @@ Verifies and, if necessary, translates gene annotations across multiple vectors 
 **Parameters:** 
 - `data_to_translate`: Vector or dataframe containing gene names to be translated.
 - `translator_table`: User-provided reference table for gene translation (first column: Ensembl IDs, second column: gene symbols).
-- `species`: The reference genome version of the species (required if translator_table is not provided).
-- `position`: Location of the genes ("row" or "column") if data_to_translate is a dataframe.
-- `notation`: The gene annotation format ("symbol" or "id") to resolve inconsistencies in data_to_translate.
+- `species`: The reference genome version of the species (if `translator_table` is not provided).
+- `position`: Location of the genes ("row" or "column") if `data_to_translate` is a dataframe.
+- `notation`: Gene annotation format ("symbol" or "id") to resolve inconsistencies in `data_to_translate`.
 - `verbose`: Logical, if TRUE, displays information messages.
 
 ```{r}
@@ -267,11 +264,11 @@ To complement the codon usage analysis, we have developed an independent module 
 Based on a Ensembl dataset name retrieves the reference genome of the organism and computes the codon frequency per gene matrix. This function can also be used in a targeted mode by using the "transcripts" parameter to give a vector of gene ids to retrieve. 
 
 **Parameters:**
-- `dataset_name`: String specifying the Ensembl dataset name for the species.
-- `genome_file`: File containing the full DNA sequence of a genome.
-- `genes_file`: File containing gene IDs along with their corresponding sequences.
+- `dataset_name`: Ensembl species' dataset name.
+- `genome_file`: File name of the full DNA sequence of a genome.
+- `genes_file`: File name of the gene IDs along with their corresponding sequences.
 - `transcripts`: Vector of genes to subset the analyses. 
-- `filter`: String defining the criteria ("canonical" or "length") to select a transcript if several are available for the same gene.
+- `filter`: Criteria ("canonical" or "length") to select a transcript if several are available for the same gene.
 - `verbose`: Logical, if TRUE, displays information messages.
 
 ```{r}
@@ -280,11 +277,18 @@ datasets <- biomaRt::listDatasets(useEnsembl(biomart = "ensembl"))
 datasets$dataset
 
 # Retrieving the codon frequency per gene matrix from the human reference genome
-human_codon_freq_per_gene_matrix <- ObtainCodonFreqPerGene(dataset_name = "hsapiens_gene_ensembl", filter = "canonical")
+human_codon_freq_per_gene_matrix <- ObtainCodonFreqPerGene(dataset_name = "hsapiens_gene_ensembl",
+                                                           filter = "canonical")
 
 # Using a targeted approach to get the codon frequency of the genes included in the mRNA data 
-targeted_genes <- c("ENSG00000059588", "ENSG00000052841", "ENSG00000173153", "ENSG00000058799", "ENSG00000071203")
-targeted_genes_codon_freq_per_gene_matrix <- ObtainCodonFreqPerGene(dataset_name = "hsapiens_gene_ensembl", transcripts = targeted_genes)
+targeted_genes <- c("ENSG00000059588",
+                    "ENSG00000052841",
+                    "ENSG00000173153",
+                    "ENSG00000058799",
+                    "ENSG00000071203")
+
+targeted_genes_codon_freq_per_gene_matrix <- ObtainCodonFreqPerGene(dataset_name = "hsapiens_gene_ensembl",
+                                                                    transcripts = targeted_genes)
 ```
 
 <hr>
@@ -313,23 +317,21 @@ Performs differential expression analysis using the DESeq2 package and provides 
 - `data`: Matrix with features as rows and conditions as columns.
 - `conditions`: A vector with the labels for each section of the conditions labels.
 - `name_sep`: Specification of the notation separation used in the condition labels to run a DESeq2 analysis.
-- `formula`: Design formula to use for the DESeq2 analysis. The names need to be consistent with the columns in `data`.
 - `targets`: Dataset with two columns: (i)conditions to select, and (ii) labels to use for the comparisons.
-- `fc_threshold`: Fold change threshold to be used in the volcano plot (applicable for targeted approach).
-- `pval_threshold`: P-value threshold to be used in the volcano plot (applicable for targeted approach).
-- `reduce`:  Integer specifying a factor to divide codon usage values if they exceed R's maximum allowed values.
-- `heatmap`: Logical, if TRUE, a heatmap should will be displayed (not applicable for targeted approach).
-- `PCA`: Logical, if TRUE, the principal component analysis will be computed (not applicable for targeted approach).
+- `fc_threshold`: Fold change threshold to use in the volcano plot (applicable for targeted approach).
+- `pval_threshold`: P-value threshold to use in the volcano plot (applicable for targeted approach).
+- `reduce`: Integer factor to divide matrix values if the R's maximum values are exceed.
+- `heatmap`: Logical, if TRUE, displays heatmap (not applicable for targeted approach).
+- `PCA`: Logical, if TRUE, computs the principal component analysis (not applicable for targeted approach).
 - `numPC`: Number of principal components to consider in the PCA analysis (if PCA is TRUE).
-- `color_factor`: Column name of `data` to use to define the groups (if PCA is TRUE.
-- `labels Boolean variable to indicate if labels should be included in the PCA plots (if \code{PCA} is TRUE).
+- `color_factor`: Specification of the `data` column to define groups (if PCA is TRUE).
+- `labels`: Logical, if TRUE, displays data points labels in PCA plot (if PCA is TRUE).
 - `verbose`: Logical, if TRUE, displays information messages. 
 
 ```{r}
 differential_expression_mRNA_analysis <- DESeq2runner(data = mRNA_data,
                                                       conditions = c("tissue", "cell.type"),
                                                       name_sep = "-",
-                                                      formula = ~ tissue,
                                                       heatmap = TRUE,
                                                       PCA = TRUE,
                                                       numPC = 5,
@@ -362,7 +364,7 @@ data(tRNA_data)
 tTEobject <- Create_tTEscanR_Object(counts = c(mRNA_data, tRNA_data), assay = c("mRNA", "tRNA)) 
 
 # Adding metadata to the object
-matching_celltypes <- intersect(colnames(mRNA_data), colnames(tRNA_data)) # We are defining a vector of strings
+matching_celltypes <- intersect(colnames(mRNA_data), colnames(tRNA_data)) 
 tTEobject <- Update_tTEscanR_Object(object = tTEobject, 
                                     meta.data = list(matching_celltypes), 
                                     meta.data.ids = list("matching_celltypes"), 
@@ -382,8 +384,7 @@ tTEobject <- ComputeAAUsage(object = tTEobject, action = "both")
 
 tTEobject <- Compute_tTE(object = tTEobject, 
                          conditions = c("tissue", "cell.type"),
-                         name_sep = "-",
-                         formula = ~ tissue)
+                         name_sep = "-")
 ```
 
 ## 5. References
