@@ -121,7 +121,8 @@ data(mRNA_data)
 data(tRNA_data)
 
 # Adding the mRNA and tRNA datasets to the object
-tTEobject <- Create_tTEscanR_Object(counts = c(mRNA_data, tRNA_data), assay = c("mRNA", "tRNA)) 
+tTEobject <- Create_tTEscanR_Object(counts = c(mRNA_data, tRNA_data),
+                                    assay = c("mRNA", "tRNA)) 
 
 # Adding metadata to the object
 matching_celltypes <- intersect(colnames(mRNA_data), colnames(tRNA_data)) 
