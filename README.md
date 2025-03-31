@@ -28,7 +28,7 @@ The **input** data is expected to be **already pre-processed** following the ste
 
 ### 3.1. Defining the tTEscanR object
 
-The **tTEscanR** object is dynamically updated to store matrices and metadata at each analysis step, ensuring efficient tracking and organization of inputs and outputs throughout the pipeline. It can be created using a single dataset and later updated with additional datasets, or all desired datasets can be in a list and passed directly to the main function. 
+The **tTEscanR** object is dynamically updated to store matrices and metadata at each analysis step, ensuring efficient tracking and organization of inputs and outputs throughout the pipeline.
 
 **`Create_tTEscanR_Object()`**. Creates a **tTEscanR** object that will contain an "assays" and "meta.data" slots and in each individual sections as specified in the parameters. 
 
@@ -36,13 +36,13 @@ The **tTEscanR** object is dynamically updated to store matrices and metadata at
 
 ### 3.2. Codon-anticodon usage assessment
 
-The **codon usage** is computed through matrix multiplication between the mRNA gene expression data (genes as rows and conditions as columns) and a **codon frequency per gene** table. This table represents the codon distribution of each protein-coding gene in a reference genome, and includes protein-coding genes from **Ensembl** formatted as a gene matrix, with the 61 sense codons as rows and each gene as columns. As a result, the codon usage calculation produces a matrix where **codons are represented as rows and conditions as columns**. This transformation enables downstream analysis of codon preferences across different conditions.
+The **codon usage** is computed through matrix multiplication between the mRNA gene expression data and a **codon frequency per protein-coding gene** table. As a result, the codon usage calculation produces a matrix where **codons are represented as rows and conditions as columns**. This transformation enables downstream analysis of codon preferences across different conditions.
 
 **`ComputeCodonUsage()`**. Updates the **tTEscanR** object by computing the codon usage of the mRNA data using matrix multiplication with a reference codon frequency table. The function allows for customization using a user-provided codon frequency per gene table (`codon_freq`) or default species-specific tables available in **tTEscanR**. 
 
 <hr>
 
-The **anticodon usage** is computed from a tRNA gene expression matrix including high-confidence tRNA genes predicted using [tRNAscan-SE](https://trna.ucsc.edu/tRNAscan-SE/) as rows, and conditions as columns. Details on how to pre-process the tRNA data described in [Helper functions](#35-helper-functions). To create a more concise representation, tRNA genes sharing the same anticodon are grouped together by **tRNA isotypes**, producing a reduced matrix. 
+The **anticodon usage** is computed from a tRNA gene expression matrix including high-confidence tRNA genes. 
 
 **`ComputeAnticodonUsage()`**. Updates the **tTEscanR** object by computing the anticodon usage from the tRNA expression data. It groups tRNA genes that share the same anticodon, generating a reduced expression matrix where tRNA isotypes are represented as rows and conditions as columns.
 
@@ -50,11 +50,11 @@ The **anticodon usage** is computed from a tRNA gene expression matrix including
 
 The **amino acid level** assessment involves calculating amino acid **demand** and **supply**. Demand is determined by grouping codons that correspond to the same amino acid (based on the genetic code), while supply is measured by pooling anticodon families based on the amino acid they recognize. These calculations can be performed separately using "demand" or "supply" or together" by specifying "both".
 
-**`ComputeAAUsage()`**. Computes the amino acid usage, either by assessing the `demand` based on codon usage, or the `supply` based on anticodon usage. You can compute both demand and supply simultaenously, depending on the specified action.
+**`ComputeAAUsage()`**. Computes the amino acid usage, either by assessing the `demand` based on codon usage, or the `supply` based on anticodon usage. You can compute both amino acid demand and supply simultaenously, depending on the specified action.
   
 ### 3.4. tTE computation
 
-The **Theoretical Translation Efficiency (tTE)** is assessed by calculating Spearman's rank correlation coefficient between amino acid demand, derived from mRNA codon usage, and amino acid supply, determined by tRNA anticodon usage. Ensuring **matching conditions** between both datasets is crucial for this step, as only shared conditions are retained for downstream analysis. Consequently, the assessment is highly sensitive to annotation variability. 
+The **Theoretical Translation Efficiency (tTE)** is assessed by calculating Spearman's rank correlation coefficient between amino acid demand, derived from mRNA codon usage, and amino acid supply, determined by tRNA anticodon usage. Ensuring **matching conditions** between both datasets is crucial for this step, as only shared conditions are retained for downstream analysis. Consequently, it is highly sensitive to annotation variability. 
 
 **`Compute_tTE()`**. Computes the tTE score across matching conditions at the codon-anticodon usage level and/or amino acid demand and supply level.
 
@@ -64,9 +64,7 @@ The **Theoretical Translation Efficiency (tTE)** is assessed by calculating Spea
 
 -------- **Pre-processing module** --------
 
-The tRNAscanR pipeline requires pre-processed files, as outlined in [Gao et al., 2022](#5-references). However, this module includes several functions designed to assist the user with pre-processing tasks. 
-- For **tRNA data**, the pre-processing steps necessary for running tTEscanR involve: (i) create of a tRNA expression matrix, (ii) filter out low tRNA cuts, and (iii) prediction of high-confidence tRNA genes using [tRNAscan-SE](https://trna.ucsc.edu/tRNAscan-SE/).
-- For **mRNA data**, the funcitons focus on: (i) trimming protein-coding genes (or any user-defined list of targeted genes), and (ii) ensuring consistent gene annotations across different nomenclature formats.
+The tRNAscanR pipeline requires pre-processed files, as outlined in [Gao et al., 2022](#5-references). This module includes several functions designed to assist the user with pre-processing tasks. 
 
 **`Get_tRNAexpressionMatrix()`**. Extracts tRNA expression data from a Chromatin Assay or a Seurat object and converts it into a structured expression matrix. Optionally, the output can be saved to a specified directory.
 
@@ -78,9 +76,9 @@ The tRNAscanR pipeline requires pre-processed files, as outlined in [Gao et al.,
 
 -------- **Codon frequency table module** --------
 
-To complement the codon usage analysis, we have developed an independent module to generate the **codon frequency per gene matrix** for reference organisms. This matrix can be obtained using Ensembl (through **biomaRt**) to access the reference sequence of an organism or by directly providing a reference genome or sequence files of interest. This flexibility allows users to retrieve codon freqeuncy per gene matrices for any organim available in Ensembl, enabling broad applicability of the computations. However, it is worth mentioning that accessing Ensembl may occasionally result in connection errors due to platform-related issues unrelated to **tTEscanR**. To facilitate a smoother analysis, we have included pre-computed codon frequency per gene matrices for human ("hg38") and mouse ("mm39") as default options. 
+To complement the codon usage analysis, we have developed an independent module to generate the **codon frequency per gene matrix** for any reference organism. This matrix can be obtained using Ensembl (through **biomaRt**) to access the reference sequence of an organism or by directly providing a reference genome or sequence files with genes and/or transcripts of interest. This flexibility allows users to retrieve codon frequency per gene matrices for any organim available in Ensembl, enabling broad applicability of the computations. However, it is worth mentioning that accessing Ensembl may occasionally result in connection errors due to platform-related issues unrelated to **tTEscanR**. To facilitate a smoother analysis, we have included pre-computed codon frequency per gene matrices for human ("hg38") and mouse ("mm39") as default options. 
 
-**`ObtainCodonComposition()`**. Based on a Ensembl dataset name retrieves the reference genome of the organism and computes the codon frequency per gene matrix. This function can also be used in a targeted mode by using the "transcripts" parameter to give a vector of gene ids to retrieve. 
+**`ObtainCodonComposition()`**. Retrieves the reference genome of the organism and computes the codon frequency per gene matrix. This function can also be used in a targeted mode by using the "transcripts" parameter to give a vector of gene ids to retrieve. 
 
 **`ExtractCodonComposition()`**. Computes the codon composition of a given set of DNA sequences, analyzing the frequency of codons within each sequence.  
 
@@ -88,7 +86,7 @@ To complement the codon usage analysis, we have developed an independent module 
 
 -------- **Differential expression analysis module** --------
 
-The differential expression analysis module provides a comprehensive ser of functions for identifying and analyzing differentially expressed features across multiple biological levels, including gene expression, codon-anticodon interactions, and amino acid usage. It supports various statistical frameworks, normalization techniques, and visualization tools to ensure accurate and comprehensive analysis.
+The differential expression analysis module provides a comprehensive set of functions for identifying and analyzing differentially expressed features across multiple biological levels, including gene expression, codon-anticodon interactions, and amino acid usage. It supports various statistical frameworks, normalization techniques, and visualization tools to ensure accurate and comprehensive analysis.
 
 **`DESeq2runner()`**. Performs differential expression analysis using the DESeq2 package and provides several output visualizations (heatmap, PCA plot and/or volcano plot), as well as normalizes the input data and gives the corrected data object. 
 
