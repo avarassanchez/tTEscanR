@@ -1,7 +1,7 @@
 # tTEscanR - Description of the funcitons <a href="https://your-link-here"><img src="https://github.com/user-attachments/assets/213de690-12cd-4fa8-862a-cadbd8872bf4" alt="tTEscanR_logo" align="right" width="120"></a>
 <img src="https://img.shields.io/badge/Language-R-blue.svg" style="zoom:100%;" />
 
-**tTEscanR** has a modular structure that allos to run specific components independently or as part of a comprehensive pipline, offering flexibility to enhance and complement the analysis of **codon-anticodon dynamics** across various biological contexts.
+**tTEscanR** has a modular structure that allows to run specific components independently or as part of a comprehensive pipline, offering flexibility to enhance and complement the analysis of **codon-anticodon dynamics** across various biological contexts.
 
 ## 1. Core functions
 
@@ -32,8 +32,8 @@ Updates an existing **tTEscanR** object by overwriting existing sections or addi
 - `assay`:  Label (or list of labels) to identify the `counts`. 
 - `meta.data`: Additional data to include in the object.
 - `meta.data.ids`: List of labels to identify the `meta.data`. 
-- `overwrite.assay`: Logical, if TRUE, overwrites the assays (repeated `assay`) present in the object.
-- `overwrite.metadata`: Logical, if TRUE, overwrites the metadata (repeated `meta.data.ids`) present in the object.
+- `overwrite.assay`: Logical, if TRUE, overwrites the counts (if repeated `assay`) in the object.
+- `overwrite.metadata`: Logical, if TRUE, overwrites the metadata (if repeated `meta.data.ids`) in the object.
 - `verbose`: Logical, if TRUE, displays information messages.
 
 ```{r}
@@ -55,7 +55,7 @@ tTEobject_paired <- Create_tTEscanR_Object(counts = list(mRNA_data, tRNA_data),
 
 ### 1.2. Codon-anticodon usage assessment
 
-**Codon usage** is computed through matrix multiplication between the mRNA gene expression data (genes as rows and conditions as columns) and a **codon frequency per gene** table. This table represents the codon distribution of each protein-coding gene in a reference genome, and includes protein-coding genes from **Ensembl** formatted as a gene matrix, with the 61 sense codons as rows and each gene as columns. As a result, the codon usage calculation produces a matrix where **codons are represented as rows and conditions as columns**. This transformation enables downstream analysis of codon preferences across different conditions.
+The **codon usage** is computed through matrix multiplication between the mRNA gene expression data (genes as rows and conditions as columns) and a **codon frequency per gene** table. This table represents the codon distribution of each protein-coding gene in a reference genome, and includes protein-coding genes from **Ensembl** formatted as a gene matrix, with the 61 sense codons as rows and each gene as columns. As a result, the codon usage calculation produces a matrix where **codons are represented as rows and conditions as columns**. This transformation enables downstream analysis of codon preferences across different conditions.
 
 **Function:** `ComputeCodonUsage()`. 
 
@@ -70,11 +70,11 @@ Updates the **tTEscanR** object by computing the codon usage of the mRNA data us
 - `reduce`: Integer specifying a factor to divide codon usage values if they exceed R's maximum allowed values.
 - `compute_codon_exonic_background`: Logical, if TRUE, computes the codon exonic background.
 - `compute_mean_codon_usage`: Logical, if TRUE, computes the mean codon usage across conditions.
-- `conditions`:
-- `name_sep`:
+- `conditions`: Vector with the conditions labels (column names of the mRNA assay), required if `compute_mean_codon_usage`is TRUE.
+- `name_sep`: Specification of the symbol used in `conditions` to separate each part of the labels, required if `compute_mean_codon_usage`is TRUE.
 - `compute_correlation_background_mean`: Logical, if TRUE, computes the exonic background and meand codon usage correlation.
-- `overwrite.assay`: Logical, if TRUE, overwrites the codon usage assay present in the object.
-- `overwrite.metadata`: Logical, if TRUE, overwrites the metadata present in the object.
+- `overwrite.assay`: Logical, if TRUE, overwrites the codon usage assay in the object.
+- `overwrite.metadata`: Logical, if TRUE, overwrites the metadata in the object.
 - `verbose`: Logical, if TRUE, displays information messages.
 
 ```{r}
@@ -87,12 +87,14 @@ tTEobject <- ComputeCodonUsage(object = tTEobject,
                                codon_freq = NULL, 
                                species = "hg38", 
                                filter = "canonical",
-                               translate = TRUE)
+                               translate = TRUE,
+                               conditions = c("tissue", "cell.type"),
+                               name_sep = "-")
 ```
 
 <hr>
 
-**Anticodon usage** is computed from a tRNA gene expression matrix including high-confidence tRNA genes predicted using [tRNAscan-SE](https://trna.ucsc.edu/tRNAscan-SE/) as rows, and conditions as columns. Details on how to pre-process the tRNA data described in [Helper functions](#2-helper-functions). To create a more concise representation, tRNA genes sharing the same anticodon are grouped together by **tRNA isotypes**, producing a reduced matrix. 
+The **anticodon usage** is computed from a tRNA gene expression matrix including high-confidence tRNA genes predicted using [tRNAscan-SE](https://trna.ucsc.edu/tRNAscan-SE/) as rows, and conditions as columns. Details on how to pre-process the tRNA data described in [Helper functions](#2-helper-functions). To create a more concise representation, tRNA genes sharing the same anticodon are grouped together by **tRNA isotypes**, producing a reduced matrix. 
 
 **Function:** `ComputeAnticodonUsage()`.
 
@@ -100,8 +102,8 @@ Updates the **tTEscanR** object by computing the anticodon usage from the tRNA e
 
 **Parameters:**
 - `object`: The existing **tTEscanR** object containing a tRNA assay.
-- `overwrite.assay`: Logical, if TRUE, overwrites the codon usage assay present in the object.
-- `overwrite.metadata`: Logical, if TRUE, overwrites the metadata present in the object.
+- `overwrite.assay`: Logical, if TRUE, overwrites the codon usage assay in the object.
+- `overwrite.metadata`: Logical, if TRUE, overwrites the metadata in the object.
 - `verbose`: Logical, if TRUE, displays information messages. 
 
 ```{r}
@@ -122,7 +124,7 @@ Computes the amino acid usage, either by assessing the `demand` based on codon u
     - "demand", computes amino acid demand from the codon usage matrix.</li>
     - "supply", computes amino acid supply from the anticodon usage matrix.</li>
     - "both", computes both amino acid demand and supply.</li>
-- `overwrite.assay`: Logical, if TRUE, overwrites the codon usage assay present in the object.
+- `overwrite.assay`: Logical, if TRUE, overwrites the codon usage assay in the object.
 - `verbose`: Logical, if TRUE, displays information messages.
 
 ```{r}
@@ -149,11 +151,15 @@ Computes the tTE score across matching conditions at the codon-anticodon usage l
 
 **Parameters:**
 - `object`: The existing **tTEscanR** object containing both codon-anticodon or amino acid demand-supply assays.
-- `conditions`:
-- `name_sep`:
+- `level`: Either "codon" or "AA" to specify the level at which to compute the tTE score.
+- `conditions`: Vector with the conditions labels (column names of the assays).
+- `name_sep`: Specification of the symbol used in `conditions` to separate each part of the labels.
+- `overwrite`: Logical, if TRUE, overwrites the tTE results table in the object.
+- `verbose`: Logical, if TRUE, displays information messages.
 
 ```{r}
-tTEobject <- Compute_tTE(object = tTEobject, 
+tTEobject <- Compute_tTE(object = tTEobject,
+                         level = "AA", 
                          conditions = c("tissue", "cell.type"),
                          name_sep = "-")
 ```
