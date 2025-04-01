@@ -239,7 +239,7 @@ translated_mRNA_genes <- TranslateGeneName(data_to_translate = mRNA_data,
 
 **Function:** `ObtainCodonComposition()`.
 
-Based on a Ensembl dataset name retrieves the reference genome of the organism and computes the codon frequency per gene matrix. This function can also be used in a targeted mode by using the "transcripts" parameter to give a vector of gene ids to retrieve. 
+Based on an Ensembl reference genome or a user-provided gene sequence file, this function computes a codon frequency per gene matrix. Additionally, it supports  a targeted mode via the transcripts parameter, allowing users to specify a vector of gene IDs for retrieval.
 
 **Parameters:**
 - `dataset_name`: Ensembl species' dataset name.
