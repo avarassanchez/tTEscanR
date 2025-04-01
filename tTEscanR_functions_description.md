@@ -70,8 +70,8 @@ Updates the **tTEscanR** object by computing the codon usage of the mRNA data us
 - `reduce`: Integer specifying a factor to divide codon usage values if they exceed R's maximum allowed values.
 - `compute_codon_exonic_background`: Logical, if TRUE, computes the codon exonic background.
 - `compute_mean_codon_usage`: Logical, if TRUE, computes the mean codon usage across conditions.
-- `conditions`: Vector with the conditions labels (column names of the mRNA assay), required if `compute_mean_codon_usage`is TRUE.
-- `name_sep`: Specification of the symbol used in `conditions` to separate each part of the labels, required if `compute_mean_codon_usage`is TRUE.
+- `conditions`: Vector with the conditions' labels, (if `compute_mean_codon_usage` is TRUE).
+- `name_sep`: Delimeter used in `conditions` to separate each part of the labels, (if `compute_mean_codon_usage` is TRUE).
 - `compute_correlation_background_mean`: Logical, if TRUE, computes the exonic background and meand codon usage correlation.
 - `overwrite.assay`: Logical, if TRUE, overwrites the codon usage assay in the object.
 - `overwrite.metadata`: Logical, if TRUE, overwrites the metadata in the object.
@@ -120,7 +120,7 @@ Computes the amino acid usage, either by assessing the `demand` based on codon u
 
 **Parameters:**
 - `object`: The existing **tTEscanR** object containing a codon usage and/or anticodon usage assay.
-- `action`: Label action-specific:
+- `action`: Action-specific label:
     - "demand", computes amino acid demand from the codon usage matrix.</li>
     - "supply", computes amino acid supply from the anticodon usage matrix.</li>
     - "both", computes both amino acid demand and supply.</li>
@@ -152,8 +152,8 @@ Computes the tTE score across matching conditions at the codon-anticodon usage l
 **Parameters:**
 - `object`: The existing **tTEscanR** object containing both codon-anticodon or amino acid demand-supply assays.
 - `level`: Either "codon" or "AA" to specify the level at which to compute the tTE score.
-- `conditions`: Vector with the conditions labels (column names of the assays).
-- `name_sep`: Specification of the symbol used in `conditions` to separate each part of the labels.
+- `conditions`: Vector with the conditions' labels.
+- `name_sep`: Delimeter used in `conditions` to separate each part of the labels.
 - `overwrite`: Logical, if TRUE, overwrites the tTE results table in the object.
 - `verbose`: Logical, if TRUE, displays information messages.
 
@@ -170,12 +170,12 @@ tTEobject <- Compute_tTE(object = tTEobject,
 
 **Function:** `Get_tRNAexpressionMatrix()`.
 
-Extracts tRNA expression data from a Chromatin Assay or a Seurat object and converts it into a structured expression matrix. Optionally, the output can be saved to a specified directory.
+Extracts tRNA expression data from a Chromatin Assay or a Seurat object and converts it into a structured expression matrix. Optionally, the output can be saved into a specified directory.
 
 **Parameters:**
 - `chrom`: ChromatinAssay or Seurat object containing tRNA data.
 - `assay`: Assay name to extract from the `chrom` in a Seurat object.
-- `tRNA_annotations` List of tRNA gene annotations.
+- `tRNA_annotations`: List of tRNA gene annotations.
 - `species`: Reference genome version (if `tRNA_annotations` not provided).
 - `name_sep`: Delimeter used to format tRNA gene names in the output matrix.
 - `save`: Logical, if TRUE, saves the tRNA expression matrix into a .rds file.
@@ -243,9 +243,8 @@ Based on a Ensembl dataset name retrieves the reference genome of the organism a
 
 **Parameters:**
 - `dataset_name`: Ensembl species' dataset name.
-- `genome_file`: File name of the full DNA sequence of a genome.
 - `genes_file`: File name of the gene IDs along with their corresponding sequences.
-- `transcripts`: Vector of genes to subset the analyses. 
+- `transcripts`: Subset of genes to trimm the dataset.
 - `filter`: Criteria ("canonical" or "length") to select a transcript if several are available for the same gene.
 - `verbose`: Logical, if TRUE, displays information messages.
 
@@ -291,7 +290,7 @@ Performs differential expression analysis using the DESeq2 package and provides 
 **Parameters:**
 - `data`: Matrix with features as rows and conditions as columns.
 - `conditions`: A vector with the labels for each section of the conditions labels.
-- `name_sep`: Specification of the notation separation used in the condition labels to run a DESeq2 analysis.
+- `name_sep`: Delimeter used in `conditions` to separate each part of the labels.
 - `targets`: Dataset with two columns: (i)conditions to select, and (ii) labels to use for the comparisons.
 - `fc_threshold`: Fold change threshold to use in the volcano plot (applicable for targeted approach).
 - `pval_threshold`: P-value threshold to use in the volcano plot (applicable for targeted approach).
@@ -299,7 +298,7 @@ Performs differential expression analysis using the DESeq2 package and provides 
 - `heatmap`: Logical, if TRUE, displays heatmap (not applicable for targeted approach).
 - `PCA`: Logical, if TRUE, computs the principal component analysis (not applicable for targeted approach).
 - `numPC`: Number of principal components to consider in the PCA analysis (if PCA is TRUE).
-- `color_factor`: Specification of the `data` column to define groups (if PCA is TRUE).
+- `color_factor`: Name of the `data` column to define groups (if PCA is TRUE).
 - `labels`: Logical, if TRUE, displays data points labels in PCA plot (if PCA is TRUE).
 - `verbose`: Logical, if TRUE, displays information messages.
 
