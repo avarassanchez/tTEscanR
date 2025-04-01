@@ -250,9 +250,8 @@ Based on a Ensembl dataset name retrieves the reference genome of the organism a
 - `verbose`: Logical, if TRUE, displays information messages.
 
 ```{r}
-# To check the list of Ensembl dataset names
+# To check the list of Ensembl dataset names (datasets$dataset)
 datasets <- biomaRt::listDatasets(useEnsembl(biomart = "ensembl"))
-datasets$dataset
 
 # Retrieving the codon frequency per gene matrix from the human reference genome
 human_codon_freq_per_gene_matrix <- ObtainCodonFreqPerGene(dataset_name = "hsapiens_gene_ensembl",
@@ -322,7 +321,6 @@ targets_neuron <- data.frame(search = c("neuron", "ENS neurons"),
 differential_expression_mRNA_analysis_targeted <- DESeq2runner(data = mRNA_data,
                                                                conditions = c("tissue", "cell.type"),
                                                                name_sep = "-",
-                                                               formula = ~ class,
                                                                targets = targets_neuron,
                                                                fc_threshold = 1,
                                                                pval_threshold = 0.05)
