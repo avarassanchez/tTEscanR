@@ -70,8 +70,8 @@ Updates the **tTEscanR** object by computing the codon usage of the mRNA data us
 - `reduce`: Integer specifying a factor to divide codon usage values if they exceed R's maximum allowed values.
 - `compute_codon_exonic_background`: Logical, if TRUE, computes the codon exonic background.
 - `compute_mean_codon_usage`: Logical, if TRUE, computes the mean codon usage across conditions.
-- `conditions`: Vector with the conditions' labels, (if `compute_mean_codon_usage` is TRUE).
-- `name_sep`: Delimeter used in `conditions` to separate each part of the labels, (if `compute_mean_codon_usage` is TRUE).
+- `conditions`: Vector with the conditions' labels (if `compute_mean_codon_usage` is TRUE).
+- `name_sep`: Delimiter used in `conditions` to separate each part of the labels (if `compute_mean_codon_usage` is TRUE).
 - `compute_correlation_background_mean`: Logical, if TRUE, computes the exonic background and meand codon usage correlation.
 - `overwrite.assay`: Logical, if TRUE, overwrites the codon usage assay in the object.
 - `overwrite.metadata`: Logical, if TRUE, overwrites the metadata in the object.
