@@ -15,9 +15,9 @@ Initializes a **tTEscanR** object, a strucutred container designed to hold data.
 
 **Parameters:**
 - `counts`: A count matrix (or list of matrices) to be stored in the *"assays"* slot. 
-- `assay`: A character string (or vector of characters) to identify the name of the `counts`. 
-- `meta.data`: Optional; a list with additional information that to be stored in the *"meta.data"* slot.
-- `meta.data.ids`: Optional; a list of labels to identify the `meta.data`. 
+- `assay`: Optional; a character string (or list of characters) to identify the `counts`. 
+- `meta.data`: Optional; a variable (or list of variables) with additional information to be stored in the *"meta.data"* slot.
+- `meta.data.ids`: Optional; a character string (or list of characters) to identify the `meta.data`. 
 - `verbose`: Logical; if TRUE, displays information messages. 
 
 <hr>
@@ -29,9 +29,9 @@ Updates an existing **tTEscanR** object by overwriting existing sections or addi
 **Parameters:**
 - `object`: An existing **tTEscanR** object to be updated.
 - `counts`: Optional; a count matrix (or list of matrices) to be stored in the *"assays"* slot.
-- `assay`:  Optional; a character string to identify the name of the `counts`.
-- `meta.data`: Optional; a list with additional information that to be stored in the *"meta.data"* slot.
-- `meta.data.ids`: Optional; a list of labels to identify the `meta.data`. 
+- `assay`:  Optional; a character string (or list of characters) to identify the `counts`.
+- `meta.data`: Optional; a variable (or list of variables) with additional information to be stored in the *"meta.data"* slot.
+- `meta.data.ids`: Optional; a character string (or list of characters) to identify the `meta.data`. 
 - `overwrite.assay`: Logical; if TRUE, overwrites any existing *"assays"* in the `object` if the `assay` label coincides.
 - `overwrite.metadata`: Logical; if TRUE, overwrites any existing *"meta.data"* in the `object` if the `meta.data.ids` label coincides.
 - `verbose`: Logical; if TRUE, displays information messages.
@@ -41,16 +41,18 @@ data(mRNA_data)
 data(tRNA_data)
 
 # Adding the mRNA dataset to the object
-tTEobject <- Create_tTEscanR_Object(counts = mRNA_data, assay = "mRNA") 
+tTEscanR_obj <- Create_tTEscanR_Object(counts = mRNA_data, assay = "mRNA") 
 
 # Updating the object created before with the tRNA dataset
-tTEobject <- Update_tTEscanR_Object(object = tTEobject, counts = tRNA_data, assay = "tRNA", 
-                                    meta.data = NULL, meta.data.ids = NULL,
-                                    overwrite.assay = FALSE, overwrite.metadata = FALSE)
+tTEscanR_obj <- Update_tTEscanR_Object(object = tTEscanR_obj,
+                                       counts = tRNA_data,
+                                       assay = "tRNA")
 
 # If we want to add at the same time both datasets we can use the following sintaxis:
-tTEobject_paired <- Create_tTEscanR_Object(counts = list(mRNA_data, tRNA_data), 
-                                           assay = list("mRNA", "tRNA"))
+tTEscanR_obj <- Create_tTEscanR_Object(counts = list(mRNA_data, tRNA_data), 
+                                       assay = list("mRNA", "tRNA"),
+                                       overwrite.assay = TRUE,
+                                       overwrite.metadata = TRUE)
 ```
 
 ### 1.2. Codon-anticodon usage assessment
@@ -64,18 +66,31 @@ Estimates codon usage profiles based on gene-level mRNA expression data. It opti
 **Parameters:**
 - `object`: An existing **tTEscanR** object containing a mRNA assay.
 - `codon_freq`: Optional; a user-provided codon frequency-per-gene table.
-- `translate`: Logical; if TRUE, resolves inconsistent gene annotations.
-- `species`: Either *"hg38"* (human) or *"mm39"* (mouse) to specify which default codon frequency-per-gene table to use. Required if `codon_freq` is not provided or if `translate` is enabled.
+- `species`: Either *"hg38"* (human) or *"mm39"* (mouse) to specify the default codon frequency-per-gene table. Required if `codon_freq` is not provided. 
 - `filter`: Either *"canonical"* (default) or *"length"* (longest transcript) to specify which transcript to choose if several are available for the same gene.
 - `reduce`: Numeric; a scaling factor used to normalize large expression values that exceed R's handling capacity.
-- `compute_codon_exonic_background`: Logical; if TRUE, computes the codon exonic background.
-- `compute_mean_codon_usage`: Logical; if TRUE, computes the mean codon usage across conditions.
-- `conditions`: A character vector specifying the labels' structure of the conditions (columns in the matrix). Required if `compute_mean_codon_usage` is enabled.
-- `name_sep`: A string delimiter used in `conditions` to separate each part of the labels. Required if `compute_mean_codon_usage` is enabled.
-- `compute_correlation_background_mean`: Logical; if TRUE, computes the exonic background and meand codon usage correlation. Requires `compute_codon_exonic_background` and `compute_mean_codon_usage` to be enabled.
+- `additional.metrics`: Logical; if TRUE, computes the codon exonic background, the mean codon usage across conditions, and the correlation between the previous.
+- `corr_method`: A character string specifying a suitable correlation method.
+- `corr_factor`: A metadata factor (column name) to identify the variable to correct for.
 - `overwrite.assay`: Logical; if TRUE, overwrites any existing *"assays"* in the `object`.
 - `overwrite.metadata`: Logical; if TRUE, overwrites any existing *"meta.data"* in the `object`.
 - `verbose`: Logical; if TRUE, displays information messages.
+
+**Note:** As the metadata has not been added previously we will update the **tTEscanR** object with this new information before computing the codon usage. The table with the information regarding the condition's labels (columns in count matrices) should be stored as "ConditionsLables" in the **tTEscanR** object.
+
+```{r}
+# Defining the metadata
+# - The conditions (column names) correspond to cell types.
+# - Each cell type is composed by the tissue and the actual cell label.
+metadata <- data.frame(label = colnames(mRNA_data), stringsAsFactors = FALSE)
+metadata <- tidyr::separate(metadata, label, into = c("tissue", "cell.type"), sep = "-")
+metadata$conditions <- colnames(mRNA_data)
+
+# Adding the metadata to the tTEscanR object
+tTEscanR_obj <- Update_tTEscanR_Object(object = tTEscanR_obj,
+                                       meta.data = metadata,
+                                       meta.data.ids = "ConditionsLabels")
+```
 
 ```{r}
 # Here we use: 
@@ -83,13 +98,13 @@ Estimates codon usage profiles based on gene-level mRNA expression data. It opti
 # - Canonical setting to filter potential mRNA transcript repetitions
 # - Enable to translate the genes if no matching formats are detected
 
-tTEobject <- ComputeCodonUsage(object = tTEobject, 
-                               codon_freq = NULL, 
-                               species = "hg38", 
-                               filter = "canonical",
-                               translate = TRUE,
-                               conditions = c("tissue", "cell.type"),
-                               name_sep = "-")
+tTEscanR_obj <- ComputeCodonUsage(object = tTEscanR_obj, 
+                                  codon_freq = NULL, 
+                                  species = "hg38", 
+                                  filter = "canonical",
+                                  additional.metrics = TRUE,
+                                  corr_method = "spearman",
+                                  corr_factor = "tissue")
 ```
 
 <hr>
@@ -107,7 +122,7 @@ Calculates anticodon usage profiles from tRNA gene expression data. It summarize
 - `verbose`: Logical; if TRUE, displays information messages.
 
 ```{r}
-tTEobject <- ComputeAnticodonUsage(object = tTEobject)
+tTEscanR_obj <- ComputeAnticodonUsage(object = tTEscanR_obj)
 ```
 
 ### 1.3. Amino acid level assessment
@@ -128,16 +143,11 @@ Computes the amino acid (AA) demand and/or supply from a given codon or anticodo
 - `verbose`: Logical; if TRUE, displays information messages.
 
 ```{r}
-tTEobject <- ComputeAAUsage(object = tTEobject, 
-                            level = "demand")
+tTEscanR_obj <- ComputeAAUsage(object = tTEscanR_obj, level = "demand")
 
-tTEobject <- ComputeAAUsage(object = tTEobject, 
-                            level = "supply")
+tTEscanR_obj <- ComputeAAUsage(object = tTEscanR_obj, level = "supply")
 
-# If we want to compute the AA demand and supply simultaneously
-tTEobject <- ComputeAAUsage(object = tTEobject, 
-                            level = "both", 
-                            overwrite.assay = TRUE)
+tTEscanR_obj <- ComputeAAUsage(object = tTEscanR_obj,  evel = "both", overwrite.assay = TRUE)
 ```
 
 ### 1.4. tTE computation
@@ -154,16 +164,18 @@ Computes the tTE score across matching conditions at the codon-anticodon usage l
     - "codon", computes tTE from codon-anticodon usage.</li>
     - "AA", computes tTE from amino acid demand and supply.</li>
     - "both", computes tTE from codon-anticodon usage and amino acid demand and supply.</li>
-- `conditions`: A character vector specifying the labels' structure of the conditions (columns in the matrix). Required if `compute_mean_codon_usage` is enabled.
-- `name_sep`: A string delimiter used in `conditions` to separate each part of the labels. Required if `compute_mean_codon_usage` is enabled.
+- `corr_factor`: A metadata factor (column name) to identify the variable to correct for.
+- `corr_method`: A character string specifying a suitable correlation method.
+- `compute.significance`: Logical; if TRUE, computes the p-value of the tTE scores.
 - `overwrite`: Logical; if TRUE, overwrites any existing *"meta.data"* in the `object`.
 - `verbose`: Logical; if TRUE, displays information messages.
 
 ```{r}
-tTEobject <- Compute_tTE(object = tTEobject,
-                         level = "AA", 
-                         conditions = c("tissue", "cell.type"),
-                         name_sep = "-")
+tTEscanR_obj <- Compute_tTE(object = tTEscanR_obj,
+                            level = "AA", 
+                            corr_factor = "tissue",
+                            corr_method = "spearman",
+                            compute.significance = TRUE)
 ```
 
 ## 2. Helper functions
@@ -218,25 +230,26 @@ tRNA_data_filtered <- tRNACutsFilter(tRNA_data = tRNA_data, cutoff = 5000)
 
 <hr>
 
-**Function:** `TranslateNames()`.
+**Function:** `FeaturesToAA()`.
 
 Verifies and, if necessary, translates gene annotations across multiple vectors or data frames, from Ensembl IDs to gene names, or vice-versa, ensuring **consistent annotation** throughout the analysis. Additionally, it enables bidirectional translation between codon and anticodons using the genetic code table, allowing assingment of their corresponding amino acids and supporting hierrchical annotation across levels.
 
 **Parameters:** 
 - `data_to_translate`: A vector or dataframe containing gene names or features (codons or anticodons) to be translated.
-- `mode`: Either *"gene* or *"feature"* to specify the conversion to perform.
-- `translator_table`: Optional; a two-column (Ensembl id and gene name) user-provided reference table for gene translation. Required if `mode` is *"gene"*.
-- `species`: Either *"hg38"* (human) or *"mm39"* (mouse) to specify which default gene translator table to use. Required if `mode` is *"gene"*.
-- `position`: Either *"row"*, *"column"* or *"column_name"* to specify the location of the genes or features in `data_to_translate`. Required if `data_to_translate` is a data frame. 
-- `notation`: Either *"symbol"* or *"id"* for the genes, and *"codon"*, *"anticodon"* or *"AA"* for the features, to indicate the translation format to implement.
+- `position`: Either *"row"*, *"column"* or *<column_name>* to specify the location of the features in `data_to_translate`. Required if `data_to_translate` is a data frame. 
+- `notation.from`: Either *"codon"* or *"anticodon"* to select the input format of the features in `data_to_translate`.
+- `notation.to`: Either *"codon"*, *"anticodon"* or *"aa"* to select the output format of the features in `data_to_translate`.
 - `verbose`: Logical; if TRUE, displays information messages.
 
 ```{r}
-translated_mRNA_genes <- TranslateNames(data_to_translate = mRNA_data,
-                                        mode = "gene, 
-                                        species = "hg38",
-                                        position = "row",
-                                        notation = "id")
+codons <- rownames(tTEscanR_obj@assays$CodonUsage)
+codons_to_AA <- FeaturesToAA(data_to_translate = codons,
+                             notation.from = "codon",
+                             notation.to = "AA")
+
+codons_to_anticodons <- FeaturesToAA(data_to_translate = codons,
+                                     notation.from = "codon",
+                                     notation.to = "anticodon")
 ```
 
 ### 2.2 Codon frequency table module
@@ -290,28 +303,30 @@ Performs differential expression analysis using the DESeq2 framework on a matrix
 
 **Parameters:**
 - `list_data`: A list of matrices with features as rows and conditions as columns.
-- `conditions`: A character vector specifying the labels' structure of the conditions (columns in the matrix).
-- `name_sep`: A string delimiter used in `conditions` to separate each part of the labels.
+- `metadata`: A table with additional information related to `list_data`.
 - `targets`: Optional; a data frame with one column indicating the conditions to select, and another column with the labels for comparisons.
+- `target_factor`: Optional; A metadata factor (column name) to identify the variable of interest. 
 - `fc_threshold`: Numeric; fold change threshold used for highlighting significant features in the volcano plot. Required if `targets` is specified. 
 - `pval_threshold`: Numeric; p-value threshold used for highlighting significant features in the volcano plot. Required if `targets` is specified.
 - `reduce`: Numeric; a scaling factor used to normalize large expression values that exceed R's handling capacity.
 - `heatmap`: Logical, if TRUE, generates a heatmap for exploratory analysis. Not applicable if `targets` is specified.
 - `PCA`: Logical, if TRUE, generates a principal component analysis. Not applicable if `targets` is specified. 
 - `numPC`: Numeric; number of principal components to consider in the PCA analysis. Required if `PCA` is enabled.
-- `color_factor`: A factor based on `conditions` to define the colors in the PCA plot. Required if `PCA` is enabled.
+- `corr_factor`: Optional; a metadata factor (column name) to identify the variable to correct for. Required if `PCA` is enabled.
+- `color_factor`: Optional; a metadata factor (column name) to define the colors in the PCA data points. Required if `PCA` is enabled.
+- `shape_factor`: Optional; a metadata factor (column name) to define the shapes of the PCA data points. Required if `PCA` is enabled.
+- `color_palette`: Optional; a vector of color codes to customize the PCA plot appearance. Required if `PCA` is enabled.
 - `labels`: Logical; if TRUE, displays the data points labels in PCA plot. Required if `PCA` is enabled.
 - `verbose`: Logical; if TRUE, displays information messages.
 
 ```{r}
 datasets_to_analyze <- list(mRNA = mRNA_data, tRNA = tRNA_data)
 differential_expression_mRNA_analysis <- ExecuteDESeq2runner(list_data = datasets_to_analyze,
-                                                             conditions = c("tissue", "cell.type"),
-                                                             name_sep = "-",
                                                              heatmap = TRUE,
                                                              PCA = TRUE,
                                                              numPC = 5,
                                                              color_factor = "tissue",
+                                                             corr_factor = "tissue", 
                                                              labels = FALSE)
 
 # List of outputs: (i) Heatmap, (ii) PCA plot, and (iii) Size corrected data.
@@ -321,8 +336,6 @@ differential_expression_mRNA_analysis <- ExecuteDESeq2runner(list_data = dataset
 targets_neuron <- data.frame(search = c("neuron", "ENS neurons"),
                                       class = c("neuron", "other"))
 differential_expression_mRNA_analysis_targeted <- ExecuteDESeq2runner(data = list(target_mRNA = mRNA_data),
-                                                                      conditions = c("tissue", "cell.type"),
-                                                                      name_sep = "-",
                                                                       targets = targets_neuron,
                                                                       fc_threshold = 1,
                                                                       pval_threshold = 0.05)
