@@ -1,4 +1,4 @@
-# tTEscanR <a href="https://your-link-here"><img src="https://github.com/user-attachments/assets/213de690-12cd-4fa8-862a-cadbd8872bf4" alt="tTEscanR_logo" align="right" width="120"></a>
+# tTEscanR <a href="https://your-link-here"><img src="https://github.com/user-attachments/assets/8cca530a-f0a5-4284-bf2e-cf030a8193fa" alt="logo_tTEscanR" align="right" width="120"></a>
 <img src="https://img.shields.io/badge/Language-R-blue.svg" style="zoom:100%;" />
 
 ## 1. What is tTEscanR?
@@ -16,7 +16,7 @@ library(tTEscanR)
 
 ### 2.1. Data specifications
 
-The **input** data for **tTEscanR** should be pre-processed according to the steps in [Gao et al., 2022](#5-references) or any custom pipeline to obtain gene expression count matrices. Both mRNA and tRNA data must be provided as matrices with features (mRNA transcripts or tRNA genes) as rows and conditions (e.g., model andreplicate in bulk datasets or tissue and cell type in single-cell datasets) as columns. Some functions are integrated into the [pre-processing module](#32-helper-functions) for convenience.
+The **input** data for **tTEscanR** should be pre-processed according to the steps in [Gao et al., 2022](#5-references) or any custom pipeline to obtain gene expression count matrices. Both mRNA and tRNA data must be provided as matrices with features (mRNA transcripts or tRNA genes) as rows and conditions (e.g., model andreplicate in bulk datasets or tissue and cell type in single-cell datasets) as columns. Additionally, a metadata table should be provided for proper integration of the data. Some functions are integrated into the [pre-processing module](#32-helper-functions) for convenience. 
 
 ## 3. Workflow functionalities
 
@@ -116,32 +116,37 @@ library(tTEscanR)
 data(mRNA_data)
 data(tRNA_data)
 
-# Adding the mRNA and tRNA datasets to the object
-tTEobject <- Create_tTEscanR_Object(counts = c(mRNA_data, tRNA_data),
-                                    assay = c("mRNA", "tRNA)) 
+# Defining the metadata table
+metadata <- data.frame(label = colnames(mRNA_data), stringsAsFactors = FALSE)
+metadata <- tidyr::separate(metadata, label, into = c("tissue", "cell.type"), sep = "-")
+metadata$conditions <- colnames(mRNA_data)
 
-# Adding metadata to the object
+# Adding the mRNA and tRNA datasets and the metadata to the object
+tTEscanR_obj <- Create_tTEscanR_Object(counts = list(mRNA_data, tRNA_data),
+                                       assay = list("mRNA", "tRNA"),
+                                       meta.data = metadata,
+                                       meta.data.ids = "ConditionsLabels") 
+
+# Adding extra information to the object
 matching_celltypes <- intersect(colnames(mRNA_data), colnames(tRNA_data)) 
-tTEobject <- Update_tTEscanR_Object(object = tTEobject, 
-                                    meta.data = list(matching_celltypes), 
-                                    meta.data.ids = list("matching_celltypes"), 
-                                    overwrite.metadata = TRUE)
+tTEscanR_obj <- Update_tTEscanR_Object(object = tTEscanR_obj, 
+                                       meta.data = list(matching_celltypes), 
+                                       meta.data.ids = list("matching_celltypes"), 
+                                       overwrite.metadata = TRUE)
 
 # Compute codon usage with default hg38 canonical codon frequency per gene table.
-tTEobject <- ComputeCodonUsage(object = tTEobject, 
-                               codon_freq = NULL, 
-                               species = "hg38", 
-                               filter = "canonical",
-                               translate = TRUE)
+tTEscanR_obj <- ComputeCodonUsage(object = tTEscanR_obj, 
+                                  codon_freq = NULL, 
+                                  species = "hg38", 
+                                  filter = "canonical",
+                                  additional.metrics = TRUE)
 
-tTEobject <- ComputeAnticodonUsage(object = tTEobject)
+tTEscanR_obj <- ComputeAnticodonUsage(object = tTEscanR_obj)
 
 # The both parameter allows to perform at the same time the AA demand and supply assessment
-tTEobject <- ComputeAAUsage(object = tTEobject, action = "both")
+tTEscanR_obj <- ComputeAAUsage(object = tTEscanR_obj, level = "both")
 
-tTEobject <- Compute_tTE(object = tTEobject, 
-                         conditions = c("tissue", "cell.type"),
-                         name_sep = "-")
+tTEscanR_obj <- Compute_tTE(object = tTEscanR_obj, level = "both")
 ```
 
 ## 5. References
