@@ -71,12 +71,11 @@ Estimates codon usage profiles based on gene-level mRNA expression data. It opti
 - `reduce`: Numeric; a scaling factor used to normalize large expression values that exceed R's handling capacity.
 - `additional.metrics`: Logical; if TRUE, computes the codon exonic background, the mean codon usage across conditions, and the correlation between the previous.
 - `corr_method`: A character string specifying a suitable correlation method.
-- `corr_factor`: A metadata factor (column name) to identify the variable to correct for.
 - `overwrite.assay`: Logical; if TRUE, overwrites any existing *"assays"* in the `object`.
 - `overwrite.metadata`: Logical; if TRUE, overwrites any existing *"meta.data"* in the `object`.
 - `verbose`: Logical; if TRUE, displays information messages.
 
-**Note:** As the metadata has not been added previously we will update the **tTEscanR** object with this new information before computing the codon usage. The table with the information regarding the condition's labels (columns in count matrices) should be stored as "ConditionsLables" in the **tTEscanR** object.
+**Note:** As the metadata has not been added previously we will update the **tTEscanR** object with this new information before computing the codon usage. The table with the information regarding the condition's labels (columns in count matrices) should be stored as "ConditionsLables" in the **tTEscanR** object. Additionally, in order to be able to compute the additional metrics the **tTEscanR** object will have to contain a "corr_factor" metadata.
 
 ```{r}
 # Defining the metadata
@@ -88,8 +87,8 @@ metadata$conditions <- colnames(mRNA_data)
 
 # Adding the metadata to the tTEscanR object
 tTEscanR_obj <- Update_tTEscanR_Object(object = tTEscanR_obj,
-                                       meta.data = metadata,
-                                       meta.data.ids = "ConditionsLabels")
+                                       meta.data = list(metadata, "tissue"),
+                                       meta.data.ids = list("ConditionsLabels", "corr_factor"))
 ```
 
 ```{r}
@@ -103,8 +102,7 @@ tTEscanR_obj <- ComputeCodonUsage(object = tTEscanR_obj,
                                   species = "hg38", 
                                   filter = "canonical",
                                   additional.metrics = TRUE,
-                                  corr_method = "spearman",
-                                  corr_factor = "tissue")
+                                  corr_method = "spearman")
 ```
 
 <hr>
@@ -164,16 +162,16 @@ Computes the tTE score across matching conditions at the codon-anticodon usage l
     - "codon", computes tTE from codon-anticodon usage.</li>
     - "AA", computes tTE from amino acid demand and supply.</li>
     - "both", computes tTE from codon-anticodon usage and amino acid demand and supply.</li>
-- `corr_factor`: A metadata factor (column name) to identify the variable to correct for.
 - `corr_method`: A character string specifying a suitable correlation method.
 - `compute.significance`: Logical; if TRUE, computes the p-value of the tTE scores.
 - `overwrite`: Logical; if TRUE, overwrites any existing *"meta.data"* in the `object`.
 - `verbose`: Logical; if TRUE, displays information messages.
 
+**Note:** Here we are not pre-defining a "corr_factor" parameter as it has been previously added to the **tTEscanR**. However, if a different factor is desired, the "corr_factor· metadata should be chaged correspondingly using `Update_tTEscanR_Object()`.
+
 ```{r}
 tTEscanR_obj <- Compute_tTE(object = tTEscanR_obj,
                             level = "AA", 
-                            corr_factor = "tissue",
                             corr_method = "spearman",
                             compute.significance = TRUE)
 ```
