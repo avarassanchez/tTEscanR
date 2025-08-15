@@ -115,17 +115,13 @@ The **tTEscanR** package includes helper functions to support specific steps of 
 library(tTEscanR)
 data(mRNA_data)
 data(tRNA_data)
-
-# Defining the metadata table
-metadata <- data.frame(label = colnames(mRNA_data), stringsAsFactors = FALSE)
-metadata <- tidyr::separate(metadata, label, into = c("tissue", "cell.type"), sep = "-")
-metadata$conditions <- colnames(mRNA_data)
+data(metadata)
 
 # Adding the mRNA and tRNA datasets and the metadata to the object
 tTEscanR_obj <- Create_tTEscanR_Object(counts = list(mRNA_data, tRNA_data),
                                        assay = list("mRNA", "tRNA"),
-                                       meta.data = metadata,
-                                       meta.data.ids = "ConditionsLabels") 
+                                       meta.data = list(metadata, "tissue"),
+                                       meta.data.ids = list("ConditionsLabels", "CorrectionFactor")) 
 
 # Adding extra information to the object
 matching_celltypes <- intersect(colnames(mRNA_data), colnames(tRNA_data)) 
