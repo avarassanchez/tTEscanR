@@ -243,7 +243,7 @@ Verifies and, if necessary, translates gene annotations across multiple vectors 
 codons <- rownames(tTEscanR_obj@assays$CodonUsage)
 codons_to_AA <- FeaturesToAA(data_to_translate = codons,
                              notation.from = "codon",
-                             notation.to = "AA")
+                             notation.to = "aa")
 
 codons_to_anticodons <- FeaturesToAA(data_to_translate = codons,
                                      notation.from = "codon",
