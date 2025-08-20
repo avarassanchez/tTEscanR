@@ -3,7 +3,15 @@
 
 ## 1. What is tTEscanR?
 
-**tTEscanR**, is a powerful and user-friendly R-based package designed to quantify translation efficiency from bulk and single-cell sequencing data. **tTEscanR** offers a comprehensive approach to quantify translation efficiency by integrating gene expression data and chromatin accessibility data. The modular design of **tTEscanR** ensures flexibility, allowing users to either run independent components or a complete pipeline based on their research needs. Its user-friendly R-based interface simplifies the analysis of complex data, even for researchers with minimal computational experience. Additionally, **tTEscanR** includes an advanced visualization module that generates high-quality plots, aiding in interpretation of results and enhancing the ability to communicate findings effectively. Applicable to both bulk and single-cell sequencing data, **tTEscanR** provides a versatile tool for a wide range of experimental setups and biological contexts, enabling deeper exploration of translation efficiency and its role in cellular processes, disease mechanisms, and therapeutic development. 
+**tTEscanR**, is a powerful and user-friendly R-based package designed to quantify translation efficiency from bulk and single-cell sequencing data. **tTEscanR** offers a comprehensive approach to quantify translation efficiency by integrating gene expression data and chromatin accessibility data. The modular design of **tTEscanR** ensures flexibility, allowing users to either run independent components or a complete pipeline based on their research needs. Its user-friendly R-based interface simplifies the analysis of complex data, even for researchers with minimal computational experience. 
+
+Additionally, **tTEscanR** includes an advanced visualization module that generates high-quality plots, aiding in interpretation of results and enhancing the ability to communicate findings effectively. Applicable to both bulk and single-cell sequencing data, **tTEscanR** provides a versatile tool for a wide range of experimental setups and biological contexts, enabling deeper exploration of translation efficiency and its role in cellular processes, disease mechanisms, and therapeutic development. 
+
+**Key features:**
+<li>Compatible with bulk and single-cell data.</li>
+<li>Modular and customizable pipeline.</li>
+<li>High-quality visualizations.</li>
+<li>User-friendly R-based interface.</li>
 
 ## 2. Setup
 
@@ -22,8 +30,7 @@ The **input** data for **tTEscanR** should be pre-processed according to the ste
 
 The **tTEscanR** package provides a strucutred framework for analyzing codon-anticodon pools and transaltion efficiency.
 
-![tTEscanR_workflow](https://github.com/user-attachments/assets/2cf26e1c-5e48-40d6-b81b-300e6293c98a)
-
+![tTEscanR_workflow](https://github.com/user-attachments/assets/2842bdbb-3986-418d-b87a-2cc189a58d6f)
 ### 3.1. Core functions
 
 <table>
@@ -36,7 +43,7 @@ The **tTEscanR** package provides a strucutred framework for analyzing codon-ant
   </thead>
   <tbody>
     <tr>
-      <td rowspan="2"><b>Defining the tTEscanR object</b></td>
+      <td rowspan="2"><b>tTEscanR object definition</b></td>
       <td><code>Create_tTEscanR_Object()</code></td>
       <td>Initializes a <b>tTEscanR</b> object to store analysis data.</td>
     </tr>
@@ -80,17 +87,13 @@ The **tTEscanR** package includes helper functions to support specific steps of 
   </thead>
   <tbody>
     <tr>
-      <td rowspan="3"><b>Pre-processing</b></td>
-      <td><code>Get_tRNAexpressionMatrix()</code></td>
+      <td rowspan="2"><b>Pre-processing</b></td>
+      <td><code>Get_tRNAMatrix()</code></td>
       <td>Extracts and structures tRNA expression data from various sources.</td>
     </tr>
     <tr>
       <td><code>tRNACutsFilter()</code></td>
       <td>Filters out conditions with low tRNA expression to ensure data quality.</td>
-    </tr>
-    <tr>
-      <td><code>TranslateGeneName()</code></td>
-      <td>Converts gene annotations between Ensembl IDs and gene names for consistency.</td>
     </tr>
     <tr>
       <td rowspan="2"><b>Codon frequency table</b></td>
