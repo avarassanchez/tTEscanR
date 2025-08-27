@@ -1,0 +1,337 @@
+---
+title: "<img src='tTEscanR_logo.png' style='height:60px; vertical-align:middle;'> tTEscanR Visualization Module"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+  rmarkdown::html_document:
+    toc: true
+    toc_float: true
+    theme: default
+    css: style.css
+vignette: >
+  %\VignetteIndexEntry{tTEscanR visualization module}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+bibliography: references.bib
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set( collapse = TRUE, comment = "#>")
+```
+
+```{r notes_format, echo = FALSE, results = 'asis'}
+cat('
+<style>
+.note {
+  background-color: #f6e8c3;
+  border-left: 5px solid #dfc27d;
+  padding: 1em;
+  margin: 1em 0;
+  border-radius: 4px;
+}
+.warning {
+  background-color: #fff3cd;
+  border-left: 5px solid #ff9800;
+  padding: 1em;
+  margin: 1em 0;
+  border-radius: 4px;
+}
+</style>
+')
+```
+
+<hr>
+
+# 1. Overview
+
+**tTEscanR** includes a dedicated **visualization module** that provides multiple functions for generating plots based on the output tables produced at each step of the analysis. The primary goal of this module is to facilitate a more intuitive and streamlined interpretation of results, allowing researchers to easily explore an understand their data. Additionally, it helps summarize complex findings in a visually accessible manner, enhancing the overall clarity and impact of the analysis. 
+
+```{r setup, message = FALSE, warning = FALSE}
+# install.packages("/avarassanchez/tTEscanR")
+devtools::load_all()
+library(tTEscanR)
+```
+
+To illustrate the usage of each plotting function and demonstrate the flexibility provided by various parameters, we will first run **tTEscanR**. In this tutorial, we will analyze a single-cell fetal human atlas described in *[@Cao2020]* and *[@Domcke2020]*, and previously examined by *[@Gao2022]*. A subset of this dataset is included as a default dataset in **tTEscanR** and can be directly loaded to performm the analysis. A step-by-step explanation of this pipeline is available in the **tTEscanR User Guide** vignette.
+
+```{r load_datasets, message = FALSE, warning = FALSE}
+data(mRNA_data, tRNA_data, metadata)
+```
+
+```{r execute_workflow, message = FALSE, warning = FALSE}
+tTEobject <- Run_tTEscanR_pipeline(mRNA_data = mRNA_data,  tRNA_data = tRNA_data, metadata = metadata, species = "hg38", 
+                                   corr_factor = "tissue", runDESeq = FALSE, verbose = FALSE)
+```
+
+<hr>
+
+# 2. Configuration options
+
+The visualization functions in **tTEscanR** are highly customizable and can be applied to any properly formatted dataset. Depending on the plot type, specific data requirements must be met, which may involve **prior data transformation** or restructuring. 
+
+This guide provides an overview of the available **visualization options** in **tTEscanR**, and illustrates key **parameter settings** and their effects through practical examples. 
+
+::: {.note}
+The visualization functions in **tTEscanR** are not limited to outputs generated within the package's pipeline. Users can apply them to external dataset, provided that the required data formatting and structure are met.
+:::
+
+| Function               | Purpose                                         | 
+|------------------------|-------------------------------------------------|
+| `tTE_ProportionPlot()` | Shows features' frequencies differences within and between conditions |
+| `tTE_DistributionPlot()` | Displays features' distributions across conditions |
+| `tTE_CompareTargetToMean()` | Variation of `tTE_DistributionPlot()` to compare a target feature against the mean across conditions |
+| `tTE_CorrelationPlot()` | Features correlation |
+| `tTE_PermutationPlot()` | Compares the baseline codon exonic background against the current codon usage |
+| `tTE_ScorePlot()` | Represents the tTE scores obtained from `Compute_tTE()` |
+
+## 2.1. Data transformation
+
+There are **helper functions** in **tTEscanR** designed to properly transform data for downstream analysis and visualization. the data. One such function is **`DataToLongFormat()`**, which converts a count matrix, with features as rows and conditions as columns, into a **long-format table**. In this format, each row-column combination from the original matrix becomes an individual row in the output.
+
+The function also provides an option to **normalize** the input data. Parameters such as `rownames_to_column`, `names_to` and `values_to` allow users to customize the names of the columns in the resulting long-format table.
+
+::: {.note}
+The **normalization** performed by **DataToLongFormat()** is done by converting the raw counts into relative abundances (i.e. dividing each column by its column-wise sum).
+:::
+
+```{r, eval = FALSE}
+tTEobject@assays$CodonUsage[1:5, 1:5]
+```
+
+```{r codon_usage_data_transform}
+long_format_codon_usage <- DataToLongFormat(data = tTEobject@assays$CodonUsage, normalize = TRUE,
+                                            rownames_to_column = "codon",  # features (rownames) of the CodonUsage matrix
+                                            names_to = "condition", # conditions (colnames) of the CodonUsage matrix
+                                            values_to = "usage") # values of the CodonUsage matrix
+
+# long_format_codon_usage contains 3 columns: codon, condition, usage
+# We are going to divide the condition column into tissue and cell_type
+long_format_codon_usage <- long_format_codon_usage %>%
+  tidyr::separate(.data$condition, into = c("tissue", "cell_type"), sep = "-")
+```
+
+```{r, eval = FALSE}
+head(long_format_codon_usage)
+```
+
+```{r aa_demand_data_transform}
+long_format_AA_demand <- DataToLongFormat(data = tTEobject@assays$AADemand, normalize = TRUE,
+                                          rownames_to_column = "AA", # features (rownames) of the AADemand matrix
+                                          names_to = "condition", # conditions (colnames) of the AADemand matrix
+                                          values_to = "demand") # values of the AADemand matrix
+
+# long_format_AA_demand contains 3 columns: AA, condition, demand
+# We are going to divide the condition column into tissue and cell_type
+long_format_AA_demand <- long_format_AA_demand %>%
+  tidyr::separate(.data$condition, into = c("tissue", "cell_type"), sep = "-")
+```
+
+## 2.2. Parameters
+
+To enhance usability, parameters' names and structures have been kept **consistent across functions** with most parameters being shared among them. This standardization simplifies customization and ensures an intuitive workflow. 
+
+| Parameter               | Description                                         | 
+|------------------------|-------------------------------------------------|
+| `data` | Properly formatted dataset |
+| `plot` | A character string indicating the type of plot to generate |
+| `panels` | Logical; if TRUE, splits the plot into multiple panels. Defaults to FALSE |
+| `ncols` | Numeric; Number of columns for arranging panels (if panels is enabled). Defaults to 1 |
+| `x_axis_col` | Name of the column in data to use for the x-axis |
+| `y_axis_col` | Name of the column in data to use for the y-axis |
+| `condition_col` | Name of the column in data to use for coloring/grouping by condition |
+| `targeted_arg` |  Optional; A vector defining key feature clusters to highlight or label. |
+| `color_palette` | Optional; A vector of color codes to customize plot appearance |
+| `save_format` | Optional; A character string indicating the format for saving the plot. Supported formats: "png" or "pdf" |
+| `out_name` | Optional; Name for the saved plot (if `save_format` specified) |
+| `out_directory` | Optional; Path to the directory where the plot will be saved (if `save_format` specified) |
+| `show_legend` | A character string specifying the position of the legend. Supported formats: "none" (default), "top", "bottom", "right" and "left" |
+| `add_titles` | Logical; if TRUE, includes titles in the plot. Defaults to TRUE |
+
+::: {.note}
+<li>Function-specific parameters will be introduced within each plot's corresponding description section.</li>
+<li>Not all generic parameters are required by every function; usage depends on the specific plotting context.</li>
+<li>The values provided for *x_axis_col*, *y_axis_col* and *condition_col* must exactly match the column names in the input data.</li>
+:::
+
+<hr>
+
+# 3. Visualization options
+
+The **`tTE_DistributionPlot()`** function generates **jitter plots**, **barplots** or **boxplots** to visualize data distributions (e.g. raw or normalize codon usage) across features (e.g. codons). This function provides an intuitive representation of how usage patterns vary across conditions. The type of plot can be specified via the `plot` argument, while layout and grouping can be controlled using the `panels` parameter.
+
+In the example below, we visualize **normalized codon usage** across conditions to explore how codon preferences fluctuate. The dataset is a **single-cell dataset**, where each cell is annotated by its type and tissue of origin. As a general guideline, the *jitter* plot mode is well-suited for large datasets, as it allows users to observe the distribution of values at a general level and identify patterns across groups.
+
+```{r general_dist_plot, fig.width =  7, fig.height = 4, fig.align = 'center'}
+# Codon usage distribution plot (jitter)
+tTE_DistributionPlot(data = long_format_codon_usage,  plot = "jitter", panels = FALSE,
+                     x_axis_col = "codon", y_axis_col = "usage", condition_col = "tissue",
+                     show_legend = "right", add_titles = FALSE)
+```
+
+Alternatively, to reduce dataset complexity and enable more in-depth analysis, we can focus on a subset of **target conditions**. In this example, we restrict the analysis to spleen-derived cells, specifically selecting those belonging to the lymphoid and myeloid lineages. For this approach we can use a *barplot* plot mode.
+
+```{r generate_subset_data}
+# Data subset: spleen tissue and selected cell types (lymphoid and myeloid)
+spleen_indexes <- grep("Spleen", long_format_codon_usage$tissue)
+long_format_codon_usage_spleen <- long_format_codon_usage[spleen_indexes, ]
+
+lymphoid_indexes <- grep("Lymphoid", long_format_codon_usage_spleen$cell_type)
+myeloid_indexes <- grep("Myeloid", long_format_codon_usage_spleen$cell_type)
+
+cells_indexes <- c(lymphoid_indexes, myeloid_indexes)
+
+long_format_codon_usage_subset <- long_format_codon_usage_spleen[cells_indexes, ]
+```
+
+To facilitate visualization, we enable the `panels` parameter in **`tTE_DistributionPlot`**, which arranges each condition in a separate facet. This separation allows for easier comparison across groups. Additionally, the `ncols` parameter controls the **number of columns** used in the facet layout, helping optimize the plot's readability, especially when working with multiple conditions.
+
+```{r distribution_plot_barplot, fig.width =  7, fig.height = 4, fig.align = 'center'}
+# Codon usage distribution plot (barplot)
+tTE_DistributionPlot(data = long_format_codon_usage_subset, plot = "barplot",
+                     panels = TRUE, ncols = 1, x_axis_col = "codon", y_axis_col = "usage", 
+                     condition_col = "cell_type", show_legend = "none", add_titles = FALSE)
+```
+
+If, instead of comparing the distributions of two cell types within the same tissue, we want to explore how distributions vary across two different tissues, we can switch to the *boxplot* mode. This plot type summarizes the variation and central tendency of the data, making it easier to compare distirbution between broader biological groups. 
+
+```{r generate_subset_data_2}
+# Data subset: specific codons in spleen and heart tissues
+spleen_indexes <- grep("Spleen", long_format_codon_usage$tissue)
+heart_indexes <- grep("Heart", long_format_codon_usage$tissue)
+
+tissue_indexes <- c(spleen_indexes, heart_indexes)
+
+long_format_codon_usage_tissues <- long_format_codon_usage[tissue_indexes, ]
+
+selected_codons <- c("CAA", "CAC", "CAG", "CAT", "CCA", "CCC", "CCG", "CCT", "CGA", "CGC",
+                     "CGG", "CGT", "CTA", "CTC", "CTG", "CTT", "GAA", "GAC", "GAG", "GAT", 
+                     "GCA", "GCC", "GCG", "GCT", "GGA", "GGC", "GGG", "GGT", "GTA", "GTC", 
+                     "GTG", "GTT")
+
+codons_indexes <- which(long_format_codon_usage_tissues$codon %in% selected_codons)
+long_format_codon_usage_tissues <- long_format_codon_usage_tissues[codons_indexes, ]
+```
+
+In this example, we introduce a pre-defined `color_palette` to explicitly assign specific colors to each of the tissues being analyzed. 
+
+```{r, fig.width =  6, fig.height = 4, fig.align = 'center'}
+# Codon usage distribution plot (barplot)
+tTE_DistributionPlot(data = long_format_codon_usage_tissues, plot = "boxplot", panels = FALSE, x_axis_col = "codon", y_axis_col = "usage",
+                     condition_col = "tissue", color_palette = c(Heart = "#de77ae", Spleen = "#7fbc41"), show_legend = "bottom", add_titles = FALSE)
+```
+
+<hr>
+
+The **`tTE_CompareTargetToMean()`** function extends the functionality of **`tTE_DistributionPlot()`** by allowing direct comparison between a target confition and the overall mean. This visualization helps identify how codon, anticodon, or amino acid usage in the selected condition deviates from the average profile.  
+
+**Function-specific parameters:**
+
+<li>`mean` - A numeric vector containing the mean values of the codons/anticodon/amino acids present in `data`.</li>
+<li>`show_difference` - Logical; if TRUE, displays the differences between the mean and the targeted values.</li>
+
+In the following example, we focus on cells from the cerebellum. To enable a proper comparison, we first subset the dataset to include only cerebellum-specific data and then compute the mean codon usage using **`ComputeMeanUsage()`**. The overall mean codon usage was previously obtained during the initial execution of **`Run_tTEscanR_pipeline()`**.
+
+```{r cerebellum_mean}
+# Data subset: mean codon usage across cerebellum cell types
+cerebellum_indexes <- grep("Cerebellum", colnames(tTEobject@assays$CodonUsage))
+cerebrum_indexes <- grep("Cerebrum", colnames(tTEobject@assays$CodonUsage))
+brain_indexes <- c(cerebellum_indexes, cerebrum_indexes)
+brain_codon_usage <- tTEobject@assays$CodonUsage[, brain_indexes]
+
+# Define the metadata
+metadata_brain <- data.frame(label = colnames(brain_codon_usage), stringsAsFactors = FALSE)
+metadata_brain <- tidyr::separate(metadata_brain, label, into = c("tissue", "cell.type"), sep = "-")
+metadata_brain$conditions <- colnames(brain_codon_usage)
+ 
+mean_brain_codon_usage <- ComputeMeanUsage(data = brain_codon_usage, metadata = metadata_brain, corr_factor = "tissue", verbose = FALSE)
+```
+
+Based on the calculations above, the plot illustrates: (i) the mean codon usage of the cerebellum cells as **purple dots**, (ii) the overallcmean codon usage across conditions as **grey bars**, and (iii) the difference between the two as **blue lines**.
+
+```{r compare_to_mean_plot, fig.width = 7, fig.height = 4, fig.align = 'center'}
+tTE_CompareTargetToMean(target_data = data.frame(mean_brain_codon_usage), 
+                        overall_data = data.frame(tTEobject@meta.data$CodonUsage_AdditionalMetrics$MeanCodonUsage), 
+                        x_axis_col = "feature", y_axis_col = "mean_usage_across_conditions",
+                        show_difference = TRUE, add_titles = FALSE)
+```
+
+<hr>
+
+The **`tTE_ProportionPlot()`** function provides a summary visualization of a specific metric's distribution across features or conditions. It supports multiple display modes, including *bar*, *radar* or *donut* plots, allowing users to choose the most effective format for their data.
+
+::: {.note}
+The choice of **plot type** in this and other functions within **tTEscanR** is left to the user's discretion, depending on the nature of the data (e.g. number of features, distribution of counts) and the specific research question being addressed.
+:::
+
+```{r}
+mean_codon_usage <- tTEobject@meta.data$CodonUsage_AdditionalMetrics$MeanCodonUsage
+mean_codon_usage$codon <- mean_codon_usage$feature
+
+mean_codon_usage <- FeaturesToAA(data_to_translate = mean_codon_usage, position = "feature", 
+                                 notation.from = "codon", notation.to = "aa", verbose = FALSE)
+```
+
+```{r proportion_plot_mean_codon, fig.width = 7, fig.height = 5, fig.align = 'center'}
+tTE_ProportionPlot(data = mean_codon_usage, plot = "bar", var_numerical = "mean_usage_across_conditions", 
+                   var_categorical = "codon", var_color = "feature", show_legend = "none") # Here feature corresponds to AA
+```
+
+```{r mean_AA_demand}
+# Data subset: mean codon usage across cerebellum cell types
+cerebellum_indexes_AA <- grep("Cerebellum", colnames(tTEobject@assays$AADemand))
+cerebrum_indexes_AA <- grep("Cerebrum", colnames(tTEobject@assays$AADemand))
+brain_indexes_AA <- c(cerebellum_indexes_AA, cerebrum_indexes_AA)
+brain_AAdemand <- tTEobject@assays$AADemand[, brain_indexes_AA]
+        
+mean_brain_AAdemand <- ComputeMeanUsage(data = brain_AAdemand, metadata = metadata_brain, corr_factor = "tissue", verbose = FALSE)
+```
+
+```{r proportion_plot_brain_mean, fig.width = 6, fig.height = 4, fig.align = 'center'}
+tTE_ProportionPlot(data = mean_brain_AAdemand, plot = "donut",  var_numerical = "mean_usage_across_conditions", 
+                   var_categorical = "feature", show_legend = "none") # Here feature corresponds to AA
+```
+
+<hr>
+
+The **`tTE_ScoresPlot()`** function generates a **violin plot** to compare the **tTE scores** between a specified target condition and all other conditions in the dataset.  This visualization helps assess how distinct the translation efficiency profile of the target group is relative to the rest. 
+
+::: {.note}
+As **tTE_ScoresPlot()** uses violin plots, it is important to ensure that each group, especially the targeted condition, has a **sufficient number of data points**. Violin plots may not provide a reliable representation of the distribution if the sample size is too small. Alternatively, **tTE_DistributionPlot** and **tTE_ProportionPlot()** could be used.
+:::
+
+```{r target_immune}
+# Targeted condition: lymphoid and myeloid cells
+targets_cells <- data.frame(search = c("Myeloid", "Lymphoid"), class = c("myeloid", "lymphoid"))
+```
+
+```{r score_plot_immune, fig.width = 6, fig.height = 4, fig.align = 'center'}
+# input data has 4 columns: condition, tTE, p_value, neg_log10_tTE_p_value
+
+# Codon-anticodon tTE score
+tTE_ScoresPlot(data = tTEobject@meta.data$tTEresults_codon, name_sep = "-", 
+               conditions = c("tissue", "cell_type"), targets = targets_cells,
+               color_palette = c(myeloid = "#abd9e9", lymphoid = "#f1b6da", other = "#fee0b6"))
+
+# AA demand-supply tTE score
+tTE_ScoresPlot(data = tTEobject@meta.data$tTEresults_AA, name_sep = "-",
+               conditions = c("tissue", "cell_type"), targets = targets_cells,
+               color_palette = c(myeloid = "#abd9e9", lymphoid = "#f1b6da", other = "#fee0b6"))
+```
+
+In cases where we want to refine the selection of target cell types, such as including or excluding specific subtypes, it is essential to encode this distinction explicitly in the input metadata (`targets`) data frame. 
+
+For instance, if we aim to focus on **neurons** but exclude cells labeled as **ENS neurons**, we need to assign those excluded cells to a different category, referred to as *"other"* in the metadata. This ensures the function correctly recognizes which cells belong to the **target group** and which do not. 
+
+```{r target_neurons}
+# Targeted condition: neurons
+targets_cells_neurons <- data.frame(search = c("neurons", "ENS neurons"), class = c("neurons", "other"))
+```
+
+```{r score_plot_neurons, fig.width = 6, fig.height = 4, fig.align = 'center'}
+# AA demand-supply tTE score
+tTE_ScoresPlot(data = tTEobject@meta.data$tTEresults_AA, name_sep = "-",
+               conditions = c("tissue", "cell_type"), targets = targets_cells_neurons,
+               color_palette = c(neurons = "#8073ac", other = "#fee0b6"))
+```
+
+# 4. References
