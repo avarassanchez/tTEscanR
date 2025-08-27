@@ -3,3 +3,4 @@
 ^LICENSE\.md$
 ^tTEscanR_functions_description\.txt$
 ^custom_checks\.R$
+^\.Rhistory$
