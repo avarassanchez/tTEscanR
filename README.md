@@ -116,9 +116,7 @@ The **tTEscanR** package includes helper functions to support specific steps of 
 
 ```{r}
 library(tTEscanR)
-data(mRNA_data)
-data(tRNA_data)
-data(metadata)
+data(mRNA_data, tRNA_data, metadata)
 
 # Adding the mRNA and tRNA datasets and the metadata to the object
 tTEscanR_obj <- Create_tTEscanR_Object(counts = list(mRNA_data, tRNA_data),
