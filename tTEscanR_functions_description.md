@@ -9,6 +9,16 @@
 
 The **tTEscanR** object is dynamically updated to store assays and metadata at each analysis step, ensuring efficient tracking and organization of inputs and outputs throughout the pipeline. 
 
+In order to ensure robustness throughout the pipeline **specific ids** have been assigned and should be respected by the user.
+**assays slot:**
+- mRNA and tRNA count matrices as *"mRNA"* and *"tRNA"*
+- Codon and anticodon usage count matrices as *"CodonUsage"* and *"AnticodonUsage"*
+- Amino acid demand and supply count matrices as *"AADemand"* and *"AASupply"*
+
+**meta.data slot:**
+- Table with the conditions of the mRNA and tRNA data as *"ConditionsLabels"*
+- Active correction factor to use when running differential expression analyses as *"CorrectionFactor"*
+
 **Function:** `Create_tTEscanR_Object()`. 
 
 Initializes a **tTEscanR** object, a strucutred container designed to hold data. The object consists of two main components; *"assays"*, which stores data matrices, and *"meta.data"*, which stores associated information and additional intermediate calculations.  A **tTEscanR** object can be created using a single dataset, or initialized with a list of datasets provided at once. Additional assays and metadata layers can be appended later using `Update_tTEscanR_Object()`. 
@@ -29,7 +39,7 @@ Updates an existing **tTEscanR** object by overwriting existing sections or addi
 **Parameters:**
 - `object`: An existing **tTEscanR** object to be updated.
 - `counts`: Optional; a count matrix (or list of matrices) to be stored in the *"assays"* slot.
-- `assay`:  Optional; a character string (or list of characters) to identify the `counts`.
+- `assay`: Optional; a character string (or list of characters) to identify the `counts`.
 - `meta.data`: Optional; a variable (or list of variables) with additional information to be stored in the *"meta.data"* slot.
 - `meta.data.ids`: Optional; a character string (or list of characters) to identify the `meta.data`. 
 - `overwrite.assay`: Logical; if TRUE, overwrites any existing *"assays"* in the `object` if the `assay` label coincides.
@@ -37,22 +47,16 @@ Updates an existing **tTEscanR** object by overwriting existing sections or addi
 - `verbose`: Logical; if TRUE, displays information messages.
 
 ```{r}
-data(mRNA_data)
-data(tRNA_data)
+data(mRNA_data, tRNA_data, metadata)
 
 # Adding the mRNA dataset to the object
-tTEscanR_obj <- Create_tTEscanR_Object(counts = mRNA_data, assay = "mRNA") 
+tTEscanR_obj <- Create_tTEscanR_Object(counts = list(mRNA_data, tRNA_data),
+                                       assay = list("mRNA", "tRNA"))
 
 # Updating the object created before with the tRNA dataset
 tTEscanR_obj <- Update_tTEscanR_Object(object = tTEscanR_obj,
-                                       counts = tRNA_data,
-                                       assay = "tRNA")
-
-# If we want to add at the same time both datasets we can use the following sintaxis:
-tTEscanR_obj <- Create_tTEscanR_Object(counts = list(mRNA_data, tRNA_data), 
-                                       assay = list("mRNA", "tRNA"),
-                                       overwrite.assay = TRUE,
-                                       overwrite.metadata = TRUE)
+                                       meta.data = metadata,
+                                       meta.data.ids = "ConditionsLabels")
 ```
 
 ### 1.2. Codon-anticodon usage assessment
@@ -75,20 +79,14 @@ Estimates codon usage profiles based on gene-level mRNA expression data. It opti
 - `overwrite.metadata`: Logical; if TRUE, overwrites any existing *"meta.data"* in the `object`.
 - `verbose`: Logical; if TRUE, displays information messages.
 
-**Note:** As the metadata has not been added previously we will update the **tTEscanR** object with this new information before computing the codon usage. The table with the information regarding the condition's labels (columns in count matrices) should be stored as "ConditionsLables" in the **tTEscanR** object. Additionally, in order to be able to compute the additional metrics the **tTEscanR** object will have to contain a "corr_factor" metadata.
+**Note:** The table with the information regarding the condition's labels (columns in count matrices) should be stored as "ConditionsLables" in the **tTEscanR** object. Additionally, in order to be able to compute the additional metrics the **tTEscanR** object will have to contain a "CorrectionFactor" metadata.
 
 ```{r}
-# Defining the metadata
-# - The conditions (column names) correspond to cell types.
-# - Each cell type is composed by the tissue and the actual cell label.
-metadata <- data.frame(label = colnames(mRNA_data), stringsAsFactors = FALSE)
-metadata <- tidyr::separate(metadata, label, into = c("tissue", "cell.type"), sep = "-")
-metadata$conditions <- colnames(mRNA_data)
-
-# Adding the metadata to the tTEscanR object
+# The metadata was previously added to the tTEscanR object
+# Adding the corrrection factor to the tTEscanR object
 tTEscanR_obj <- Update_tTEscanR_Object(object = tTEscanR_obj,
-                                       meta.data = list(metadata, "tissue"),
-                                       meta.data.ids = list("ConditionsLabels", "corr_factor"))
+                                       meta.data = "tissue",
+                                       meta.data.ids = "CorrectionFactor")
 ```
 
 ```{r}
@@ -142,7 +140,6 @@ Computes the amino acid (AA) demand and/or supply from a given codon or anticodo
 
 ```{r}
 tTEscanR_obj <- ComputeAAUsage(object = tTEscanR_obj, level = "demand")
-
 tTEscanR_obj <- ComputeAAUsage(object = tTEscanR_obj, level = "supply")
 
 tTEscanR_obj <- ComputeAAUsage(object = tTEscanR_obj,  evel = "both", overwrite.assay = TRUE)
@@ -158,9 +155,9 @@ Computes the tTE score across matching conditions at the codon-anticodon usage l
 
 **Parameters:**
 - `object`: An existing **tTEscanR** object containing both codon-anticodon and/or amino acid demand-supply assays.
-- `level`: Either *"codon"*, *"AA"* or *"both"* to specify the level at which to compute the tTE score.
+- `level`: Either *"codon"*, *"aa"* or *"both"* to specify the level at which to compute the tTE score.
     - "codon", computes tTE from codon-anticodon usage.</li>
-    - "AA", computes tTE from amino acid demand and supply.</li>
+    - "aa", computes tTE from amino acid demand and supply.</li>
     - "both", computes tTE from codon-anticodon usage and amino acid demand and supply.</li>
 - `corr_method`: A character string specifying a suitable correlation method.
 - `compute.significance`: Logical; if TRUE, computes the p-value of the tTE scores.
@@ -171,7 +168,7 @@ Computes the tTE score across matching conditions at the codon-anticodon usage l
 
 ```{r}
 tTEscanR_obj <- Compute_tTE(object = tTEscanR_obj,
-                            level = "AA", 
+                            level = "aa", 
                             corr_method = "spearman",
                             compute.significance = TRUE)
 ```
@@ -180,13 +177,13 @@ tTEscanR_obj <- Compute_tTE(object = tTEscanR_obj,
 
 ### 2.1. Pre-processing module
 
-**Function:** `Get_tRNAexpressionMatrix()`.
+**Function:** `Get_tRNAMatrix()`.
 
 Extracts tRNA expression data from a Chromatin Assay or a Seurat object and converts it into a structured expression matrix. Optionally, the output can be saved into a specified directory.
 
 **Parameters:**
 - `chrom`: A ChromatinAssay or Seurat object containing tRNA data.
-- `assay`: Optional; q character string specifying the name of the assay to retrive from `chrom`it if is a Seurat object.
+- `assay`: Optional; a character string specifying the name of the assay to retrive from `chrom` it if is a Seurat object.
 - `tRNA_annotations`: A list of tRNA gene annotations.
 - `species`:  Either *"hg38"* (human) or *"mm39"* (mouse) to specify which default codon frequency-per-gene table to use. Required if `tRNA_annotations` is not provided.
 - `name_sep`: A string delimiter to format the tRNA gene names in the output matrix.
@@ -261,6 +258,8 @@ Based on an Ensembl reference genome or a user-provided gene sequence file, this
 - `genes_file`: A file path to a table containign gene IDs and their corresponding nucleotide sequences.
 - `transcripts`: Optional; a vector of transcripts or gene IDs to subset the analysis.
 - `filter`:  Either *"canonical"* (default) or *"length"* (longest transcript) to specify which transcript to choose if several are available for the same gene.
+- `retain.mitochondrial`: Logical; if FALSE filters outs the mitochondrial genes.
+- `out_format`: Either *"external_gene_name"*, *"ensembl_gene_id"* or *"ensembl_transcript_id"* to specify the annotation of the genes in the output matrix.
 - `verbose`: Logical; if TRUE, displays information messages.
 
 ```{r}
@@ -269,14 +268,18 @@ datasets <- biomaRt::listDatasets(useEnsembl(biomart = "ensembl"))
 
 # Retrieving the codon frequency per gene matrix from the human reference genome
 human_codon_freq_per_gene_matrix <- ObtainCodonFreqPerGene(dataset_name = "hsapiens_gene_ensembl",
-                                                           filter = "canonical")
+                                                           filter = "canonical",
+                                                           retain.mitochondrial = FALSE,
+                                                           out_format = "external_gene_name")
 
 # Using a targeted approach to get the codon frequency of the genes included in the mRNA data 
 targeted_genes <- c("ENSG00000059588", "ENSG00000052841", "ENSG00000173153",
                     "ENSG00000058799", "ENSG00000071203")
 
 targeted_genes_codon_freq_per_gene_matrix <- ObtainCodonFreqPerGene(dataset_name = "hsapiens_gene_ensembl",
-                                                                    transcripts = targeted_genes)
+                                                                    transcripts = targeted_genes,
+                                                                    retain.mitochondrial = FALSE,
+                                                                    out_format = "external_gene_name")
 ```
 
 <hr>
