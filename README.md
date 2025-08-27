@@ -106,7 +106,7 @@ The **tTEscanR** package includes helper functions to support specific steps of 
     </tr>
     <tr>
       <td><b>Differential expression analysis</b></td>
-      <td><code>DESeq2runner()</code></td>
+      <td><code>ExecuteDESeq2runner()</code></td>
       <td>Conducts differential expression analysis using DESeq2.</td>
     </tr>
   </tbody>
