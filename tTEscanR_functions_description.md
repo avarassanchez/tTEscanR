@@ -10,6 +10,7 @@
 The **tTEscanR** object is dynamically updated to store assays and metadata at each analysis step, ensuring efficient tracking and organization of inputs and outputs throughout the pipeline. 
 
 In order to ensure robustness throughout the pipeline **specific ids** have been assigned and should be respected by the user.
+
 **assays slot:**
 - mRNA and tRNA count matrices as *"mRNA"* and *"tRNA"*
 - Codon and anticodon usage count matrices as *"CodonUsage"* and *"AnticodonUsage"*
