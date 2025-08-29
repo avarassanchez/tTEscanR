@@ -54,18 +54,20 @@ ObtainCodonFreqPerGene <- function(dataset_name = NULL, genes_file = NULL, trans
     genes_data <- Biostrings::readDNAStringSet(genes_file) # Read the sequences in the FASTA file
 
     FASTA_transformation <- FromFASTAtoTable(data = genes_data, transcripts = transcripts, retain.mitochondrial = retain.mitochondrial, verbose = verbose)
+    transcript_sequences <- FASTA_transformation[[1]]
+    translator_table <- FASTA_transformation[[2]]
     message("  1 . COMPLETED")
 
-    results.list <- append(results.list, list(FASTA_transformation[[2]]))
+    results.list <- append(results.list, list(translator_table))
   }
 
   message(paste(as.character(count), ". Retrieving the codon composition of each transcript."))
-  codon_freq_per_gene_matrix <- ExtractCodonComposition(sequences = FASTA_transformation[[1]])
+  codon_freq_per_gene_matrix <- ExtractCodonComposition(sequences = transcript_sequences)
   CheckDataFrame(data = codon_freq_per_gene_matrix, names = TRUE)
 
   if (out_format != "ensembl_transcript_id"){
     if (verbose) message(paste("- Translating the transcript identifiers to their corresponding", out_format, "format."))
-    tr <- stats::setNames(FASTA_transformation[[2]][[out_format]], nm = FASTA_transformation[[2]][["ensembl_transcript_id"]])
+    tr <- stats::setNames(translator_table[[out_format]], nm = translator_table[["ensembl_transcript_id"]])
     translated_transcripts <- dplyr::recode(colnames(codon_freq_per_gene_matrix), !!!tr)
     colnames(codon_freq_per_gene_matrix) <- translated_transcripts
   }

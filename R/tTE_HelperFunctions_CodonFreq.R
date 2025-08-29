@@ -194,10 +194,10 @@ ExtractCodonComposition <- function(sequences, verbose = TRUE){
     # Ensure the validity of the sequence: (i) proper nucleotides, (ii) divided into triplets
     valid_nucleotides <- grepl("^[ATGCatgcnNUu]+$", sequence)
     if (isFALSE(valid_nucleotides)) stop(paste("Invalid sequence characters found in sequence:", transcript_id))
-    if (nchar(sequence) %% 3 != 0)  stop("The sequence length is not a multiple of 3.")
 
     # Generate the table with the counts - Count the number of appearances of each codon in each sequence
     sequence <- substr(sequence, 1, (nchar(sequence) %/% 3) * 3) # Divide the nucleotide sequence into triplets
+    if (nchar(sequence) %% 3 != 0)  stop("The sequence length is not a multiple of 3.")
     codon_counts <- as.data.frame(table(substring(sequence, seq(1, nchar(sequence) - 2, 3), seq(3, nchar(sequence), 3))))
     colnames(codon_counts) <- c("codons", transcript_id) # Add the codons as a column not as rownames
 
