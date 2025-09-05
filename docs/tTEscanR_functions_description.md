@@ -201,11 +201,11 @@ Extracts tRNA expression data from a Chromatin Assay or a Seurat object and conv
 # - The output matrix will not be saved
 
 chromatin_object <- readRDS()
-tRNA_expression_matrix <- Get_tRNAexpressionMatrix(chrom = chromatin_object,
-                                                   assay = "peaks",
-                                                   species = "hg38",
-                                                   name_sep = c("-", "-"),
-                                                   save = FALSE)
+tRNA_expression_matrix <- Get_tRNAMatrix(chrom = chromatin_object,
+                                         assay = "peaks",
+                                         species = "hg38",
+                                         name_sep = c("-", "-"),
+                                         save = FALSE)
 
 # The generated tRNA_expression_matrix corresponds to the tRNA_data available in tTEscanR
 ```
