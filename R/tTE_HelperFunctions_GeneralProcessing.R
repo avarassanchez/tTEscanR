@@ -134,8 +134,7 @@ DataToLongFormat <- function(data, normalize, rownames_to_column, names_to, valu
   data_processed <- if (isTRUE(normalize)) sweep(data, 2, colSums(data), FUN = "/") else data # Normalize the data if required
 
   # Transform the data into a long format
-  long_format <- data_processed %>%
-    as.data.frame() %>%
+  long_format <- data_processed %>% as.data.frame() %>%
     tibble::rownames_to_column(var = rownames_to_column) %>%
     tidyr::pivot_longer(-{{ rownames_to_column }}, names_to = names_to, values_to = values_to)
 

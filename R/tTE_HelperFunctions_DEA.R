@@ -1,5 +1,5 @@
-DESeq2runner <- function(data, metadata, corr_factor, targets = NULL, target_factor = NULL, fc_threshold = 1, pval_threshold = 0.05, reduce = 100,
-                         heatmap = TRUE, PCA = TRUE, numPC = 2, color_factor = NULL, shape_factor = NULL, color_palette = NULL, labels = FALSE, verbose = TRUE){
+DESeq2runner <- function(data, metadata, corr_factor = NULL, targets = NULL, target_factor = NULL, fc_threshold, pval_threshold, reduce,
+                         heatmap = TRUE, PCA = TRUE, numPC = 2, color_factor = NULL, shape_factor = NULL, color_palette = NULL, labels = FALSE, label_factor = NULL, verbose = TRUE){
 
   ###
   # CALL: ExecuteDESeq2runner()
@@ -18,7 +18,7 @@ DESeq2runner <- function(data, metadata, corr_factor, targets = NULL, target_fac
   results.list <- list() # Create empty list to store the results
 
   if (verbose) message("- Running differential expression analysis.")
-  DESeq2_run <- ComputeDESeq2(data = data, metadata = metadata, corr_factor = corr_factor, targets = targets, target_factor = target_factor, reduce = reduce, verbose = verbose)
+  DESeq2_run <- suppressWarnings(ComputeDESeq2(data = data, metadata = metadata, corr_factor = corr_factor, targets = targets, target_factor = target_factor, reduce = reduce, verbose = verbose))
   if (verbose) message("- Differential expression analysis completed.")
 
   if (is.null(targets)){ # EXPLORATORY ANALYSIS (NO TARGETS)
@@ -49,7 +49,7 @@ DESeq2runner <- function(data, metadata, corr_factor, targets = NULL, target_fac
 
       if (verbose) message("- Running principal component analysis with ", numPC, " principal components.")
       PCA_results <- RunPCA(data = vst, metadata = metadata, numPC = numPC, color_factor = color_factor, shape_factor = shape_factor,
-                            color_palette = color_palette, labels = labels, verbose = verbose)
+                            color_palette = color_palette, labels = labels, label_factor = label_factor, verbose = verbose)
 
       results.list <- append(results.list, PCA_results)
     }
@@ -82,7 +82,7 @@ DESeq2runner <- function(data, metadata, corr_factor, targets = NULL, target_fac
   return(results.list) # Return list with the resuts based on the analysis approach
 }
 
-ComputeDESeq2 <- function(data, metadata, corr_factor, targets = NULL, target_factor = NULL, reduce = 100, verbose = TRUE){
+ComputeDESeq2 <- function(data, metadata, corr_factor, targets, target_factor, reduce, verbose){
 
   ###
   # CALL: ComputeSizeCorrection() and DESeq2runner()
@@ -101,7 +101,7 @@ ComputeDESeq2 <- function(data, metadata, corr_factor, targets = NULL, target_fa
 
   colData <- tibble::as_tibble(metadata) # Force the metadata to be interpreted as a tibble
 
-  if (!is.null(targets)){ # TARGETED APPROACH
+  if (!(is.null(targets))){ # TARGETED APPROACH
     colData$class <- "other" # Add to the colData a new column "class"
     contrast_vect <- c("class", "other")
 
@@ -120,6 +120,7 @@ ComputeDESeq2 <- function(data, metadata, corr_factor, targets = NULL, target_fa
   formula <- stats::as.formula(paste("~", corr_factor)) # Define the formula to use by DESeq2 to correct the `data` (`corr_factor`)
 
   # Run DESeq2: DESeqDataSetFromMatrix() and DESeq()
+  if (ncol(data) != nrow(colData)) stop("Inconsistent features between data and metadata.")
   DESeq2_run <- suppressMessages(DESeq2::DESeqDataSetFromMatrix(countData = data, colData = colData, design = formula))
   if (!is.null(targets)) message("- Executing a targeted analysis.\n", paste("- The class taken as reference for DESeq2 is:", levels(DESeq2_run$class)[[1]]))
   DESeq2_run <- suppressMessages(DESeq2::DESeq(DESeq2_run, quiet = TRUE))
@@ -205,7 +206,7 @@ ProduceElbowPlot <- function(data, variance){
   return(elbow_plot) # Outputs the elbow plot
 }
 
-ProducePCAPlot <- function(data, variance, metadata, numPC, color_factor, shape_factor, color_palette, labels){
+ProducePCAPlot <- function(data, variance, metadata, numPC, color_factor, shape_factor, color_palette, labels, label_factor){
 
   ###
   # CALL: RunPCA()
@@ -219,39 +220,37 @@ ProducePCAPlot <- function(data, variance, metadata, numPC, color_factor, shape_
   PC_columns <- lapply(1:numPC, function(i) data$x[, i])
   names(PC_columns) <- paste0("PC_", 1:numPC)
 
-  PCA_plot_tibble <- tibble::tibble(metadata, !!!PC_columns )
+  # Add the principal components to the metadata table
+  PCA_plot_tibble <- tibble::tibble(metadata, !!!PC_columns)
   CheckDataFrame(data = PCA_plot_tibble)
 
   # Selects the variable that will be used to color the data points
   index <- which(colnames(PCA_plot_tibble) == color_factor)
-  PCA_plot_tibble$factor <- factor(PCA_plot_tibble[[index]])
+  PCA_plot_tibble$color_factor <- factor(PCA_plot_tibble[[index]])
 
-  id_factor <- colnames(PCA_plot_tibble)
+  if(isTRUE(labels)){
+    index_labels <- which(colnames(PCA_plot_tibble) == label_factor)
+    PCA_plot_tibble$label_factor <- factor(PCA_plot_tibble[[index_labels]])
+  }
 
   for (i in 2:numPC){ # Iterates over all the PCs - starts in 2 as PC = 1 is always included (comparison in pairs)
-    if(is.null(shape_factor)){ # Shape is NOT considered
-      plot <- ggplot2::ggplot(data = PCA_plot_tibble, mapping =  ggplot2::aes_string(x = "PC_1", y = paste("PC", i, sep = "_"), label = "id_factor", color = color_factor))
-    } else { # Shape is considered
-      plot <- ggplot2::ggplot(data = PCA_plot_tibble, mapping =  ggplot2::aes_string(x = "PC_1", y = paste("PC", i, sep = "_"), label = "id_factor", color = color_factor, shape = shape_factor))
-    }
+    y_axis <- paste("PC", i, sep = "_")
+
+    plot <- ggplot2::ggplot(PCA_plot_tibble, ggplot2::aes(x = .data$PC_1, y = .data[[y_axis]], color = .data$color_factor))
 
     # Customization:
-    if (!is.null(color_palette)) plot <- plot + ggplot2::scale_color_manual(values = color_palette) # Usage of user-defined color palette
-    plot <- plot + ggplot2::theme_bw() + ggplot2::geom_point() + ggplot2::labs(x = sprintf("PC1 (%.1f%%)", variance[1]), y = sprintf("PC%d (%.1f%%)", i, variance[i])) # Add the points and the titles
+    if (!(is.null(shape_factor))) plot <- plot + ggplot2::aes(shape = shape_factor)
+    if (isTRUE(labels)) plot <- plot + ggrepel::geom_text_repel(ggplot2::aes(label = .data$label_factor), size = 2, show.legend = FALSE)
+    plot <- plot + ggplot2::geom_point() + ggplot2::theme_bw() + ggplot2::labs(x = sprintf("PC1 (%.1f%%)", variance[1]), y = sprintf("PC%d (%.1f%%)", i, variance[i]))
+    if (!(is.null(color_palette))) plot <- plot + ggplot2::scale_color_manual(values = color_palette)
 
-    # Update the output list by adding the generated plot
-    if (isFALSE(labels)){
-      outputs_PCA[[paste0("PCA_plot_PC", i)]] <- plot
-    } else{ # Include the names of the data points
-      plot <- plot + ggrepel::geom_text_repel(ggplot2::aes(label = id_factor), size = 2, show.legend = FALSE)
-      outputs_PCA[[paste0("PCA_plot_labels_PC", i)]] <- plot
-    }
+    outputs_PCA[[paste0("PCA_plot_PC", i)]] <- plot
   }
 
   return(outputs_PCA) # Returns list of plots
 }
 
-RunPCA <- function(data, metadata, numPC, color_factor, shape_factor, color_palette, labels, verbose){
+RunPCA <- function(data, metadata, numPC, color_factor, shape_factor, color_palette, labels, label_factor, verbose){
 
   ###
   # CALL: DESeq2runner()
@@ -284,8 +283,8 @@ RunPCA <- function(data, metadata, numPC, color_factor, shape_factor, color_pale
   elbow_plot <- ProduceElbowPlot(data = PCA_res, variance = PC_variance_explained)
 
   if (verbose) message("- Producing PCA plots.")
-  pca_plots <- ProducePCAPlot(data = PCA_res, variance = PC_variance_explained, metadata = metadata, numPC = numPC,
-                              color_factor = color_factor, shape_factor = shape_factor, color_palette = color_palette, labels = labels)
+  pca_plots <- ProducePCAPlot(data = PCA_res, variance = PC_variance_explained, metadata = metadata, numPC = numPC, color_factor = color_factor,
+                              shape_factor = shape_factor, color_palette = color_palette, labels = labels, label_factor = label_factor)
 
   return(list(elbow_plot = elbow_plot, pca_plots = pca_plots)) # Returns a list with: (i) elbow plot, (ii) list with a PCA plot per each PC considered
 }

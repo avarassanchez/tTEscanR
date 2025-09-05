@@ -8,7 +8,7 @@
 #' It is crucial to ensure consistency between the name of the columns in \code{data} and the parameters \code{x_axis_col}, \code{y_axis_col} and \code{condition_col}.
 #'
 #' @param data A long format table. This format can be obtained using \code{\link{DataToLongFormat}}.
-#' @param plot Either \code{"jitter"} (default), \code{"barplot"} or \code{"boxplot"} to indicate the type of plot to generate.
+#' @param plot Either \code{"jitter"} (default), \code{"barplot"}, \code{"boxplot"} or \code{"line"} to indicate the type of plot to generate.
 #' @param x_axis_col Name of the categorical variable to reflect in the plot.
 #' @param y_axis_col Name of the numerical variable to reflect in the plot.
 #' @param condition_col Name of the categorical variable to group the data points.
@@ -34,7 +34,7 @@ tTE_DistributionPlot <- function(data, plot = "jitter", x_axis_col, y_axis_col, 
 
   # Checking the input parameters
   CheckDataInLongFormat(data) # Data in long format.
-  CheckValueInData(param = "plot", observed = plot, expected = c("jitter", "boxplot", "barplot")) # Valid plot layaout
+  CheckValueInData(param = "plot", observed = plot, expected = c("jitter", "boxplot", "barplot", "line")) # Valid plot layout
   CheckValueInData(param = "_col", observed = c(x_axis_col, y_axis_col, condition_col), expected = colnames(data)) # All columns present in data
   if (!(is.numeric(data[[y_axis_col]]))) stop(paste("Error in `data`: Column", y_axis_col, "is not numeric."))
   if (is.numeric(data[[x_axis_col]])) stop(paste("Error in `data`: Column", x_axis_col, "is not categorical."))

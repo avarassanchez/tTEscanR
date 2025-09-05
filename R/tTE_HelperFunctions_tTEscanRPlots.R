@@ -94,7 +94,7 @@ GetOutputName <- function(action, out_name, out_directory, save_format){
 
 GenerateDistPlot <- function(level, target, data, x_axis_col, y_axis_col, color_palette, add_titles, show_legend, panels, ncols){
 
-  if (level == "jitter"){
+  if (level == "jitter" || level == "line"){
     plot <- ggplot2::ggplot(data = data, mapping = ggplot2::aes(x = .data[[x_axis_col]], y = .data[[y_axis_col]], color = .data[[target]]))
   } else {
     plot <- ggplot2::ggplot(data = data, mapping = ggplot2::aes(x = .data[[x_axis_col]], y = .data[[y_axis_col]], fill = .data[[target]]))
@@ -105,6 +105,7 @@ GenerateDistPlot <- function(level, target, data, x_axis_col, y_axis_col, color_
   if (level == "jitter") plot <- plot + ggplot2::geom_jitter(size = 0.5) + ggplot2::theme_bw()
   if (level == "barplot") plot <- plot + ggplot2::geom_bar(stat = "identity", position = "dodge") +  ggplot2::theme_bw() # ENABLE TO CUSTOMIZE stat
   if (level == "boxplot") plot <- plot + ggplot2::geom_boxplot() + ggplot2::theme_bw() + ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, vjust = 0.5, hjust = 1))
+  if (level == "line") plot <- plot + ggplot2::geom_line() + ggplot2::geom_point() + ggplot2::theme_bw() + ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, vjust = 0.5, hjust = 1), strip.text = ggplot2::element_blank())
 
   # Customize the colors
   if (is.null(color_palette) && length(unique(data[[target]])) < 36) color_palette <- gradual_groups_35

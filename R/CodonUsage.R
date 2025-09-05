@@ -53,6 +53,7 @@ ComputeCodonUsage <- function(object, codon_freq = NULL, species = NULL, filter 
   }
 
   # Loading the codon frequency and assess consistency in gene annotation mRNA_data and codon_freq
+  if (!(is.null(codon_freq)) && !(class(codon_freq) %in% c("dgCMatrix", "data.frame", "matrix"))) stop("Wrong codon_freq format.\n Supported formats: dgCMatrix, data.frame, matrix")
   codon_frequency_per_gene_table <- suppressMessages(ConsistencyWithCodonFreq(data = object@assays$mRNA, codon_freq = codon_freq, species = species, filter = filter, verbose = FALSE))
   if (verbose) message("- The codon frequency per gene table has been properly loaded.")
 

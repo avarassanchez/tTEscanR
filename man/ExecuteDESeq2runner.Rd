@@ -20,6 +20,7 @@ ExecuteDESeq2runner(
   shape_factor = NULL,
   color_palette = NULL,
   labels = FALSE,
+  label_factor = NULL,
   verbose = TRUE
 )
 }
@@ -54,10 +55,12 @@ ExecuteDESeq2runner(
 
 \item{labels}{Logical; if \code{TRUE} includes the data points labels in the PCA plot. Required if \code{PCA} is \code{TRUE}. Defaults to \code{FALSE}.}
 
+\item{label_factor}{Optional; name of the categorical variable to label the data points. Required if \code{PCA} and \code{labels} are \code{TRUE}.}
+
 \item{verbose}{Logical; if \code{TRUE}, displays information messages. Defaults to \code{TRUE}.}
 }
 \value{
-A \code{list} of outputs per each matrix in \code{list_data}, based on the enabled parameters: (i) heatmap, (ii) PCA plot, and (iii) Size corrected \code{data}.
+A \code{list} of outputs per each matrix in \code{list_data}, based on the enabled parameters: (i) heatmap, (ii) PCA plot, and (iii) size corrected \code{data}.
 }
 \description{
 This function applies differential expression analysis using the DESeq2 framework on a matrix of expression values.

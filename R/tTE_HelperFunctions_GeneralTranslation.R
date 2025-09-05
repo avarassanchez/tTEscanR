@@ -138,7 +138,8 @@ IsEnsemblID <- function(gene_vector, action, notation = NULL) {
   if ((length(gene_vector) != 1) && (any(!sapply(gene_vector, is.character)))) stop("Element in `gene_vector` is not a string.") # Check that all elements are strings
 
   # Returns TRUE if the gene follows the Ensembl annotation and FALSE otherwise - gives one output per gene in the gene_vector
-  annotation <- grepl("^ENS[A-Z]*[0-9]+$", gene_vector)
+  # annotation <- grepl("^ENS[A-Z]*[0-9]+$", gene_vector)
+  annotation <- grepl("^ENS[A-Z]*G+[0-9]+$", gene_vector)
 
   # Evaluates if the Ensembl format contains the gene version
   if (any(grepl("^ENS[A-Z]*G\\d+\\.\\d+$", gene_vector))) stop("There are genes containing the gene version. Those cases can not be handled.")

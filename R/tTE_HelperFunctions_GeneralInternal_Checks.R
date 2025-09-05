@@ -13,7 +13,7 @@ CheckCodonFreqTable <- function(data, species, filter = "canonical", verbose = T
     if (verbose) message("- No `codon_freq` has been given as input.")
 
     # There are 2 filter options: canonical and length
-    if(!(filter %in% c("canonical", "length"))) stop("An invalid `filter` has been given as input.\n", "Please, leave it empty or specify `canonical` or `length`.")
+    if(!(filter %in% c("canonical", "length"))) stop("An invalid `filter` has been given as input.\n", "Please, specify `canonical` or `length`.")
 
     # Extract from the tTEscanR memory the default codon frequency table
     data <- SelectDefaultData(species = species, filter = filter)

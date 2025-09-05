@@ -34,7 +34,7 @@ ComputeSizeCorrection <- function(data, metadata = NULL, corr_factor = NULL, red
   message("  1 . COMPLETED\n", "2 . Executing DESeq2.")
   if (verbose) message("- Filtering (if necessary) the `data` and `metadata` for common features.")
   filtered <- FilterByMetadata(data = data, metadata = metadata, verbose = verbose) # Check consistency in conditions included in the data and metadata
-  DESeq2_run <- suppressWarnings(ComputeDESeq2(data = filtered[[1]], metadata = filtered[[2]], corr_factor = corr_factor, reduce = reduce, verbose = verbose))
+  DESeq2_run <- suppressWarnings(ComputeDESeq2(data = filtered[[1]], metadata = filtered[[2]], corr_factor = corr_factor, reduce = reduce, targets = NULL, verbose = verbose))
 
   message("  2 . COMPLETED\n", "3 . Extracting the size-corrected counts.")
   size_corrected_output_matrix <- suppressMessages(DESeq2::counts(DESeq2_run, normalized = TRUE)) # Extracting the normalized data from the DESeq2 object
@@ -63,9 +63,10 @@ ComputeSizeCorrection <- function(data, metadata = NULL, corr_factor = NULL, red
 #' @param shape_factor Optional; name of the categorical variable to group by shape the data points. Required if \code{PCA} is \code{TRUE}.
 #' @param color_palette Optional; a \code{vector} of color codes to customize PCA plot appearance.
 #' @param labels Logical; if \code{TRUE} includes the data points labels in the PCA plot. Required if \code{PCA} is \code{TRUE}. Defaults to \code{FALSE}.
+#' @param label_factor Optional; name of the categorical variable to label the data points. Required if \code{PCA} and \code{labels} are \code{TRUE}.
 #' @param verbose Logical; if \code{TRUE}, displays information messages. Defaults to \code{TRUE}.
 #'
-#' @return A \code{list} of outputs per each matrix in \code{list_data}, based on the enabled parameters: (i) heatmap, (ii) PCA plot, and (iii) Size corrected \code{data}.
+#' @return A \code{list} of outputs per each matrix in \code{list_data}, based on the enabled parameters: (i) heatmap, (ii) PCA plot, and (iii) size corrected \code{data}.
 #' @export
 #'
 #' @examples
@@ -73,8 +74,8 @@ ComputeSizeCorrection <- function(data, metadata = NULL, corr_factor = NULL, red
 #' DE_analysis <- ExecuteDESeq2runner(list_data = list(mRNA = subset_mRNA_data),
 #'                                    metadata = metadata, corr_factor = "tissue")
 
-ExecuteDESeq2runner <- function(list_data, metadata, targets = NULL, target_factor = NULL, corr_factor = NULL, fc_threshold = 1, pval_threshold = 0.05, reduce = 100,
-                                heatmap = TRUE, PCA = TRUE, numPC = 2, color_factor = NULL, shape_factor = NULL, color_palette = NULL, labels = FALSE, verbose = TRUE){
+ExecuteDESeq2runner <- function(list_data, metadata, targets = NULL, target_factor = NULL, corr_factor = NULL, fc_threshold = 1, pval_threshold = 0.05, reduce = 100, heatmap = TRUE,
+                                PCA = TRUE, numPC = 2, color_factor = NULL, shape_factor = NULL, color_palette = NULL, labels = FALSE, label_factor = NULL, verbose = TRUE){
 
   ###
   # CALL: User and Run_tTEscanR_pipeline()
@@ -84,20 +85,27 @@ ExecuteDESeq2runner <- function(list_data, metadata, targets = NULL, target_fact
   if (verbose) message("1 . Checking the input parameters.")
   if (is.null(names(list_data)) || all(names(list_data) == "")) names(list_data) <- paste("list_data", seq_along(list_data)) # If list_data is an unnamed list the name is assigned based on appearance order
   CheckDataFrame(data = metadata)
-  if (!(corr_factor %in% colnames(metadata))) stop("The correction factor was not found in the metadata.") # Checking the variable that will be used to correct the data when running DESeq2
+  if (isTRUE(PCA) && (is.null(corr_factor) || !(corr_factor %in% colnames(metadata)))) stop("The correction factor was not found in the metadata.") # Checking the variable that will be used to correct the data when running DESeq2
 
   # Checking the variable that will be used to classify the entries in a targeted approach
-  if (!is.null(targets) && !(target_factor %in% colnames(metadata))) stop("Please indicate a suitable `target_factor`.\n",
+  if (!(is.null(targets)) && !(target_factor %in% colnames(metadata))) stop("Please indicate a suitable `target_factor`.\n",
                                                                           paste("Current `target_factor` =", target_factor, "not in `metadata`.\n"),
                                                                           paste("Consider as potential `target_factor`:", paste(colnames(metadata), collapse = ",")))
 
-  if (verbose) message("- Running the differential expression analysis.")
+  if (isTRUE(labels) &&  (is.null(label_factor) || !(label_factor %in% colnames(metadata)))){
+    message("No label_factor was input or it was not found in the metadata.\n", "The PCA plot(s) will not display any label.")
+    labels <- FALSE
+  }
+
+  message("  1 . COMPLETED\n", "2 . Running the differential expression analysis.")
   DESeq2_results_list <- list() # Create an empty list to store the results
   for (i in 1:length(list_data)){ # Iterates over the assays included in list_data
     message(paste("- Analyzing:", names(list_data)[i]))
     DESeq2_results_list[[names(list_data)[i]]] <- DESeq2runner(data = list_data[[i]], metadata = metadata, targets = targets, target_factor = target_factor, corr_factor = corr_factor,
                                                                fc_threshold = fc_threshold, pval_threshold = pval_threshold, reduce = reduce, heatmap = heatmap, PCA = PCA, numPC = numPC,
-                                                               color_factor = color_factor, shape_factor = shape_factor, color_palette = color_palette, labels = labels, verbose = verbose)
+                                                               color_factor = color_factor, shape_factor = shape_factor, color_palette = color_palette, labels = labels, label_factor = label_factor, verbose = verbose)
+    message(paste("- COMPLETED analyzing:", names(list_data)[i]))
   }
+  message("  2 . COMPLETED\n")
   return (DESeq2_results_list) # The output consists of a nested list, which elements depend on the parameters enabled.
 }

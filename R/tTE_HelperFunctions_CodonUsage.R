@@ -168,7 +168,7 @@ ComputeMeanUsage <- function(data, assay = NULL, mode = "raw", metadata = NULL, 
 
     if (verbose) message("- Size correcting the usage matrix to account for sequencing depth.")
     filtered <- FilterByMetadata(data = data, metadata = metadata) # Filter the data and the metadata based on their matching entries
-    data <- ComputeSizeCorrection(data = filtered[[1]], metadata = filtered[[2]], corr_factor = corr_factor, verbose = FALSE)
+    data <- suppressMessages(ComputeSizeCorrection(data = filtered[[1]], metadata = filtered[[2]], corr_factor = corr_factor, verbose = FALSE))
     mode <- "size-corrected"
   }
 
