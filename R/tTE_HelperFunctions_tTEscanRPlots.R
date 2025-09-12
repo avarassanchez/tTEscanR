@@ -109,8 +109,8 @@ GenerateDistPlot <- function(level, target, data, x_axis_col, y_axis_col, color_
 
   # Customize the colors
   if (is.null(color_palette) && length(unique(data[[target]])) < 36) color_palette <- gradual_groups_35
-  if (!(is.null(color_palette)) && (level == "jitter")){
-    if (level == "jitter") plot <- plot + ggplot2::scale_color_manual(values = color_palette) else  plot <- plot + ggplot2::scale_fill_manual(values = color_palette)
+  if (!(is.null(color_palette))){
+    if (level == "jitter" || (level == "line")) plot <- plot + ggplot2::scale_color_manual(values = color_palette) else  plot <- plot + ggplot2::scale_fill_manual(values = color_palette)
   }
 
   if(isTRUE(add_titles)) plot <- plot + ggplot2::labs(x = x_axis_col, y = paste(x_axis_col, "usage counts")) # + ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5, size = 15))

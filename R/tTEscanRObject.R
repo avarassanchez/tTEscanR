@@ -16,6 +16,31 @@ NULL
 
 setClass(Class = 'tTEscanR_Object', slots = c(assays = 'list', meta.data = 'list'))
 
+setValidity("tTEscanR_Object", function(object) {
+
+  # The setValidity function is called by the new() function used to generate a tTEscanR_object
+
+  # Validate the slots of the object
+  # if (!is.list(object@assays)) return("The 'assays' slot must be a list.")
+  # if (!is.list(object@meta.data)) return("The 'meta.data' slot must be a list.")
+
+  valid_assay_ids <- c("mRNA", "tRNA", "CodonUsage", "AnticodonUsage", "AADemand", "AASupply", "SizeCorrectedCodonUsage")
+
+  # Initially check that the assay is not empty
+  if (length(object@assays) > 0) {
+
+    # Check the names of the assays
+    if (!all(names(object@assays) %in% valid_assay_ids)) {
+      invalid_names <- setdiff(names(object@assays), valid_assay_ids)
+      return(paste("Invalid assay names detected:", paste(invalid_names, collapse = ", "),
+                   "Valid names are:", paste(valid_assay_ids, collapse = ", ")))
+    }
+  }
+
+  return(TRUE)
+})
+
+
 #' Create a tTEscanR Object
 #' @description
 #' This function initializes a \code{tTEscanR_Object}, a structured container designed to hold translational efficiency-related data.
@@ -70,8 +95,6 @@ Create_tTEscanR_Object <- function(counts, assay = NULL, meta.data = NULL, meta.
     object <- suppressWarnings(expr = new(Class = 'tTEscanR_Object', assays = assay.list)) # Generate the object
   }
 
-  message("  1 . COMPLETED\n", "2 . Validating and returning the tTEscanR object.")
-  validObject(object = object)
-  message("  2 . COMPLETED")
+  message("  1 . COMPLETED\n")
   return(object)
 }

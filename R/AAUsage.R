@@ -30,9 +30,8 @@ ComputeAAUsage <- function(object, level, overwrite.assay = FALSE, verbose = TRU
                        supply = list(assay_id = list("AASupply"), check_assays = list("AnticodonUsage"), AAfunction = "reverse"),
                        both = list(assay_id = list("AADemand", "AASupply"), check_assays = list("CodonUsage", "AnticodonUsage"), AAfunction = list("sense", "reverse")))
 
-  message("1 . Checking the format of the input data.")
   if (!(inherits(object, 'tTEscanR_Object'))) stop("`object` must be a tTEscanR object.")
-  if (verbose) message("- The input contains a proper tTEscanR object.")
+  if (verbose) message("1 . Checking the format of the input data.\n", "- The input consists of a proper tTEscanR object.")
   if (!level %in% names(assay_map_AA) || is.null(level)) stop("Please specify a valid `level` input parameter: demand, supply, both.")
   if (verbose) message("- The level has been porperly specified.")
 

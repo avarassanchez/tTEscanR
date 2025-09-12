@@ -52,7 +52,8 @@ ExamineCodonPoolContribution <- function(object, codon_freq = NULL, species = NU
 
   # Check if the mean codon usage is available, otherwise computes it
   check_mean_codon <- IsIn_tTEscanR_Object(object = object, slot = "meta.data", section = "CodonUsage_AdditionalMetrics", subset = "MeanCodonUsage", compute.assay = TRUE, verbose = verbose)
-  if (isTRUE(check_mean_codon)){
+
+  if (isFALSE(check_mean_codon)){
     if (verbose) message("- Computing the mean codon usage.")
     mean_codon_usage <- suppressMessages(ComputeMeanUsage(data = object@assays$CodonUsage, assay = "CodonUsage", metadata = object@meta.data$ConditionsLabels, corr_factor = object@meta.data$CorrectionFactor, verbose = FALSE))
   } else { # Retrieves the mean codon usage from the tTEscanR object

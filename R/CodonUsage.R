@@ -39,7 +39,7 @@ ComputeCodonUsage <- function(object, codon_freq = NULL, species = NULL, filter 
 
   message("1 . Checking the format of the input data.")
   if (!inherits(object, 'tTEscanR_Object')) stop("`object` must be a tTEscanR object.")
-  if (verbose) message("- The input contains a proper tTEscanR object.")
+  if (verbose) message("- The input consists of a proper tTEscanR object.")
   IsIn_tTEscanR_Object(object = object, slot = "assays", section = "mRNA", verbose = FALSE)
   CheckDataFrame(data = object@assays$mRNA)
   if (verbose) message("- The mRNA assay has been properly loaded.")

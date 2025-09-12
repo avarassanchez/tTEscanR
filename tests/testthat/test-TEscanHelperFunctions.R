@@ -14,8 +14,25 @@ test_that("The default data is correctly loaded", {
 
 test_that("The data loaded has a correct format", {
 
-  expect_error(IdentifyInputFormat(data = list(4, 5, 6, 7, 8)))
-  expect_error(IdentifyInputFormat(data = c()))
-  expect_no_error(IdentifyInputFormat(data = mRNA_data_test))
-  expect_no_error(IdentifyInputFormat(data = ENSG_gene_names_mRNA_data))
+  # CONTROLS
+  expect_no_error(IdentifyInputFormat(data = mRNA_data_test, mode = "flexible"))
+  expect_no_error(IdentifyInputFormat(data = mRNA_data_test, mode = "fix"))
+  expect_no_error(IdentifyInputFormat(data = ENSG_gene_names_mRNA_data, mode = "flexible"))
+  expect_no_error(IdentifyInputFormat(data = ENSG_gene_names_mRNA_data, mode = "fix"))
+
+  # CASE 1: error - wrong input formats
+  expect_no_error(IdentifyInputFormat(data = list(4, 5, 6, 7, 8), mode = "flexible"))
+  expect_error(IdentifyInputFormat(data = list(4, 5, 6, 7, 8), mode = "fix")) # the fix parameters requires that the elements are matrices
+
+  # CASE 2: error - empty input data
+  expect_error(IdentifyInputFormat(data = c(), mode = "flexible"))
+  expect_error(IdentifyInputFormat(data = c(), mode = "fix"))
+
+  # CASE 3: missing mode parameter
+  expect_error(IdentifyInputFormat(data = mRNA_data_test))
+  expect_error(IdentifyInputFormat(data = ENSG_gene_names_mRNA_data))
+
+  # CASE 4: error - wrong mode parameter
+  expect_error(IdentifyInputFormat(data = mRNA_data_test, mode = flexible)) # mode needs to be a string
+  expect_error(IdentifyInputFormat(data = mRNA_data_test, mode = "strict")) # mode has to be flexible or fi
 })

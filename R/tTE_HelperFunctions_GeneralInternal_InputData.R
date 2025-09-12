@@ -22,34 +22,32 @@ SelectDefaultData <- function(species, filter = NULL){
   return(codon_freq) # Return the retrieved codon frequency-per-gene table
 }
 
-IdentifyInputFormat <- function(data,  mode = "fix"){
+IdentifyInputFormat <- function(data, mode) {
 
   ###
   # CALL: Multiple internal functions
-  # DESCRIPTION: This function checks the format of the input data.
-  # Returns a character string with the actual format of the input data.
+  # DESCRIPTION: Check the format of the input data and return a string with the format of the input data.
   ###
 
-  if(is.character(data)){ # DEALING WITH VECTORS
-    format <- "vector"
-  } else if (is.data.frame(data) || is.matrix(data) || inherits(data, "dgCMatrix")){ # DEALING WITH DATAFRAME OR MATRICES
-    format <- "table"
-    CheckDataFrame(data)
-  } else if (inherits(data, "list")){ # DEALING WITH LISTS
+  if (is.null(mode)) stop("Missing `mode` parameter.\nSupported formats: fix or flexible.")
+  if (!mode %in% c("fix", "flexible")) stop("Incorrect `mode` parameter.\nSupported formats: fix or flexible.")
 
-    if (mode == "fix"){ # Check the actual content of the list
-      for (i in 1:length(data)){
-        if (!(is.data.frame(data[[i]]) || is.matrix(data[[i]]) || inherits(data[[i]], "dgCMatrix"))) stop("Incorrect data format.\n", "Supported formats: vector, dataframe or matrix.")
-      }
+  if (inherits(data, "list")) {
+    if (mode == "fix") {
+      valid_types <- sapply(data, function(x) is.data.frame(x) || is.matrix(x) || inherits(x, "dgCMatrix"))
+      if (!all(valid_types)) stop("Incorrect `data` format.\nSupported formats: list of dataframes or matrices.")
     }
-
-    format <- "list"
-
-  } else { # WRONG INPUT FORMAT
-    stop("Incorrect data format.\n", "Supported formats: vector, dataframe or matrix.")
+    return("list")
   }
-  return(format)
+
+  if (is.data.frame(data) || is.matrix(data) || inherits(data, "dgCMatrix") || is.character(data)) {
+    if (is.data.frame(data) && mode == "fix") data <- as.matrix(data)
+    return("single")
+  }
+
+  stop("Incorrect `data` format.\nSupported formats: single vector, dataframe or matrix, or a list of these.")
 }
+
 
 FilterByMetadata <- function(data, metadata, verbose = TRUE){
 

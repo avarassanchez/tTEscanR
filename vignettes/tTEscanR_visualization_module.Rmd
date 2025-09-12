@@ -192,7 +192,7 @@ tTE_DistributionPlot(data = long_format_codon_usage_subset, plot = "barplot",
                      condition_col = "cell_type", show_legend = "none", add_titles = FALSE)
 ```
 
-If, instead of comparing the distributions of two cell types within the same tissue, we want to explore how distributions vary across two different tissues, we can switch to the *boxplot* mode. This plot type summarizes the variation and central tendency of the data, making it easier to compare distirbution between broader biological groups. 
+If, instead of comparing the distributions of two cell types within the same tissue, we want to explore how distributions vary across two different tissues, we can switch to the *boxplot* mode. This plot type summarizes the variation and central tendency of the data, making it easier to compare distribution between broader biological groups. 
 
 ```{r generate_subset_data_2}
 # Data subset: specific codons in spleen and heart tissues

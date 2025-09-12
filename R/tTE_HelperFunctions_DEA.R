@@ -12,13 +12,12 @@ DESeq2runner <- function(data, metadata, corr_factor = NULL, targets = NULL, tar
   # Check the consistency in the conditions included in the data and metadata - If needed filters them accordingly
   if (verbose) message("- Filtering (if necessary) the `data` and `metadata` for common features.")
   filtered <- FilterByMetadata(data = data, metadata = metadata, verbose = verbose)
-  data <- filtered[[1]]
-  metadata_filtered <- filtered[[2]]
+  # data <- filtered[[1]] metadata_filtered <- filtered[[2]]
 
   results.list <- list() # Create empty list to store the results
 
   if (verbose) message("- Running differential expression analysis.")
-  DESeq2_run <- suppressWarnings(ComputeDESeq2(data = data, metadata = metadata, corr_factor = corr_factor, targets = targets, target_factor = target_factor, reduce = reduce, verbose = verbose))
+  DESeq2_run <- suppressWarnings(ComputeDESeq2(data = filtered[[1]], metadata = filtered[[2]], corr_factor = corr_factor, targets = targets, target_factor = target_factor, reduce = reduce, verbose = verbose))
   if (verbose) message("- Differential expression analysis completed.")
 
   if (is.null(targets)){ # EXPLORATORY ANALYSIS (NO TARGETS)
@@ -43,12 +42,12 @@ DESeq2runner <- function(data, metadata, corr_factor = NULL, targets = NULL, tar
       }
 
       # Check points:
-      if (!is.character(color_factor)) color_factor <- as.character(color_factor)
-      if (!(color_factor %in% colnames(metadata))) stop("Please specify a `color_factor` parameter present in the `metadata` used as input.")
-      if(!is.null(shape_factor) && !(shape_factor %in% colnames(metadata))) stop("Please specify a `shape_factor` parameter present in the `metadata` used as input.")
+      if (!(is.character(color_factor))) color_factor <- as.character(color_factor)
+      if (!(color_factor %in% colnames(filtered[[2]]))) stop("Please specify a `color_factor` parameter present in the `metadata` used as input.")
+      if(!(is.null(shape_factor)) && !(shape_factor %in% colnames(filtered[[2]]))) stop("Please specify a `shape_factor` parameter present in the `metadata` used as input.")
 
       if (verbose) message("- Running principal component analysis with ", numPC, " principal components.")
-      PCA_results <- RunPCA(data = vst, metadata = metadata, numPC = numPC, color_factor = color_factor, shape_factor = shape_factor,
+      PCA_results <- RunPCA(data = vst, metadata = filtered[[2]], numPC = numPC, color_factor = color_factor, shape_factor = shape_factor,
                             color_palette = color_palette, labels = labels, label_factor = label_factor, verbose = verbose)
 
       results.list <- append(results.list, PCA_results)
@@ -64,22 +63,35 @@ DESeq2runner <- function(data, metadata, corr_factor = NULL, targets = NULL, tar
 
     if (verbose) message("- Executing a targeted analysis.\n", "- In this analysis no heatmap or PCA plot will be produced.\n", "- A volcano plot will be generated instead.")
 
-    # Converts the format of the ComputeDESeq2() output
-    target_DESeq2_results <- as.data.frame(DESeq2::results(DESeq2_run[[1]], contrast = DESeq2_run[[2]])) # Retrieve the different information parts from ComputeDESeq2()
+    lvls <- levels(SummarizedExperiment::colData(DESeq2_run[[1]])$class) # Get all the levels in the contrast vector
+    combs <- utils::combn(lvls, 2, simplify = FALSE) # Define all the pairwise comparisons: target vs others, target vs target
 
-    # Generate a summary table with the statistical measures
-    target_results_tibble <- tibble::tibble(feature = rownames(data), log2_FC = target_DESeq2_results$log2FoldChange,
-                                            neg_log10_adjusted_p_value = -log10(target_DESeq2_results$padj)) %>%
-      dplyr::filter(!is.na(.data$log2_FC) & !is.na(.data$neg_log10_adjusted_p_value))  # Remove NA values
+    results.list <- list() # Define empty list to store the results
 
-    results.list <- append(results.list, target_results_tibble)
+    for (cmb in combs) { # Iterate through each pairwise comparison
+      contrast <- c("class", cmb[1], cmb[2])
+      contrast_name <- paste(cmb[1], "vs", cmb[2], sep = "_")
 
-    if (verbose) message("- Generating volcano plot.")
-    volcano_plot <- GenerateVolcanoPlot(data = target_results_tibble, fc_threshold = fc_threshold, pval_threshold = pval_threshold)
-    results.list <- append(results.list, volcano_plot)
+      if (verbose) message("Processing contrast: ", contrast_name)
+
+      target_DESeq2_results <- as.data.frame(DESeq2::results(DESeq2_run[[1]], contrast = contrast)) # Run DESeq2 results
+
+      # Convert to tibble for plotting
+      target_results_tibble <- tibble::tibble(feature = rownames(target_DESeq2_results),
+                                              log2_FC = target_DESeq2_results$log2FoldChange,
+                                              neg_log10_adjusted_p_value = -log10(target_DESeq2_results$padj)) %>%
+        dplyr::filter(!is.na(.data$log2_FC) & !is.na(.data$neg_log10_adjusted_p_value))
+
+      results.list[[paste0("results_", contrast_name)]] <- target_results_tibble # Store the results
+
+      if (verbose) message("- Generating volcano plot.")
+      volcano_plot <- GenerateVolcanoPlot(data = target_results_tibble, fc_threshold = fc_threshold, pval_threshold = pval_threshold) + ggplot2::ggtitle(contrast_name)  # give each plot a title
+      results.list[[paste0("volcano_", contrast_name)]] <- volcano_plot
+    }
+
   }
 
-  return(results.list) # Return list with the resuts based on the analysis approach
+  return(results.list) # Return list with the results based on the analysis approach
 }
 
 ComputeDESeq2 <- function(data, metadata, corr_factor, targets, target_factor, reduce, verbose){
@@ -113,7 +125,7 @@ ComputeDESeq2 <- function(data, metadata, corr_factor, targets, target_factor, r
     # It is necessary to have a target to compare against the rest of the conditions - The rest of the conditions will be labeled as "other"
     if (length(unique(colData$class)) < 2) stop("A single class was identified.\n", paste("Current `target_factor` = ", target_factor, ".\n"),
                                                 paste("Class distribution:", as.character(length(unique(colData$class)))))
-    if (verbose) message(paste("- Class distribution:", as.character(length(unique(colData$class)))))
+    if (verbose) message(paste("- Number of groups:", as.character(length(unique(colData$class)))))
     corr_factor <- "class"
   }
 
@@ -122,7 +134,7 @@ ComputeDESeq2 <- function(data, metadata, corr_factor, targets, target_factor, r
   # Run DESeq2: DESeqDataSetFromMatrix() and DESeq()
   if (ncol(data) != nrow(colData)) stop("Inconsistent features between data and metadata.")
   DESeq2_run <- suppressMessages(DESeq2::DESeqDataSetFromMatrix(countData = data, colData = colData, design = formula))
-  if (!is.null(targets)) message("- Executing a targeted analysis.\n", paste("- The class taken as reference for DESeq2 is:", levels(DESeq2_run$class)[[1]]))
+  if (!(is.null(targets))) message("- Executing a targeted analysis.\n", paste("- The class taken as reference for DESeq2 is:", levels(DESeq2_run$class)[[1]]))
   DESeq2_run <- suppressMessages(DESeq2::DESeq(DESeq2_run, quiet = TRUE))
 
   if (is.null(targets)) return(DESeq2_run) else return(list(DESeq2_run, contrast_vect)) # When performing a targeted approach, report the table with the amount of entries per condition
@@ -132,20 +144,20 @@ GenerateVolcanoPlot <- function(data, fc_threshold, pval_threshold){
 
   ###
   # CALL: DESeq2runner()
-  # DESCRIPTION: This function generates a volcano plot based on the DESeq2 results.
-  # It is executed when the user inputs a `targets` parameter, therefore it is specific for a targeted analysis.
+  # DESCRIPTION: This function generates a volcano plot based on the DESeq2 results when the user inputs a `targets` parameter (specific for a targeted analysis).
   ###
 
-  volcano_plot <- ggplot2::ggplot() + ggplot2::theme_classic() +
+  volcano_plot <- ggplot2::ggplot() + ggplot2::theme_bw() +
     ggplot2::geom_point(data = data, mapping = ggplot2::aes(x = .data$log2_FC, y = .data$neg_log10_adjusted_p_value), color = "black", alpha = 0.5) +
     ggplot2::geom_point(data = dplyr::filter(data, abs(.data$log2_FC) > fc_threshold, .data$neg_log10_adjusted_p_value > -log10(pval_threshold)),
                         mapping = ggplot2::aes(x = .data$log2_FC, y = .data$neg_log10_adjusted_p_value), size = 3) +
-    ggrepel::geom_text_repel(data = dplyr::filter(data, abs(.data$log2_FC) > fc_threshold, .data$neg_log10_adjusted_p_value > -log10(pval_threshold)),
-                             mapping = ggplot2::aes(x = .data$log2_FC, y = .data$neg_log10_adjusted_p_value, label = .data$feature), size = 2) +
+    # ggrepel::geom_text_repel(data = dplyr::filter(data, abs(.data$log2_FC) > fc_threshold, .data$neg_log10_adjusted_p_value > -log10(pval_threshold)),
+    #                          mapping = ggplot2::aes(x = .data$log2_FC, y = .data$neg_log10_adjusted_p_value, label = .data$feature), size = 2) +
+    ggrepel::geom_text_repel(data = data, mapping = ggplot2::aes(x = .data$log2_FC, y = .data$neg_log10_adjusted_p_value, label = .data$feature), size = 2) +
     ggplot2::geom_abline(slope = 0, intercept = -log10(pval_threshold), linetype = "dotted") +
     ggplot2::geom_vline(xintercept = -1 * fc_threshold, linetype = "dotted") +
     ggplot2::geom_vline(xintercept = fc_threshold, linetype = "dotted") +
-    ggplot2::labs(x = expression(log[2]~fold~change), y = expression(-log[10]~adjusted~p~value), title = "brain neurons vs. other cell types") +
+    ggplot2::labs(x = expression(log[2]~fold~change), y = expression(-log[10]~adjusted~p~value), title = "target group vs. others") +
     ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5, size = 20))
 
   return(volcano_plot)
@@ -239,7 +251,7 @@ ProducePCAPlot <- function(data, variance, metadata, numPC, color_factor, shape_
     plot <- ggplot2::ggplot(PCA_plot_tibble, ggplot2::aes(x = .data$PC_1, y = .data[[y_axis]], color = .data$color_factor))
 
     # Customization:
-    if (!(is.null(shape_factor))) plot <- plot + ggplot2::aes(shape = shape_factor)
+    if (!(is.null(shape_factor))) plot <- plot + ggplot2::aes(shape = .data[[shape_factor]])
     if (isTRUE(labels)) plot <- plot + ggrepel::geom_text_repel(ggplot2::aes(label = .data$label_factor), size = 2, show.legend = FALSE)
     plot <- plot + ggplot2::geom_point() + ggplot2::theme_bw() + ggplot2::labs(x = sprintf("PC1 (%.1f%%)", variance[1]), y = sprintf("PC%d (%.1f%%)", i, variance[i]))
     if (!(is.null(color_palette))) plot <- plot + ggplot2::scale_color_manual(values = color_palette)

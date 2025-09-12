@@ -10,5 +10,4 @@ test_that("Checking the codon pool contribution", {
 
   tTEscanR_obj <- Update_tTEscanR_Object(object = tTEscanR_obj, meta.data = list(metadata, "tissue"), meta.data.ids = list("ConditionsLabels", "CorrectionFactor"))
   expect_no_error(ExamineCodonPoolContribution(object = tTEscanR_obj, species = "hg38", verbose = FALSE))
-
 })

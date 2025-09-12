@@ -92,7 +92,7 @@ ExecuteDESeq2runner <- function(list_data, metadata, targets = NULL, target_fact
                                                                           paste("Current `target_factor` =", target_factor, "not in `metadata`.\n"),
                                                                           paste("Consider as potential `target_factor`:", paste(colnames(metadata), collapse = ",")))
 
-  if (isTRUE(labels) &&  (is.null(label_factor) || !(label_factor %in% colnames(metadata)))){
+  if (isTRUE(labels) && (is.null(label_factor) || !(label_factor %in% colnames(metadata)))){
     message("No label_factor was input or it was not found in the metadata.\n", "The PCA plot(s) will not display any label.")
     labels <- FALSE
   }
