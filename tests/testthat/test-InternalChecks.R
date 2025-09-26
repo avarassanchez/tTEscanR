@@ -24,13 +24,13 @@ test_that("The codon frequency per gene matrix is properly assessed", {
 test_that("The data frames are properly assessed", {
 
   # CASE 1: no error -  checking well defined matrices
-  expect_no_error(CheckDataFrame(data = mRNA_data))
-  expect_no_error(CheckDataFrame(data = mRNA_data, names = TRUE))
-  expect_no_error(CheckDataFrame(data = mRNA_data, names = FALSE))
+  expect_no_error(CheckDataFrame(data = subset_mRNA_data))
+  expect_no_error(CheckDataFrame(data = subset_mRNA_data, names = TRUE))
+  expect_no_error(CheckDataFrame(data = subset_mRNA_data, names = FALSE))
 
   # CASE 2: error - the input data is a vector
-  expect_error(CheckDataFrame(data = mRNA_data[1, ]))
-  expect_error(CheckDataFrame(data = mRNA_data[, 1]))
+  expect_error(CheckDataFrame(data = subset_mRNA_data[1, ]))
+  expect_error(CheckDataFrame(data = subset_mRNA_data[, 1]))
   expect_error(CheckDataFrame(data = ENSG_gene_names_mRNA_data))
   expect_error(CheckDataFrame(data = list("A", "B", "C")))
   expect_error(CheckDataFrame(data = "mRNA_data"))

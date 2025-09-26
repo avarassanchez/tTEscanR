@@ -65,7 +65,7 @@ library(tTEscanR)
 In this tutorial, we will analyze a single-cell fetal human atlas described in *[@Cao2020]* and *[@Domcke2020]*, and previously examined by *[@Gao2022]*. A this data and a subset of it are included in **tTEscanR** and can be directly loaded.
 
 ```{r load_data_mRNA, message = FALSE, warning = FALSE}
-data(mRNA_data)
+data(subset_mRNA_data)
 ```
 
 **Dimensions:** 9900 genes (rows) x 172 cell types (columns)
@@ -75,7 +75,7 @@ data(mRNA_data)
 **Columns:** The cell type labels are composed of two parts: tissue - cell type (e.g. Adrenal-Adrenocortical cells)
 
 ```{r load_data_tRNA, message = FALSE, warning = FALSE}
-data(tRNA_data)
+data(subset_tRNA_data)
 ```
 
 **Dimensions:** 377 tRNA genes (rows) x 89 cell types (columns)
@@ -95,7 +95,7 @@ The **pre-processing module** formats and standardizes input matrices to ensure 
 The **`tRNACutsFilter()`** function filters out **samples or conditions** with low total tRNA expression, helping to ensure overall **data quality**. 
 
 ```{r filter_tRNAs, message = FALSE, warning = FALSE}
-filtered_tRNA_data <- tRNACutsFilter(data = tRNA_data, cutoff = 5000)
+filtered_tRNA_data <- tRNACutsFilter(data = subset_tRNA_data, cutoff = 5000)
 ```
 
 ### 2.2. Defining the tTEscanR object
@@ -113,13 +113,13 @@ data(metadata)
 
 ```{r create_tTEscanR_object, message = FALSE, warning = FALSE}
 # Adding the mRNA and tRNA datasest to the object
-tTEobject <- Create_tTEscanR_Object(counts = list(mRNA_data, tRNA_data), assay = list("mRNA", "tRNA"), 
+tTEobject <- Create_tTEscanR_Object(counts = list(subset_mRNA_data, subset_tRNA_data), assay = list("mRNA", "tRNA"), 
                                     meta.data = metadata, meta.data.ids = "ConditionsLabels") 
 ```
 
 ```{r update_tTEscanR_object, message = FALSE, warning = FALSE}
 # Updating the object created before some metadata for reference
-matching_celltypes <- intersect(colnames(mRNA_data), colnames(tRNA_data))
+matching_celltypes <- intersect(colnames(subset_mRNA_data), colnames(subset_tRNA_data))
 
 tTEobject <- Update_tTEscanR_Object(object = tTEobject, meta.data = matching_celltypes, 
                                     meta.data.ids = "matching_celltypes", overwrite.metadata = TRUE)
@@ -176,10 +176,10 @@ tTE_CorrelationPlot(data = correlation_mean_background, plot = "MeanCodonUsage",
                     add_titles = TRUE, show_legend = "none")
 ```
 
-You can further evaluate the codon usage output using **`ExamineCodonPoolContribution()`**, which quantifies the contribution of the most highly expressed genes to the overall codon pool across different conditions. This analysis helps identify whether codon usage is dominated by a small subset of highly expressed transcripts or is broadly distributed across the transcriptome.
+You can further evaluate the codon usage output using **`ExaminePoolContribution()`**, which quantifies the contribution of the most highly expressed genes to the overall codon pool across different conditions. This analysis helps identify whether codon usage is dominated by a small subset of highly expressed transcripts or is broadly distributed across the transcriptome.
 
 ```{r codon_pool_contribution, message = FALSE, warning = FALSE}
-tTEobject <- ExamineCodonPoolContribution(object = tTEobject, N = 10, species = "hg38", overwrite.assay = TRUE, overwrite.metadata = TRUE)
+tTEobject <- ExaminePoolContribution(object = tTEobject, N = 10, species = "hg38", overwrite.assay = TRUE, overwrite.metadata = TRUE)
 ```
 
 ```{r correlation_plot_diversity, message = FALSE, warning = FALSE}

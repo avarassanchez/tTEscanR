@@ -9,7 +9,7 @@ ComputeCorrelationBackground(mean, background, corr_method = "spearman")
 \arguments{
 \item{mean}{A \code{matrix} representing mean codon usage across condition. Can be computed using \code{\link{ComputeMeanUsage}}.}
 
-\item{background}{A \code{matrix} or table representing codon frequencies in exonic regions. Can be computed using \code{\link{ComputeCodonExonicBackground}}.}
+\item{background}{A \code{matrix} or table representing codon frequencies in exonic regions. Can be computed using \code{\link{ComputeExonicBackground}}.}
 
 \item{corr_method}{A correlation method accepted by \code{\link{cor}}. Defaults to \code{"spearman"}.}
 }
@@ -25,7 +25,7 @@ data(subset_mRNA_data, metadata)
 tTEscanR_obj <- Create_tTEscanR_Object(counts = subset_mRNA_data, assay = "mRNA")
 tTEscanR_obj <- ComputeCodonUsage(object = tTEscanR_obj, species = "hg38",
                                   additional.metrics = FALSE, reduce = 1000)
-exonic_background <- ComputeCodonExonicBackground(data = tTEscanR_obj@assays$CodonUsage)
+exonic_background <- ComputeExonicBackground(data = tTEscanR_obj@assays$CodonUsage)
 # Input: expression count matrix, need to provide metadata and corr_factor parameters
 mean_codon_usage <- ComputeMeanUsage(data = tTEscanR_obj@assays$CodonUsage,
                                      mode = "raw", metadata = metadata,

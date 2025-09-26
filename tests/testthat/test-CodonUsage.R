@@ -77,7 +77,7 @@ test_that("The different corr_method possibilities - inside ComputeCorrelationBa
   tTEobject <- ComputeCodonUsage(object = tTEobject, codon_freq = NULL, species = "hg38", filter = "canonical", additional.metrics = FALSE)
 
   mean_codon_usage <- suppressWarnings(ComputeMeanUsage(data = tTEobject, assay = "CodonUsage", mode = "raw"))
-  exonic_background <- suppressWarnings(ComputeCodonExonicBackground(data = tTEobject@assays$CodonUsage))
+  exonic_background <- suppressWarnings(ComputeExonicBackground(data = tTEobject@assays$CodonUsage))
 
   # CASE 1: no error - default
   expect_no_error(suppressWarnings(ComputeCorrelationBackground(mean = mean_codon_usage, background = exonic_background, corr_method = "spearman")))

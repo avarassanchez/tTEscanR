@@ -24,9 +24,9 @@
 #'                                        meta.data.ids = list("ConditionsLabels", "CorrectionFactor"))
 #' tTEscanR_obj <- ComputeCodonUsage(object = tTEscanR_obj, species = "hg38",
 #'                                   additional.metrics = FALSE)
-#' tTEscanR_obj <-  ExamineCodonPoolContribution(object = tTEscanR_obj, species = "hg38")
+#' tTEscanR_obj <-  ExaminePoolContribution(object = tTEscanR_obj, species = "hg38")
 
-ExamineCodonPoolContribution <- function(object, codon_freq = NULL, species = NULL, filter = "canonical", N = 10, corr_method = "spearman",
+ExaminePoolContribution <- function(object, codon_freq = NULL, species = NULL, filter = "canonical", N = 10, corr_method = "spearman",
                                          overwrite.assay = FALSE, overwrite.metadata = FALSE, verbose = TRUE){
 
   ###
@@ -111,15 +111,23 @@ ExamineCodonPoolContribution <- function(object, codon_freq = NULL, species = NU
     metadata_list[[paste("top", N, "GenesCodonPoolDiversity", sep = "")]] <- topN_codon_pool_diversity
   }
 
+  if (length(table(names(condition_correlations_to_mean_codon_usage) == removed_top_correlation_to_mean_codon_usage$condition)) == 1){
+    without_topN_codon_pool_diversity <- cbind(removed_top_correlation_to_mean_codon_usage, condition_correlations_to_mean_codon_usage)
+    metadata_list[[paste("NO_top", N, "GenesCodonPoolDiversity", sep = "")]] <- without_topN_codon_pool_diversity
+  }
+
   # metadata_list[["ConditionsCorrelationToMeanCodonUsage"]] <- condition_correlations_to_mean_codon_usage
   # metadata_list[[paste("CodonPoolDiversityVSCorrelation_Top", N, "Genes", sep = "")]] <- extract_topN_genes[[1]]
   # metadata_list[[paste("CodonPoolContributionTop", N, "Genes", sep = "")]] <- extract_topN_genes[[1]]$codon_diversity # included in topN_codon_pool_diversity
   metadata_list[[paste("PoolContributorTop", N, "Genes", sep = "")]] <- extract_topN_genes[[2]]
 
   metadata_list[["CodonPoolContribution"]] <- codon_pool_contribution
+
+  # Correlation values
   metadata_list[[paste("CorrelationTop", N, "Genes", sep = "")]] <- correl_codon_pool_mean
-  metadata_list[[paste("CodonPoolDiversityVSCorrelation_NO_Top", N, "Genes", sep = "")]] <- removed_top_correlation_to_mean_codon_usage[[1]]
   metadata_list[[paste("Correlation_NO_Top", N, "Genes", sep = "")]] <- correl_codon_pool_mean_no_topN
+
+  # metadata_list[[paste("NOtop", N, "GenesCodonPoolDiversity", sep = "")]] <- removed_top_correlation_to_mean_codon_usage
 
   object <- suppressMessages(Update_tTEscanR_Object(object = object, counts = codon_usage_size_corrected, assay = "SizeCorrectedCodonUsage", main_name = "CodonPoolContribution_Results",
                                                     meta.data = metadata_list, overwrite.assay = overwrite.assay, overwrite.metadata = overwrite.metadata))

@@ -1,7 +1,7 @@
 ComputeIndividualGeneCorrelation <- function(codon_usage, mean_codon_usage, corr_method){
 
   ###
-  # CALL: ExamineCodonPoolContribution()
+  # CALL: ExaminePoolContribution()
   # DESCRIPTION: Identification of outliers: calculate correlation of each condition's codon usage to the mean codon usage across conditions.
   # This function takes as input the size corrected codon usage matrix and the mean codon usage.
   # It correlates each individual codon usage value with the mean codon usage (reference).
@@ -25,7 +25,7 @@ ComputeIndividualGeneCorrelation <- function(codon_usage, mean_codon_usage, corr
 ComputeTopNGenes <- function(data, N){
 
   ###
-  # CALL: ExamineCodonPoolContribution()
+  # CALL: ExaminePoolContribution()
   # DESCRIPTION: This function takes each condition of the data and sorts the codons by their contribution and extracts the top N contributors.
   ###
 
@@ -49,7 +49,7 @@ ComputeTopNGenes <- function(data, N){
 ComputeWithoutTopNGenes <- function(data, codon_freq, mean_codon_usage, extract_topN_genes, corr_method){
 
   ###
-  # CALL: ExamineCodonPoolContribution()
+  # CALL: ExaminePoolContribution()
   # DESCRIPTION: This function computes the correlation between the codon usage matrix computed
   # without the top N gene codon pool contributors and the mean codon usage across conditions (baseline, considering all genes).
   ###

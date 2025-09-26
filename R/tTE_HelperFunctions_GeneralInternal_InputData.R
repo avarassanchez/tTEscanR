@@ -45,6 +45,8 @@ IdentifyInputFormat <- function(data, mode) {
     return("single")
   }
 
+  if (is.numeric(data) && mode == "flexible") return("single")
+
   stop("Incorrect `data` format.\nSupported formats: single vector, dataframe or matrix, or a list of these.")
 }
 

@@ -19,8 +19,8 @@ ExecuteDESeq2runner(
   color_factor = NULL,
   shape_factor = NULL,
   color_palette = NULL,
-  labels = FALSE,
   label_factor = NULL,
+  sig_axis = TRUE,
   verbose = TRUE
 )
 }
@@ -53,9 +53,9 @@ ExecuteDESeq2runner(
 
 \item{color_palette}{Optional; a \code{vector} of color codes to customize PCA plot appearance.}
 
-\item{labels}{Logical; if \code{TRUE} includes the data points labels in the PCA plot. Required if \code{PCA} is \code{TRUE}. Defaults to \code{FALSE}.}
+\item{label_factor}{Optional; name of the categorical variable to label the data points. Required if \code{PCA} is \code{TRUE}.}
 
-\item{label_factor}{Optional; name of the categorical variable to label the data points. Required if \code{PCA} and \code{labels} are \code{TRUE}.}
+\item{sig_axis}{Logical; if \code{TRUE} displays the axis of the plots based on \code{fc_threshold} and \code{pval_threshold}. Defaults to \code{TRUE}.}
 
 \item{verbose}{Logical; if \code{TRUE}, displays information messages. Defaults to \code{TRUE}.}
 }

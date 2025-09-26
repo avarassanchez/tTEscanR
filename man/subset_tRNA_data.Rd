@@ -4,11 +4,11 @@
 \name{subset_tRNA_data}
 \alias{subset_tRNA_data}
 \title{tRNA Expression Data Subset
-This dataset contains a subset of tRNA_data.}
+This dataset contains an example of tRNA gene expression data with tRNA genes as rows and cell types as columns.}
 \usage{
 data(subset_tRNA_data)
 }
 \description{
 tRNA Expression Data Subset
-This dataset contains a subset of tRNA_data.
+This dataset contains an example of tRNA gene expression data with tRNA genes as rows and cell types as columns.
 }

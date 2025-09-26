@@ -59,7 +59,7 @@ data(mRNA_data, tRNA_data, metadata)
 ```
 
 ```{r execute_workflow, message = FALSE, warning = FALSE}
-tTEobject <- Run_tTEscanR_pipeline(mRNA_data = mRNA_data,  tRNA_data = tRNA_data, metadata = metadata, species = "hg38", 
+tTEobject <- Run_tTEscanR_pipeline(mRNA_data = subset_mRNA_data,  tRNA_data = subset_tRNA_data, metadata = metadata, species = "hg38", 
                                    corr_factor = "tissue", runDESeq = FALSE, verbose = FALSE)
 ```
 
@@ -134,8 +134,7 @@ To enhance usability, parameters' names and structures have been kept **consiste
 |------------------------|-------------------------------------------------|
 | `data` | Properly formatted dataset |
 | `plot` | A character string indicating the type of plot to generate |
-| `panels` | Logical; if TRUE, splits the plot into multiple panels. Defaults to FALSE |
-| `ncols` | Numeric; Number of columns for arranging panels (if panels is enabled). Defaults to 1 |
+| `ncols` | Numeric; Number of columns for arranging panels. Defaults to 1 |
 | `x_axis_col` | Name of the column in data to use for the x-axis |
 | `y_axis_col` | Name of the column in data to use for the y-axis |
 | `condition_col` | Name of the column in data to use for coloring/grouping by condition |
@@ -163,9 +162,8 @@ In the example below, we visualize **normalized codon usage** across conditions 
 
 ```{r general_dist_plot, fig.width =  7, fig.height = 4, fig.align = 'center'}
 # Codon usage distribution plot (jitter)
-tTE_DistributionPlot(data = long_format_codon_usage,  plot = "jitter", panels = FALSE,
-                     x_axis_col = "codon", y_axis_col = "usage", condition_col = "tissue",
-                     show_legend = "right", add_titles = FALSE)
+tTE_DistributionPlot(data = long_format_codon_usage, plot = "jitter", x_axis_col = "codon", 
+                     y_axis_col = "usage", condition_col = "tissue", show_legend = "right", add_titles = FALSE)
 ```
 
 Alternatively, to reduce dataset complexity and enable more in-depth analysis, we can focus on a subset of **target conditions**. In this example, we restrict the analysis to spleen-derived cells, specifically selecting those belonging to the lymphoid and myeloid lineages. For this approach we can use a *barplot* plot mode.
@@ -187,9 +185,8 @@ To facilitate visualization, we enable the `panels` parameter in **`tTE_Distribu
 
 ```{r distribution_plot_barplot, fig.width =  7, fig.height = 4, fig.align = 'center'}
 # Codon usage distribution plot (barplot)
-tTE_DistributionPlot(data = long_format_codon_usage_subset, plot = "barplot",
-                     panels = TRUE, ncols = 1, x_axis_col = "codon", y_axis_col = "usage", 
-                     condition_col = "cell_type", show_legend = "none", add_titles = FALSE)
+tTE_DistributionPlot(data = long_format_codon_usage_subset, plot = "barplot", ncols = 1, facet_col = "cell_type", 
+                     x_axis_col = "codon", y_axis_col = "usage", condition_col = "cell_type", show_legend = "none", add_titles = FALSE)
 ```
 
 If, instead of comparing the distributions of two cell types within the same tissue, we want to explore how distributions vary across two different tissues, we can switch to the *boxplot* mode. This plot type summarizes the variation and central tendency of the data, making it easier to compare distribution between broader biological groups. 
@@ -216,7 +213,7 @@ In this example, we introduce a pre-defined `color_palette` to explicitly assign
 
 ```{r, fig.width =  6, fig.height = 4, fig.align = 'center'}
 # Codon usage distribution plot (barplot)
-tTE_DistributionPlot(data = long_format_codon_usage_tissues, plot = "boxplot", panels = FALSE, x_axis_col = "codon", y_axis_col = "usage",
+tTE_DistributionPlot(data = long_format_codon_usage_tissues, plot = "boxplot", x_axis_col = "codon", y_axis_col = "usage",
                      condition_col = "tissue", color_palette = c(Heart = "#de77ae", Spleen = "#7fbc41"), show_legend = "bottom", add_titles = FALSE)
 ```
 

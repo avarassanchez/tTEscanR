@@ -92,18 +92,20 @@ GetOutputName <- function(action, out_name, out_directory, save_format){
   return (output_file) # Returns the output name.
 }
 
-GenerateDistPlot <- function(level, target, data, x_axis_col, y_axis_col, color_palette, add_titles, show_legend, panels, ncols){
+GenerateDistPlot <- function(level, target, data, x_axis_col, y_axis_col, color_palette, add_titles, show_legend, ncols, bar_position, facet_col){
 
-  if (level == "jitter" || level == "line"){
+  if (level == "jitter"){
     plot <- ggplot2::ggplot(data = data, mapping = ggplot2::aes(x = .data[[x_axis_col]], y = .data[[y_axis_col]], color = .data[[target]]))
+  } else if (level == "line"){
+    plot <- ggplot2::ggplot(data = data, mapping = ggplot2::aes(x = .data[[x_axis_col]], y = .data[[y_axis_col]], group = .data[[target]], color = .data[[target]]))
   } else {
     plot <- ggplot2::ggplot(data = data, mapping = ggplot2::aes(x = .data[[x_axis_col]], y = .data[[y_axis_col]], fill = .data[[target]]))
   }
 
-  if(isTRUE(panels)) plot <- plot + ggplot2::facet_wrap(stats::as.formula(paste("~", target)), ncol = ncols)
+  if(!is.null(facet_col)) plot <- plot + ggplot2::facet_wrap(stats::as.formula(paste("~", facet_col)), ncol = ncols)
 
   if (level == "jitter") plot <- plot + ggplot2::geom_jitter(size = 0.5) + ggplot2::theme_bw()
-  if (level == "barplot") plot <- plot + ggplot2::geom_bar(stat = "identity", position = "dodge") +  ggplot2::theme_bw() # ENABLE TO CUSTOMIZE stat
+  if (level == "barplot") plot <- plot + ggplot2::geom_bar(stat = "identity", position = bar_position) +  ggplot2::theme_bw() # ENABLE TO CUSTOMIZE stat
   if (level == "boxplot") plot <- plot + ggplot2::geom_boxplot() + ggplot2::theme_bw() + ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, vjust = 0.5, hjust = 1))
   if (level == "line") plot <- plot + ggplot2::geom_line() + ggplot2::geom_point() + ggplot2::theme_bw() + ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, vjust = 0.5, hjust = 1), strip.text = ggplot2::element_blank())
 
@@ -166,18 +168,33 @@ DrawDonutPlot <- function(data, var_numerical, var_categorical, color_palette, s
   return(plot)
 }
 
-RadarPlot <- function(data, show_legend){
+DrawRadarPlot <- function(data, show_legend, var_color, var_categorical, var_numerical){
 
-  plot <- ggradar(data, background.circle.color = "white",
-                  gridline.min.linetype = 1, gridline.mid.linetype = 1, gridline.max.linetype = 1,
-                  legend_position = show_legend)
+  radar_data <- data %>%
+    dplyr::select(
+      .data[[var_color]],
+      .data[[var_categorical]],
+      .data[[var_numerical]]
+    ) %>%
+    tidyr::pivot_wider(
+      names_from  = .data[[var_categorical]],
+      values_from = .data[[var_numerical]],
+      values_fill = stats::setNames(list(0), var_numerical)
+    )
+
+  plot <- ggradar::ggradar(radar_data,
+                           background.circle.colour = "white",
+                           grid.min = 0, grid.mid = 0.5, grid.max = 1,
+                           gridline.min.linetype = 1, gridline.mid.linetype = 1, gridline.max.linetype = 1,
+                           group.line.width = 0,8, group.point.size = 2,
+                           legend.position = show_legend)
   return(plot)
-} # I NEED TO SOLVE THE PROBLEMS WITH THE ggradar PACKAGE REQUIRE TO DRAW TO PLOT !!!
+}
 
 GenerateProportionPlot <- function(level, data, var_numerical, var_categorical, var_color, color_palette, show_legend){
 
   if (level == "donut") plot <- DrawDonutPlot(data = data, var_numerical = var_numerical, var_categorical = var_categorical, color_palette = color_palette, show_legend = show_legend)
-  if (level == "radar") plot <- DrawRadarPlot(data = data, show_legend = show_legend)
+  if (level == "radar") plot <- DrawRadarPlot(data = data, show_legend = show_legend, var_color = var_color, var_categorical = var_categorical, var_numerical = var_numerical)
   if (level == "bar") plot <- DrawBarCountsPlot(data = data, var_numerical = var_numerical, var_categorical = var_categorical, var_color = var_color, color_palette = color_palette, show_legend = show_legend)
   return(plot)
 }

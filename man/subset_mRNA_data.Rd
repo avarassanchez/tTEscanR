@@ -4,11 +4,11 @@
 \name{subset_mRNA_data}
 \alias{subset_mRNA_data}
 \title{mRNA Expression Data Subset
-This dataset contains a subset of mRNA_data.}
+This dataset contains an example of mRNA gene expression data with protein-coding genes as rows and cell types as columns.}
 \usage{
 data(subset_mRNA_data)
 }
 \description{
 mRNA Expression Data Subset
-This dataset contains a subset of mRNA_data.
+This dataset contains an example of mRNA gene expression data with protein-coding genes as rows and cell types as columns.
 }

@@ -62,8 +62,8 @@ ComputeSizeCorrection <- function(data, metadata = NULL, corr_factor = NULL, red
 #' @param color_factor Optional; name of the categorical variable to group by color the data points. Required if \code{PCA} is \code{TRUE}.
 #' @param shape_factor Optional; name of the categorical variable to group by shape the data points. Required if \code{PCA} is \code{TRUE}.
 #' @param color_palette Optional; a \code{vector} of color codes to customize PCA plot appearance.
-#' @param labels Logical; if \code{TRUE} includes the data points labels in the PCA plot. Required if \code{PCA} is \code{TRUE}. Defaults to \code{FALSE}.
-#' @param label_factor Optional; name of the categorical variable to label the data points. Required if \code{PCA} and \code{labels} are \code{TRUE}.
+#' @param label_factor Optional; name of the categorical variable to label the data points. Required if \code{PCA} is \code{TRUE}.
+#' @param sig_axis Logical; if \code{TRUE} displays the axis of the plots based on \code{fc_threshold} and \code{pval_threshold}. Defaults to \code{TRUE}.
 #' @param verbose Logical; if \code{TRUE}, displays information messages. Defaults to \code{TRUE}.
 #'
 #' @return A \code{list} of outputs per each matrix in \code{list_data}, based on the enabled parameters: (i) heatmap, (ii) PCA plot, and (iii) size corrected \code{data}.
@@ -75,7 +75,7 @@ ComputeSizeCorrection <- function(data, metadata = NULL, corr_factor = NULL, red
 #'                                    metadata = metadata, corr_factor = "tissue")
 
 ExecuteDESeq2runner <- function(list_data, metadata, targets = NULL, target_factor = NULL, corr_factor = NULL, fc_threshold = 1, pval_threshold = 0.05, reduce = 100, heatmap = TRUE,
-                                PCA = TRUE, numPC = 2, color_factor = NULL, shape_factor = NULL, color_palette = NULL, labels = FALSE, label_factor = NULL, verbose = TRUE){
+                                PCA = TRUE, numPC = 2, color_factor = NULL, shape_factor = NULL, color_palette = NULL, label_factor = NULL, sig_axis = TRUE, verbose = TRUE){
 
   ###
   # CALL: User and Run_tTEscanR_pipeline()
@@ -92,8 +92,19 @@ ExecuteDESeq2runner <- function(list_data, metadata, targets = NULL, target_fact
                                                                           paste("Current `target_factor` =", target_factor, "not in `metadata`.\n"),
                                                                           paste("Consider as potential `target_factor`:", paste(colnames(metadata), collapse = ",")))
 
-  if (isTRUE(labels) && (is.null(label_factor) || !(label_factor %in% colnames(metadata)))){
-    message("No label_factor was input or it was not found in the metadata.\n", "The PCA plot(s) will not display any label.")
+  # if (isTRUE(labels) && (is.null(label_factor) || !(label_factor %in% colnames(metadata)))){
+  #   message("No label_factor was input or it was not found in the metadata.\n", "The PCA plot(s) will not display any label.")
+  #   labels <- FALSE
+  # }
+
+  if(!(is.null(label_factor))){
+    if (!(label_factor %in% colnames(metadata))){
+      message("The label_factor was not found in the metadata.\n", "The PCA plot(s) will not display any label.")
+      labels <- FALSE
+    } else {
+      labels <- TRUE
+    }
+  } else {
     labels <- FALSE
   }
 
@@ -102,7 +113,7 @@ ExecuteDESeq2runner <- function(list_data, metadata, targets = NULL, target_fact
   for (i in 1:length(list_data)){ # Iterates over the assays included in list_data
     message(paste("- Analyzing:", names(list_data)[i]))
     DESeq2_results_list[[names(list_data)[i]]] <- DESeq2runner(data = list_data[[i]], metadata = metadata, targets = targets, target_factor = target_factor, corr_factor = corr_factor,
-                                                               fc_threshold = fc_threshold, pval_threshold = pval_threshold, reduce = reduce, heatmap = heatmap, PCA = PCA, numPC = numPC,
+                                                               fc_threshold = fc_threshold, pval_threshold = pval_threshold, reduce = reduce, heatmap = heatmap, PCA = PCA, numPC = numPC, sig_axis = sig_axis,
                                                                color_factor = color_factor, shape_factor = shape_factor, color_palette = color_palette, labels = labels, label_factor = label_factor, verbose = verbose)
     message(paste("- COMPLETED analyzing:", names(list_data)[i]))
   }

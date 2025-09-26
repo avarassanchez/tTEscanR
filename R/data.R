@@ -1,26 +1,12 @@
-#' mRNA Expression Data
-#' This dataset contains mRNA expression levels for a sample of genes (symbol name) across various cell types.
-#' @name mRNA_data
-#' @docType data
-#' @usage data(mRNA_data)
-NULL
-
-#' tRNA Expression Data
-#' This dataset contains tRNA expression levels for a sample of genes across various cell types.
-#' @name tRNA_data
-#' @docType data
-#' @usage data(tRNA_data)
-NULL
-
 #' mRNA Expression Data Subset
-#' This dataset contains a subset of mRNA_data.
+#' This dataset contains an example of mRNA gene expression data with protein-coding genes as rows and cell types as columns.
 #' @name subset_mRNA_data
 #' @docType data
 #' @usage data(subset_mRNA_data)
 NULL
 
 #' tRNA Expression Data Subset
-#' This dataset contains a subset of tRNA_data.
+#' This dataset contains an example of tRNA gene expression data with tRNA genes as rows and cell types as columns.
 #' @name subset_tRNA_data
 #' @docType data
 #' @usage data(subset_tRNA_data)

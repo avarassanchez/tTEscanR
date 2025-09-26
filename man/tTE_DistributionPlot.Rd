@@ -7,11 +7,12 @@
 tTE_DistributionPlot(
   data,
   plot = "jitter",
+  bar_position = "dodge",
   x_axis_col,
   y_axis_col,
   condition_col,
-  panels = FALSE,
   ncols = 1,
+  facet_col = NULL,
   color_palette = NULL,
   targeted_arg = NULL,
   save_format = NULL,
@@ -26,15 +27,17 @@ tTE_DistributionPlot(
 
 \item{plot}{Either \code{"jitter"} (default), \code{"barplot"}, \code{"boxplot"} or \code{"line"} to indicate the type of plot to generate.}
 
+\item{bar_position}{Either \code{"dodge"} (default), \code{"stack"} or \code{"fill"} to indicate the display of the plot if \code{plot} is \code{line}.}
+
 \item{x_axis_col}{Name of the categorical variable to reflect in the plot.}
 
 \item{y_axis_col}{Name of the numerical variable to reflect in the plot.}
 
 \item{condition_col}{Name of the categorical variable to group the data points.}
 
-\item{panels}{Logical; if \code{TRUE}, splits the plot into multiple panels. Defaults to \code{FALSE}.}
+\item{ncols}{Numeric; number of columns for arranging panels. Defaults to 1.}
 
-\item{ncols}{Numeric; number of columns for arranging panels (if \code{panels} is enabled). Defaults to 1.}
+\item{facet_col}{Optional; name of the categorical variable to divide the plot into different panels. Required if \code{ncols} bigger than 1.}
 
 \item{color_palette}{Optional; a vector of color codes to customize plot appearance.}
 

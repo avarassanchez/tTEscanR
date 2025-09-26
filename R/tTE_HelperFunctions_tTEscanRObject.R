@@ -63,6 +63,7 @@ Update_tTEscanR_Object <- function(object, counts = NULL, assay = NULL, main_nam
   return(object) # The output is an updated tTEscanR object
 }
 
+
 DefineNewData <- function(object = NULL, slot = NULL, data, id = NULL, action.update = FALSE, overwrite = FALSE, main.name = NULL, mode, verbose){
 
   ###

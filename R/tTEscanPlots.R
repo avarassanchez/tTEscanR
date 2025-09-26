@@ -9,13 +9,14 @@
 #'
 #' @param data A long format table. This format can be obtained using \code{\link{DataToLongFormat}}.
 #' @param plot Either \code{"jitter"} (default), \code{"barplot"}, \code{"boxplot"} or \code{"line"} to indicate the type of plot to generate.
+#' @param bar_position Either \code{"dodge"} (default), \code{"stack"} or \code{"fill"} to indicate the display of the plot if \code{plot} is \code{line}.
 #' @param x_axis_col Name of the categorical variable to reflect in the plot.
 #' @param y_axis_col Name of the numerical variable to reflect in the plot.
 #' @param condition_col Name of the categorical variable to group the data points.
 #' @param color_palette Optional; a vector of color codes to customize plot appearance.
 #' @param targeted_arg Optional; a vector defining key feature clusters to highlight or label.
-#' @param panels Logical; if \code{TRUE}, splits the plot into multiple panels. Defaults to \code{FALSE}.
-#' @param ncols Numeric; number of columns for arranging panels (if \code{panels} is enabled). Defaults to 1.
+#' @param ncols Numeric; number of columns for arranging panels. Defaults to 1.
+#' @param facet_col Optional; name of the categorical variable to divide the plot into different panels. Required if \code{ncols} bigger than 1.
 #' @param save_format Optional; either \code{"png"} or \code{"pdf"} to specify the format to save the plot.
 #' @param out_name Optional; name for the saved plot (if \code{save_format} specified).
 #' @param out_directory Optional; path to the directory where the plot will be saved (if \code{save_format} specified).
@@ -25,8 +26,8 @@
 #' @return A \code{ggplot} object representing the requested distribution plot. If \code{save_format} is provided, the plot will also be saved to the specified location.
 #' @export
 
-tTE_DistributionPlot <- function(data, plot = "jitter", x_axis_col, y_axis_col, condition_col, panels = FALSE, ncols = 1, color_palette = NULL, targeted_arg = NULL,
-                                 save_format = NULL, out_name = NULL, out_directory = NULL, show_legend = "none", add_titles = TRUE) {
+tTE_DistributionPlot <- function(data, plot = "jitter", bar_position = "dodge", x_axis_col, y_axis_col, condition_col, ncols = 1, facet_col = NULL,
+                                 color_palette = NULL, targeted_arg = NULL, save_format = NULL, out_name = NULL, out_directory = NULL, show_legend = "none", add_titles = TRUE) {
 
   ###
   # DESCRIPTION: This function takes a long format data expressing the usage of different features across a set of conditions.
@@ -36,9 +37,17 @@ tTE_DistributionPlot <- function(data, plot = "jitter", x_axis_col, y_axis_col, 
   CheckDataInLongFormat(data) # Data in long format.
   CheckValueInData(param = "plot", observed = plot, expected = c("jitter", "boxplot", "barplot", "line")) # Valid plot layout
   CheckValueInData(param = "_col", observed = c(x_axis_col, y_axis_col, condition_col), expected = colnames(data)) # All columns present in data
+
+  if (!is.null(facet_col)){
+    CheckValueInData(param = "_col", observed = c(facet_col), expected = colnames(data))
+    if (is.numeric(data[[facet_col]])) stop(paste("Error in `data`: Column", facet_col, "is not categorical."))
+  }
+
+  if (!show_legend %in% c("none", "top", "bottom", "right", "left")) stop("Please specify a suitable `show_legend` parameter.\nSupported formats: none, top, bottom, right or left.")
   if (!(is.numeric(data[[y_axis_col]]))) stop(paste("Error in `data`: Column", y_axis_col, "is not numeric."))
   if (is.numeric(data[[x_axis_col]])) stop(paste("Error in `data`: Column", x_axis_col, "is not categorical."))
   if (is.numeric(data[[condition_col]])) stop(paste("Error in `data`: Column", condition_col, "is not categorical."))
+  if (!bar_position %in% c("stack", "dodge", "fill")) stop("Please specify a suitable `bar_position` parameter.\nSupported formats: stack, dodge or fill.")
 
   target <- condition_col
 
@@ -63,7 +72,8 @@ tTE_DistributionPlot <- function(data, plot = "jitter", x_axis_col, y_axis_col, 
   }
 
   # Customization
-  plot <- GenerateDistPlot(level = plot, target = target, data = data, x_axis_col = x_axis_col, y_axis_col = y_axis_col, color_palette = color_palette, add_titles = add_titles, show_legend = show_legend, panels = panels, ncols = ncols)
+  plot <- GenerateDistPlot(level = plot, target = target, data = data, x_axis_col = x_axis_col, y_axis_col = y_axis_col, color_palette = color_palette,
+                           add_titles = add_titles, show_legend = show_legend, ncols = ncols, facet_col = facet_col, bar_position = bar_position)
   if (!(is.null(save_format))) SavePlot(plot = plot, save_format = save_format, out_name = out_name, out_directory = out_directory)
 
   return(plot) # Returns the generated plot and exports a file if enabled.
@@ -280,16 +290,20 @@ tTE_CorrelationPlot <- function(data, plot = "MeanCodonUsage", x_axis_col, y_axi
   ###
 
   plot_type <- plot
-  if(is.null(label_col)) label_col <- condition_col
 
   # Checking the input parameters
   if (!(plot_type %in% c("MeanCodonUsage", "PoolDiversity"))) stop("Please use MeanCodonUsage or PoolDiversity as `plot`.") # Suitable plot
   CheckDataInLongFormat(data) # Data in long format.
-  CheckValueInData(param = "_col", observed = colnames(data), expected = c(x_axis_col, y_axis_col, condition_col, label_col)) # Columns present in data
+  if (is.null(label_col)){
+    CheckValueInData(param = "_col", expected = colnames(data), observed = c(x_axis_col, y_axis_col, condition_col)) # Columns present in data
+  } else {
+    CheckValueInData(param = "_col", expected = colnames(data), observed = c(x_axis_col, y_axis_col, condition_col, label_col)) # Columns present in data
+    if (is.numeric(data[[label_col]])) stop(paste("Error in `data`: Column", label_col, "is not categorical."))
+  }
+
   if (!(is.numeric(data[[y_axis_col]]))) stop(paste("Error in `data`: Column", y_axis_col, "is not numeric."))
   if (!(is.numeric(data[[x_axis_col]]))) stop(paste("Error in `data`: Column", x_axis_col, "is not numeric"))
   if (is.numeric(data[[condition_col]])) stop(paste("Error in `data`: Column", condition_col, "is not categorical."))
-  if (is.numeric(data[[label_col]])) stop(paste("Error in `data`: Column", label_col, "is not categorical."))
 
   target <- condition_col
 
@@ -316,13 +330,17 @@ tTE_CorrelationPlot <- function(data, plot = "MeanCodonUsage", x_axis_col, y_axi
   if (is.null(color_palette) && (length(unique(data[[target]])) < 36)) color_palette <- gradual_groups_35
 
   # Generate the plot
-  plot <- ggplot2::ggplot(data = data, mapping = ggplot2::aes(x = .data[[x_axis_col]], y = .data[[y_axis_col]], label = .data[[label_col]], color = .data[[target]]))
+  if (is.null(label_col)){
+    plot <- ggplot2::ggplot(data = data, mapping = ggplot2::aes(x = .data[[x_axis_col]], y = .data[[y_axis_col]], color = .data[[target]]))
+  } else {
+    plot <- ggplot2::ggplot(data = data, mapping = ggplot2::aes(x = .data[[x_axis_col]], y = .data[[y_axis_col]], label = .data[[label_col]], color = .data[[target]]))
+  }
 
   # Customization:
   if (!(is.null(color_palette))) plot <- plot + ggplot2::scale_color_manual(values = color_palette) # Considering the user's color_palette (if any)
   plot <- plot + ggplot2::theme_bw() + ggplot2::geom_point(size = 3)
   if (plot_type == "MeanCodonUsage") plot <- plot + ggplot2::geom_abline(slope = 1, intercept = 0)
-  plot <- plot + ggrepel::geom_text_repel(max.overlaps = 10)
+  if (!is.null(label_col)) plot <- plot + ggrepel::geom_text_repel(max.overlaps = 10)
 
   if (isTRUE(add_titles)){
     if(plot_type == "MeanCodonUsage") plot <- plot + ggplot2::labs(title = "Codon frequencies of exonic background \n vs. mean codon usage across conditions", x = "Mean codon usage across conditions", y = "Codon usage of exonic background")
@@ -332,7 +350,7 @@ tTE_CorrelationPlot <- function(data, plot = "MeanCodonUsage", x_axis_col, y_axi
   if (!(is.null(extra_val))){
     if (plot_type == "MeanCodonUsage") coord_values <- list(x = 0.047, y = 0.001)
     if (plot_type == "PoolDiversity") coord_values <- list(x = 0.95, y = 0.85)
-    plot <- plot + ggplot2::annotate("text", x = coord_values$x, y = coord_values$y, label = sprintf("rho == %f", extra_val), parse = TRUE)
+    if (!is.null(label_col)) plot <- plot + ggplot2::annotate("text", x = coord_values$x, y = coord_values$y, label = sprintf("rho == %f", extra_val), parse = TRUE)
   }
 
   plot <- plot + ggplot2::theme(legend.position = show_legend)

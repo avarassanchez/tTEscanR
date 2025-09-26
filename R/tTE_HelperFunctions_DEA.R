@@ -1,4 +1,4 @@
-DESeq2runner <- function(data, metadata, corr_factor = NULL, targets = NULL, target_factor = NULL, fc_threshold, pval_threshold, reduce,
+DESeq2runner <- function(data, metadata, corr_factor = NULL, targets = NULL, target_factor = NULL, fc_threshold, pval_threshold, reduce, sig_axis = TRUE,
                          heatmap = TRUE, PCA = TRUE, numPC = 2, color_factor = NULL, shape_factor = NULL, color_palette = NULL, labels = FALSE, label_factor = NULL, verbose = TRUE){
 
   ###
@@ -49,7 +49,6 @@ DESeq2runner <- function(data, metadata, corr_factor = NULL, targets = NULL, tar
       if (verbose) message("- Running principal component analysis with ", numPC, " principal components.")
       PCA_results <- RunPCA(data = vst, metadata = filtered[[2]], numPC = numPC, color_factor = color_factor, shape_factor = shape_factor,
                             color_palette = color_palette, labels = labels, label_factor = label_factor, verbose = verbose)
-
       results.list <- append(results.list, PCA_results)
     }
 
@@ -63,8 +62,8 @@ DESeq2runner <- function(data, metadata, corr_factor = NULL, targets = NULL, tar
 
     if (verbose) message("- Executing a targeted analysis.\n", "- In this analysis no heatmap or PCA plot will be produced.\n", "- A volcano plot will be generated instead.")
 
-    lvls <- levels(SummarizedExperiment::colData(DESeq2_run[[1]])$class) # Get all the levels in the contrast vector
-    combs <- utils::combn(lvls, 2, simplify = FALSE) # Define all the pairwise comparisons: target vs others, target vs target
+    levels <- levels(SummarizedExperiment::colData(DESeq2_run[[1]])$class) # Get all the levels in the contrast vector
+    combs <- utils::combn(levels, 2, simplify = FALSE) # Define all the pairwise comparisons: target vs others, target vs target
 
     results.list <- list() # Define empty list to store the results
 
@@ -85,7 +84,7 @@ DESeq2runner <- function(data, metadata, corr_factor = NULL, targets = NULL, tar
       results.list[[paste0("results_", contrast_name)]] <- target_results_tibble # Store the results
 
       if (verbose) message("- Generating volcano plot.")
-      volcano_plot <- GenerateVolcanoPlot(data = target_results_tibble, fc_threshold = fc_threshold, pval_threshold = pval_threshold) + ggplot2::ggtitle(contrast_name)  # give each plot a title
+      volcano_plot <- GenerateVolcanoPlot(data = target_results_tibble, fc_threshold = fc_threshold, pval_threshold = pval_threshold, sig_axis = sig_axis) + ggplot2::ggtitle(contrast_name)  # give each plot a title
       results.list[[paste0("volcano_", contrast_name)]] <- volcano_plot
     }
 
@@ -140,7 +139,7 @@ ComputeDESeq2 <- function(data, metadata, corr_factor, targets, target_factor, r
   if (is.null(targets)) return(DESeq2_run) else return(list(DESeq2_run, contrast_vect)) # When performing a targeted approach, report the table with the amount of entries per condition
 }
 
-GenerateVolcanoPlot <- function(data, fc_threshold, pval_threshold){
+GenerateVolcanoPlot <- function(data, fc_threshold, pval_threshold, sig_axis){
 
   ###
   # CALL: DESeq2runner()
@@ -150,9 +149,20 @@ GenerateVolcanoPlot <- function(data, fc_threshold, pval_threshold){
   volcano_plot <- ggplot2::ggplot() + ggplot2::theme_bw() +
     ggplot2::geom_point(data = data, mapping = ggplot2::aes(x = .data$log2_FC, y = .data$neg_log10_adjusted_p_value), color = "black", alpha = 0.5) +
     ggplot2::geom_point(data = dplyr::filter(data, abs(.data$log2_FC) > fc_threshold, .data$neg_log10_adjusted_p_value > -log10(pval_threshold)),
-                        mapping = ggplot2::aes(x = .data$log2_FC, y = .data$neg_log10_adjusted_p_value), size = 3) +
-    # ggrepel::geom_text_repel(data = dplyr::filter(data, abs(.data$log2_FC) > fc_threshold, .data$neg_log10_adjusted_p_value > -log10(pval_threshold)),
-    #                          mapping = ggplot2::aes(x = .data$log2_FC, y = .data$neg_log10_adjusted_p_value, label = .data$feature), size = 2) +
+                        mapping = ggplot2::aes(x = .data$log2_FC, y = .data$neg_log10_adjusted_p_value), size = 3) # +
+
+  if (isTRUE(sig_axis)){ # Highlight only the significant data points
+    volcano_plot <- volcano_plot +
+      ggrepel::geom_text_repel(data = dplyr::filter(data, abs(.data$log2_FC) > fc_threshold, .data$neg_log10_adjusted_p_value > -log10(pval_threshold)),
+                               mapping = ggplot2::aes(x = .data$log2_FC, y = .data$neg_log10_adjusted_p_value, label = .data$feature), size = 2) # +
+  } else { # Limit the axis based on the min and max values of the input data
+    x_range <- range(data$log2_FC, na.rm = TRUE)
+    y_range <- range(data$neg_log10_adjusted_p_value, na.rm = TRUE)
+    volcano_plot <- volcano_plot + ggplot2::coord_cartesian(xlim = x_range, ylim = y_range)
+  }
+
+
+  volcano_plot <- volcano_plot +
     ggrepel::geom_text_repel(data = data, mapping = ggplot2::aes(x = .data$log2_FC, y = .data$neg_log10_adjusted_p_value, label = .data$feature), size = 2) +
     ggplot2::geom_abline(slope = 0, intercept = -log10(pval_threshold), linetype = "dotted") +
     ggplot2::geom_vline(xintercept = -1 * fc_threshold, linetype = "dotted") +

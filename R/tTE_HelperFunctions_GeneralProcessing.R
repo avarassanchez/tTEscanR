@@ -141,3 +141,90 @@ DataToLongFormat <- function(data, normalize, rownames_to_column, names_to, valu
   CheckDataFrame(long_format) # Evaluate that the data is properly defined
   return(long_format) # Returns the processed data (long-format and normalized if applicable).
 }
+
+#' Combine large matrices
+#' @description
+#' This function efficiently combines individual matrices.
+#'
+#' @param ... Variable number of \code{matrix}.
+#'
+#' @return Single sparse matrix with as a combination of all the input matrices.
+#' @export
+#'
+#' @examples
+#' df1 <- matrix(c(1, 0, 0, 2), nrow = 2, dimnames = list(c("geneA", "geneB"), c("s1", "s2")))
+#' df2 <- matrix(c(3, 0, 0, 4), nrow = 2, dimnames = list(c("geneB", "geneC"), c("s2", "s3")))
+#' merged_matrix <- MergeLargeMatrices(df1, df2)
+
+MergeLargeMatrices <- function(...) {
+
+  cnnew <- character()
+  rnnew <- character()
+  x <- numeric()
+  i <- numeric()
+  j <- numeric()
+
+  # Iterates over each matrices passed
+  for (df in list(...)) {
+    cnold <- colnames(df)
+    rnold <- rownames(df)
+
+    # Collect the names of the rows and columns
+    cnnew <- union(cnnew, cnold)
+    rnnew <- union(rnnew, rnold)
+
+    cindnew <- match(cnold, cnnew)
+    rindnew <- match(rnold, rnnew)
+
+    # Finds non-zero values
+    non_zero <- which(df != 0, arr.ind = TRUE)
+    i <- c(i, rindnew[non_zero[, 1]])
+    j <- c(j, cindnew[non_zero[, 2]])
+    x <- c(x, df[non_zero])
+  }
+
+  # Create sparse matrix - memory-efficient, only the non-zero values are stored
+  result_df <- Matrix::sparseMatrix(i = i, j = j, x = x, dims = c(length(rnnew), length(cnnew)), dimnames = list(rnnew, cnnew))
+
+  return(result_df)
+}
+
+#' Aggreggates data by group
+#' @description
+#' This function calculates the row sums of a given matrix to combine columns that share the same group.
+#'
+#' @param data A \code{matrix} with the features to group for as columns.
+#' @param group.labels A \code{vector} with the metadata features to group the columns in \code{data}
+#'
+#' @return A matrix with the conditions merged based on the metadata.
+#' @export
+#'
+#' @examples
+#' data <- data.frame(sample_1 = c(10, 5, 20), sample_2 = c(15, 8, 25),
+#'                    sample_3 = c(12, 6, 22), sample_4 = c(1, 2, 3),
+#'                    sample_5 = c(4, 5, 6), sample_6 = c(7, 8, 9))
+#' rownames(data) <- c("gene_1", "gene_2", "gene_3")
+#' groups <- c("cond_A", "cond_A", "cond_A", "cond_B", "cond_B", "cond_B")
+#' data_combined <- GroupConditions(data = data, group.labels = groups)
+
+GroupConditions <- function(data, group.labels) {
+
+  # Internal function to calculate the sums of the rows
+  FUN <- function(x) Matrix::rowSums(as.matrix(data))
+
+  # Identify the unique group labels
+  group.lbls.uniq <- unique(group.labels)
+  group.lbls.uniq <- split(group.lbls.uniq, 1:length(group.lbls.uniq))
+
+  res <- lapply(group.lbls.uniq, function(lbl) FUN(data[, group.labels==lbl])) # Iterate through each unique group label
+
+  # Combines the results into a single dataframe
+  res <- dplyr::bind_cols(res)
+  res <- as.data.frame(res)
+
+  # Assign the rows and column names
+  row.names(res) <- row.names(data)
+  colnames(res) <- unlist(group.lbls.uniq)
+
+  return(res)
+}

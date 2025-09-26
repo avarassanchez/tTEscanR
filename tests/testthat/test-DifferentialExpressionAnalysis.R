@@ -4,7 +4,7 @@ test_that("The differential expression analysis is correctly executed (individua
 
   # CASE 1 - controls
   expect_no_error(suppressWarnings(DESeq2runner(data = subset_mRNA_data, metadata = metadata, corr_factor = "tissue", heatmap = TRUE, PCA = TRUE, color_factor = "tissue")))
-  expect_no_error(suppressWarnings(DESeq2runner(data = subset_mRNA_data, metadata = metadata, corr_factor = "tissue", numPC = 3, color_factor = "tissue", labels = TRUE, label_factor = "cell.type")))
+  expect_no_error(suppressWarnings(DESeq2runner(data = subset_mRNA_data, metadata = metadata, corr_factor = "tissue", numPC = 3, color_factor = "tissue", label_factor = "cell.type")))
   # CASE 2 - missing required parameters
   expect_no_error(suppressWarnings(DESeq2runner(data = subset_mRNA_data, metadata = metadata, corr_factor = "tissue", heatmap = FALSE, PCA = FALSE))) # color_factor missing
   expect_error(suppressWarnings(DESeq2runner(data = subset_mRNA_data, metadata = metadata))) # color_factor missing
@@ -27,7 +27,7 @@ test_that("The differential expression analysis is correctly executed (multiple)
   # CASE 1 - controls
   expect_no_error(suppressWarnings(ExecuteDESeq2runner(list_data = list(mRNA = subset_mRNA_data), metadata = metadata, corr_factor = "tissue")))
   expect_no_error(suppressWarnings(ExecuteDESeq2runner(list_data = list(mRNA = subset_mRNA_data), metadata = metadata, corr_factor = "tissue", color_factor = "tissue")))
-  expect_no_error(suppressWarnings(ExecuteDESeq2runner(list_data = list(mRNA = subset_mRNA_data), metadata = metadata, corr_factor = "tissue", color_factor = "tissue", labels = TRUE)))
+  expect_no_error(suppressWarnings(ExecuteDESeq2runner(list_data = list(mRNA = subset_mRNA_data), metadata = metadata, corr_factor = "tissue", color_factor = "tissue")))
 
   # CASE 2
   expect_no_error(suppressWarnings(ExecuteDESeq2runner(list_data = list(mRNA = subset_mRNA_data), metadata = metadata, corr_factor = "tissue"))) # color_factor missing

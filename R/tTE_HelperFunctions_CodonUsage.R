@@ -17,9 +17,9 @@ NULL
 #' tTEscanR_obj <- Create_tTEscanR_Object(counts = subset_mRNA_data, assay = "mRNA")
 #' tTEscanR_obj <- ComputeCodonUsage(object = tTEscanR_obj, species = "hg38",
 #'                                   additional.metrics = FALSE, reduce = 1000)
-#' exonic_background <- ComputeCodonExonicBackground(data = tTEscanR_obj@assays$CodonUsage)
+#' exonic_background <- ComputeExonicBackground(data = tTEscanR_obj@assays$CodonUsage)
 
-ComputeCodonExonicBackground <- function(data){
+ComputeExonicBackground <- function(data){
 
   ###
   # CALL: User and ComputeAdditionalMetrics_CodonUsage()
@@ -37,7 +37,7 @@ ComputeCodonExonicBackground <- function(data){
 #' It provides a metric for evaluating how much codon usage is driven by underlying sequence composition versus condition-specific expression.
 #'
 #' @param mean A \code{matrix} representing mean codon usage across condition. Can be computed using \code{\link{ComputeMeanUsage}}.
-#' @param background A \code{matrix} or table representing codon frequencies in exonic regions. Can be computed using \code{\link{ComputeCodonExonicBackground}}.
+#' @param background A \code{matrix} or table representing codon frequencies in exonic regions. Can be computed using \code{\link{ComputeExonicBackground}}.
 #' @param corr_method A correlation method accepted by \code{\link{cor}}. Defaults to \code{"spearman"}.
 #'
 #' @return Integer; correlation information between \code{mean} and \code{background}.
@@ -48,7 +48,7 @@ ComputeCodonExonicBackground <- function(data){
 #' tTEscanR_obj <- Create_tTEscanR_Object(counts = subset_mRNA_data, assay = "mRNA")
 #' tTEscanR_obj <- ComputeCodonUsage(object = tTEscanR_obj, species = "hg38",
 #'                                   additional.metrics = FALSE, reduce = 1000)
-#' exonic_background <- ComputeCodonExonicBackground(data = tTEscanR_obj@assays$CodonUsage)
+#' exonic_background <- ComputeExonicBackground(data = tTEscanR_obj@assays$CodonUsage)
 #' # Input: expression count matrix, need to provide metadata and corr_factor parameters
 #' mean_codon_usage <- ComputeMeanUsage(data = tTEscanR_obj@assays$CodonUsage,
 #'                                      mode = "raw", metadata = metadata,
@@ -217,7 +217,7 @@ ComputeAdditionalMetrics_CodonUsage <- function(codon_usage, codon_freq, metadat
 
   # CODON EXONIC BACKGROUND
   if (verbose) message("- Computing the codon exonic background.")
-  codon_exonic_background <- ComputeCodonExonicBackground(data = codon_freq)
+  codon_exonic_background <- ComputeExonicBackground(data = codon_freq)
   if (is.null(codon_exonic_background)) stop("The codon exonic background could not be computed.")
 
   # MEAN CODON USAGE
