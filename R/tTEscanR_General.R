@@ -74,7 +74,7 @@ Run_tTEscanR_pipeline <- function(mRNA_data, tRNA_data, metadata,
     all_DESeq2 <- list(mRNA = tTEscanR_obj@assays$mRNA, CodonUsage = tTEscanR_obj@assays$CodonUsage, AADemand = tTEscanR_obj@assays$AADemand,
                        tRNA = tTEscanR_obj@assays$tRNA, AnticodonUsage = tTEscanR_obj@assays$AnticodonUsage, AASupply = tTEscanR_obj@assays$AASupply)
 
-    DESeq2_results <- suppressMessages(ExecuteDESeq2runner(list_data = all_DESeq2, metadata = tTEscanR_obj@meta.data$ConditionsLabels, corr_factor = tTEscanR_obj@meta.data$CorrectionFactor))
+    DESeq2_results <- suppressMessages(RunDEAnalysis(list_data = all_DESeq2, metadata = tTEscanR_obj@meta.data$ConditionsLabels, corr_factor = tTEscanR_obj@meta.data$CorrectionFactor))
     tTEscanR_obj <- suppressMessages(Update_tTEscanR_Object(object = tTEscanR_obj, main_name = "Results_runDESeq", meta.data = DESeq2_results))
 
     count <- count + 1

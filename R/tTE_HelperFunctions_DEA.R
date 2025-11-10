@@ -1,99 +1,170 @@
-DESeq2runner <- function(data, metadata, corr_factor = NULL, targets = NULL, target_factor = NULL, fc_threshold, pval_threshold, reduce, sig_axis = TRUE,
-                         heatmap = TRUE, PCA = TRUE, numPC = 2, color_factor = NULL, shape_factor = NULL, color_palette = NULL, labels = FALSE, label_factor = NULL, verbose = TRUE){
+TargetedApproach <- function(DESeq2_run, verbose = TRUE, fc_threshold, pval_threshold, sig_axis, target_factor) {
 
-  ###
-  # CALL: ExecuteDESeq2runner()
-  # DESCRIPTION: This function runs the DESeq2 analysis over an individual data input.
-  # It will be called as many times as datasets included in the `list_data` parameter in ExecuteDESeq2runner().
-  # The input parameters are checked in the main function ExecuteDESeq2runner().
-  # Returns a list with the corresponding outcomes, depends on the analysis approach (exploratory or targeted).
-  ###
+  if (verbose) message("- Executing a targeted analysis.\n", "- In this analysis no heatmap or PCA plot will be produced.\n", "- A volcano plot will be generated instead.")
 
-  # Check the consistency in the conditions included in the data and metadata - If needed filters them accordingly
-  if (verbose) message("- Filtering (if necessary) the `data` and `metadata` for common features.")
-  filtered <- FilterByMetadata(data = data, metadata = metadata, verbose = verbose)
-  # data <- filtered[[1]] metadata_filtered <- filtered[[2]]
+  SummarizedExperiment::colData(DESeq2_run)[[target_factor]] <- factor(SummarizedExperiment::colData(DESeq2_run)[[target_factor]])
+  levels <- levels(SummarizedExperiment::colData(DESeq2_run)[[target_factor]])
 
-  results.list <- list() # Create empty list to store the results
+  res_names <- DESeq2::resultsNames(DESeq2_run) # Get all results names
+  combs <- utils::combn(levels, 2, simplify = FALSE) # Generate all pairwise combinations
 
-  if (verbose) message("- Running differential expression analysis.")
-  DESeq2_run <- suppressWarnings(ComputeDESeq2(data = filtered[[1]], metadata = filtered[[2]], corr_factor = corr_factor, targets = targets, target_factor = target_factor, reduce = reduce, verbose = verbose))
-  if (verbose) message("- Differential expression analysis completed.")
+  results.list <- list()
 
-  if (is.null(targets)){ # EXPLORATORY ANALYSIS (NO TARGETS)
-    if (verbose) message("- Computing variance stabilization.")
-    vst <- DESeq2::varianceStabilizingTransformation(DESeq2_run)
-    vst <- SummarizedExperiment::assay(vst)
-    CheckDataFrame(data = vst)
-
-    if (heatmap == TRUE){
-      if (verbose) message("- Generating heatmap with Euclidean distances.")
-      Dist_heatmap <- ProduceHeatmapDiffExp(data = vst)
-      Dist_heatmap <- grDevices::recordPlot()
-      results.list <- append(results.list, Dist_heatmap)
-    }
-
-    if (PCA == TRUE){
-      if (numPC < 2) message("- Invalid `numPC` given, the default `numPC = 2` will be used instead.")
-
-      if (is.null(color_factor)){ # Select the color_factor to use in the PCA plot
-        color_factor <- corr_factor
-        message("- No `color_factor` has been given as input, the `corr_factor` will be used instead.")
-      }
-
-      # Check points:
-      if (!(is.character(color_factor))) color_factor <- as.character(color_factor)
-      if (!(color_factor %in% colnames(filtered[[2]]))) stop("Please specify a `color_factor` parameter present in the `metadata` used as input.")
-      if(!(is.null(shape_factor)) && !(shape_factor %in% colnames(filtered[[2]]))) stop("Please specify a `shape_factor` parameter present in the `metadata` used as input.")
-
-      if (verbose) message("- Running principal component analysis with ", numPC, " principal components.")
-      PCA_results <- RunPCA(data = vst, metadata = filtered[[2]], numPC = numPC, color_factor = color_factor, shape_factor = shape_factor,
-                            color_palette = color_palette, labels = labels, label_factor = label_factor, verbose = verbose)
-      results.list <- append(results.list, PCA_results)
-    }
-
-    if (verbose) message("- Computing size correction to account for sequencing depth.")
-    size_corrected_output_matrix <- suppressMessages(DESeq2::counts(DESeq2_run, normalized = TRUE))
-    CheckDataFrame(data = size_corrected_output_matrix)
-
-    results.list <- append(results.list, size_corrected_output_matrix)
-
-  } else{ # TARGETED ANALYSIS
-
-    if (verbose) message("- Executing a targeted analysis.\n", "- In this analysis no heatmap or PCA plot will be produced.\n", "- A volcano plot will be generated instead.")
-
-    levels <- levels(SummarizedExperiment::colData(DESeq2_run[[1]])$class) # Get all the levels in the contrast vector
-    combs <- utils::combn(levels, 2, simplify = FALSE) # Define all the pairwise comparisons: target vs others, target vs target
-
-    results.list <- list() # Define empty list to store the results
-
-    for (cmb in combs) { # Iterate through each pairwise comparison
-      contrast <- c("class", cmb[1], cmb[2])
-      contrast_name <- paste(cmb[1], "vs", cmb[2], sep = "_")
-
-      if (verbose) message("Processing contrast: ", contrast_name)
-
-      target_DESeq2_results <- as.data.frame(DESeq2::results(DESeq2_run[[1]], contrast = contrast)) # Run DESeq2 results
-
-      # Convert to tibble for plotting
-      target_results_tibble <- tibble::tibble(feature = rownames(target_DESeq2_results),
-                                              log2_FC = target_DESeq2_results$log2FoldChange,
-                                              neg_log10_adjusted_p_value = -log10(target_DESeq2_results$padj)) %>%
-        dplyr::filter(!is.na(.data$log2_FC) & !is.na(.data$neg_log10_adjusted_p_value))
-
-      results.list[[paste0("results_", contrast_name)]] <- target_results_tibble # Store the results
-
-      if (verbose) message("- Generating volcano plot.")
-      volcano_plot <- GenerateVolcanoPlot(data = target_results_tibble, fc_threshold = fc_threshold, pval_threshold = pval_threshold, sig_axis = sig_axis) + ggplot2::ggtitle(contrast_name)  # give each plot a title
-      results.list[[paste0("volcano_", contrast_name)]] <- volcano_plot
-    }
-
+  if (verbose) {
+    message("    Levels found in target factor: ", paste(levels, collapse = ", "))
+    message("    Number of pairwise combinations: ", length(combs))
   }
 
-  return(results.list) # Return list with the results based on the analysis approach
+  for (cmb in combs) {
+    # Construct possible result names
+    contrast_name_forward  <- paste0(target_factor, "_", cmb[2], "_vs_", cmb[1])
+    contrast_name_backward <- paste0(target_factor, "_", cmb[1], "_vs_", cmb[2])
+
+    # Check which one exists in resultsNames()
+    if (contrast_name_forward %in% res_names) {
+      contrast <- c(target_factor, cmb[2], cmb[1])
+      contrast_name <- paste(cmb[2], "vs", cmb[1], sep = "_")
+    } else if (contrast_name_backward %in% res_names) {
+      contrast <- c(target_factor, cmb[1], cmb[2])
+      contrast_name <- paste(cmb[1], "vs", cmb[2], sep = "_")
+    } else {
+      warning("Contrast ", cmb[1], " vs ", cmb[2], " not found in resultsNames(); skipping.")
+      next
+    }
+
+    if (verbose) message("Processing contrast: ", contrast_name)
+
+    target_DESeq2_results <- as.data.frame(DESeq2::results(DESeq2_run, contrast = contrast))
+
+    target_results_tibble <- tibble::tibble(
+      feature = rownames(target_DESeq2_results),
+      log2_FC = target_DESeq2_results$log2FoldChange,
+      neg_log10_adjusted_p_value = -log10(target_DESeq2_results$padj)
+    ) %>%
+      dplyr::filter(!is.na(.data$log2_FC) & !is.na(.data$neg_log10_adjusted_p_value))
+
+    results.list[[paste0("results_", contrast_name)]] <- target_results_tibble
+
+    if (verbose) message("- Generating volcano plot.")
+    volcano_plot <- GenerateVolcanoPlot( data = target_results_tibble, fc_threshold = fc_threshold, pval_threshold = pval_threshold, sig_axis = sig_axis) +
+      ggplot2::ggtitle(contrast_name)
+
+    results.list[[paste0("volcano_", contrast_name)]] <- volcano_plot
+  }
+
+  return(results.list)
 }
 
-ComputeDESeq2 <- function(data, metadata, corr_factor, targets, target_factor, reduce, verbose){
+ExploratoryApproach <- function(metadata, vst, heatmap = TRUE,
+                                dim.reduct = c("PCA", "UMAP", "tSNE"),
+                                numPC = 5, color_factor, shape_factor = NULL,
+                                label_factor = NULL, color_palette = NULL, verbose = TRUE) {
+
+  results.list <- list() # Store all outputs
+
+  # 1. Heatmap
+  if (heatmap) {
+    if (verbose) message("- Generating heatmap with Euclidean distances.")
+    heatmap_plot <- ProduceHeatmapDiffExp(data = vst)
+    heatmap_plot <- grDevices::recordPlot()
+    results.list[["heatmap"]] <- heatmap_plot
+  }
+
+  # 2. Dimensionality reduction plots
+  if (!missing(dim.reduct)) {
+    dim.reduct <- match.arg(dim.reduct)
+
+    if (dim.reduct == "PCA" & numPC < 2) {
+      message("- Invalid `numPC` given, using default `numPC = 2`.")
+      numPC <- 2
+    }
+
+    if (is.null(color_factor) || !(color_factor %in% colnames(metadata))) stop("Please specify a `color_factor` present in the `metadata`.")
+    if (!is.null(shape_factor) && !(shape_factor %in% colnames(metadata))) stop("Please specify a `shape_factor` present in the `metadata`.")
+    if (!is.null(label_factor) && !(label_factor %in% colnames(metadata))) stop("Please specify a `label_factor` present in the `metadata`.")
+
+    if (verbose) message("- Running dimensionality reduction: ", dim.reduct)
+
+    dim_plots <- RunDimReduct(vst = vst, metadata = metadata, color_factor = color_factor,
+                              shape_factor = shape_factor,  label_factor = label_factor,
+                              color_palette = color_palette, dim.reduct = dim.reduct, numPC = numPC)
+
+    results.list[["dim_reduction"]] <- dim_plots
+  }
+
+  return(results.list)
+}
+
+MakeScatterPlot <- function(df, x_col, y_col, color_factor, shape_factor = NULL, label_factor = NULL, title = NULL, color_palette = NULL) {
+
+  # Helper function to generate scatter plots
+  p <- ggplot2::ggplot(df, ggplot2::aes(x = .data[[x_col]], y = .data[[y_col]], color = .data[[color_factor]]))
+  if (!is.null(shape_factor)) p <- p + ggplot2::aes(shape = .data[[shape_factor]])
+  if (!is.null(label_factor)) p <- p + ggrepel::geom_text_repel(ggplot2::aes(label = .data[[label_factor]]),
+                                                                size = 2, show.legend = FALSE)
+  p <- p + ggplot2::geom_point() + ggplot2::theme_bw() + ggplot2::labs(title = title, color = color_factor)
+  if (!is.null(color_palette)) p <- p + ggplot2::scale_color_manual(values = color_palette)
+
+  return(p)
+}
+
+RunDimReduct <- function(vst, metadata, color_factor, shape_factor = NULL, label_factor = NULL,
+                         dim.reduct = c("PCA", "UMAP", "tSNE"), numPC = 5, color_palette = NULL) {
+
+  # Main dimensionality reduction function
+  dim.reduct <- match.arg(dim.reduct)
+  plots <- list()
+
+  # 1. Compute coordinates
+  if (dim.reduct == "PCA") {
+    # pca_res <- stats::prcomp(t(vst), scale. = TRUE, center = TRUE)
+    # coords <- pca_res$x[, 1:numPC]
+    # colnames(coords) <- paste0("PC", 1:numPC)
+    # variance <- 100 * (pca_res$sdev^2 / sum(pca_res$sdev^2)) # Variance explained
+    # plots[["ElbowPlot"]] <- ProduceElbowPlot(data = pca_res, variance = variance) # Elbow plot
+
+    # Transpose vst to samples x features
+    mat <- t(vst)
+
+    # Remove zero or near-zero variance columns (features)
+    low_var_cols <- which(matrixStats::colVars(mat, useNames = TRUE) < 1e-5)
+    if (length(low_var_cols) > 0) {
+      mat <- mat[, -low_var_cols, drop = FALSE]
+      message("- Removed ", length(low_var_cols), " low-variance features before PCA.")
+    }
+
+    pca_res <- stats::prcomp(mat, scale. = TRUE, center = TRUE)
+    coords <- pca_res$x[, 1:min(numPC, ncol(pca_res$x))]
+    colnames(coords) <- paste0("PC", 1:ncol(coords))
+
+    variance <- 100 * (pca_res$sdev^2 / sum(pca_res$sdev^2))
+    plots[["ElbowPlot"]] <- ProduceElbowPlot(data = pca_res, variance = variance)
+
+  } else if (dim.reduct == "UMAP") {
+    coords <- uwot::umap(t(vst))
+    colnames(coords) <- c("Dim1", "Dim2")
+  } else if (dim.reduct == "tSNE") {
+    coords <- Rtsne::Rtsne(t(vst))$Y
+    colnames(coords) <- c("Dim1", "Dim2")
+  }
+
+  plot_df <- cbind(as.data.frame(coords), metadata)
+
+  # 2. Generate plots
+  if (dim.reduct == "PCA") {
+    for (i in 2:numPC) {
+      pc_y <- colnames(coords)[i]
+      title <- sprintf("PC1 vs %s (%.1f%% vs %.1f%%)", pc_y, variance[1], variance[i])
+      plots[[paste0("PC1_vs_", pc_y)]] <- MakeScatterPlot(plot_df, "PC1", pc_y, color_factor, shape_factor, label_factor, title, color_palette)
+    }
+  } else {
+    plots[[dim.reduct]] <- MakeScatterPlot(plot_df, colnames(coords)[1], colnames(coords)[2], color_factor, shape_factor, label_factor, dim.reduct, color_palette)
+  }
+
+  return(plots)
+}
+
+ComputeDESeq2 <- function(data, metadata, corr_factor, reduce){
 
   ###
   # CALL: ComputeSizeCorrection() and DESeq2runner()
@@ -111,32 +182,15 @@ ComputeDESeq2 <- function(data, metadata, corr_factor, targets, target_factor, r
   }
 
   colData <- tibble::as_tibble(metadata) # Force the metadata to be interpreted as a tibble
-
-  if (!(is.null(targets))){ # TARGETED APPROACH
-    colData$class <- "other" # Add to the colData a new column "class"
-    contrast_vect <- c("class", "other")
-
-    for (i in 1:nrow(targets)){ # Iterates over each entry (row) in the `targets` table
-      colData$class[grep(targets[i,1], colData[[target_factor]])] <- targets[i,2] # Update "class" based on `targets`
-      if (targets[i,2] %in% contrast_vect) contrast_vect <- contrast_vect else contrast_vect <- append(contrast_vect, targets[i,2])
-    }
-
-    # It is necessary to have a target to compare against the rest of the conditions - The rest of the conditions will be labeled as "other"
-    if (length(unique(colData$class)) < 2) stop("A single class was identified.\n", paste("Current `target_factor` = ", target_factor, ".\n"),
-                                                paste("Class distribution:", as.character(length(unique(colData$class)))))
-    if (verbose) message(paste("- Number of groups:", as.character(length(unique(colData$class)))))
-    corr_factor <- "class"
-  }
-
   formula <- stats::as.formula(paste("~", corr_factor)) # Define the formula to use by DESeq2 to correct the `data` (`corr_factor`)
 
   # Run DESeq2: DESeqDataSetFromMatrix() and DESeq()
   if (ncol(data) != nrow(colData)) stop("Inconsistent features between data and metadata.")
   DESeq2_run <- suppressMessages(DESeq2::DESeqDataSetFromMatrix(countData = data, colData = colData, design = formula))
-  if (!(is.null(targets))) message("- Executing a targeted analysis.\n", paste("- The class taken as reference for DESeq2 is:", levels(DESeq2_run$class)[[1]]))
+  DESeq2_run <- DESeq2::estimateSizeFactors(DESeq2_run, type = "poscounts")
   DESeq2_run <- suppressMessages(DESeq2::DESeq(DESeq2_run, quiet = TRUE))
 
-  if (is.null(targets)) return(DESeq2_run) else return(list(DESeq2_run, contrast_vect)) # When performing a targeted approach, report the table with the amount of entries per condition
+  return(DESeq2_run)
 }
 
 GenerateVolcanoPlot <- function(data, fc_threshold, pval_threshold, sig_axis){
@@ -226,87 +280,4 @@ ProduceElbowPlot <- function(data, variance){
     ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90))
 
   return(elbow_plot) # Outputs the elbow plot
-}
-
-ProducePCAPlot <- function(data, variance, metadata, numPC, color_factor, shape_factor, color_palette, labels, label_factor){
-
-  ###
-  # CALL: RunPCA()
-  # DESCRIPTION: This function generates a PCA plot for each PC given (returns a list).
-  # The plots are customized based on the user's input parameters.
-  ###
-
-  outputs_PCA <- list() # Define empty list to store the outputs (PCA plots)
-
-  # Based on the metadata generates a table including the PCs that will be interrogated
-  PC_columns <- lapply(1:numPC, function(i) data$x[, i])
-  names(PC_columns) <- paste0("PC_", 1:numPC)
-
-  # Add the principal components to the metadata table
-  PCA_plot_tibble <- tibble::tibble(metadata, !!!PC_columns)
-  CheckDataFrame(data = PCA_plot_tibble)
-
-  # Selects the variable that will be used to color the data points
-  index <- which(colnames(PCA_plot_tibble) == color_factor)
-  PCA_plot_tibble$color_factor <- factor(PCA_plot_tibble[[index]])
-
-  if(isTRUE(labels)){
-    index_labels <- which(colnames(PCA_plot_tibble) == label_factor)
-    PCA_plot_tibble$label_factor <- factor(PCA_plot_tibble[[index_labels]])
-  }
-
-  for (i in 2:numPC){ # Iterates over all the PCs - starts in 2 as PC = 1 is always included (comparison in pairs)
-    y_axis <- paste("PC", i, sep = "_")
-
-    plot <- ggplot2::ggplot(PCA_plot_tibble, ggplot2::aes(x = .data$PC_1, y = .data[[y_axis]], color = .data$color_factor))
-
-    # Customization:
-    if (!(is.null(shape_factor))) plot <- plot + ggplot2::aes(shape = .data[[shape_factor]])
-    if (isTRUE(labels)) plot <- plot + ggrepel::geom_text_repel(ggplot2::aes(label = .data$label_factor), size = 2, show.legend = FALSE)
-    plot <- plot + ggplot2::geom_point() + ggplot2::theme_bw() + ggplot2::labs(x = sprintf("PC1 (%.1f%%)", variance[1]), y = sprintf("PC%d (%.1f%%)", i, variance[i]))
-    if (!(is.null(color_palette))) plot <- plot + ggplot2::scale_color_manual(values = color_palette)
-
-    outputs_PCA[[paste0("PCA_plot_PC", i)]] <- plot
-  }
-
-  return(outputs_PCA) # Returns list of plots
-}
-
-RunPCA <- function(data, metadata, numPC, color_factor, shape_factor, color_palette, labels, label_factor, verbose){
-
-  ###
-  # CALL: DESeq2runner()
-  # DESCRIPTION: This function runs a principal component analysis (PCA) and generates an elbow plot and PCA plots.
-  # Returns a nested list with the two outputs mentioned above as independent lists.
-  ###
-
-  # Check that the input data has a suitable format
-  vst_matrix <- as.matrix(data)
-  CheckDataFrame(data = vst_matrix)
-
-  # Generate transpose of feature by condition matrix
-  condition_by_feature_matrix <- t(vst_matrix)
-  CheckDataFrame(data = condition_by_feature_matrix)
-
-  # Remove features with too low variances, if any
-  too_low_variance_features <- which(matrixStats::colVars(condition_by_feature_matrix, useNames = FALSE) < 1E-5)
-
-  if (length(too_low_variance_features) > 1) {
-    condition_by_feature_matrix <- condition_by_feature_matrix[ , -c(too_low_variance_features)] # Filtering the matrix to remove low variance features
-    CheckDataFrame(data = condition_by_feature_matrix)
-  }
-
-  if (verbose) message("- Running `prcomp()` with `scale = TRUE` and `center = TRUE`.")
-  PCA_res <- stats::prcomp(condition_by_feature_matrix, scale = TRUE, center = TRUE) # Run PCA
-
-  PC_variance_explained = 100 * (PCA_res$sdev ^ 2) / sum(PCA_res$sdev ^ 2) # Examine amount of variance explained
-
-  if (verbose) message("- Producing elbow plot.")
-  elbow_plot <- ProduceElbowPlot(data = PCA_res, variance = PC_variance_explained)
-
-  if (verbose) message("- Producing PCA plots.")
-  pca_plots <- ProducePCAPlot(data = PCA_res, variance = PC_variance_explained, metadata = metadata, numPC = numPC, color_factor = color_factor,
-                              shape_factor = shape_factor, color_palette = color_palette, labels = labels, label_factor = label_factor)
-
-  return(list(elbow_plot = elbow_plot, pca_plots = pca_plots)) # Returns a list with: (i) elbow plot, (ii) list with a PCA plot per each PC considered
 }

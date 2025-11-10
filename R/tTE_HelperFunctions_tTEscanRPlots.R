@@ -96,7 +96,7 @@ GenerateDistPlot <- function(level, target, data, x_axis_col, y_axis_col, color_
 
   if (level == "jitter"){
     plot <- ggplot2::ggplot(data = data, mapping = ggplot2::aes(x = .data[[x_axis_col]], y = .data[[y_axis_col]], color = .data[[target]]))
-  } else if (level == "line"){
+  } else if (level == "dot"){
     plot <- ggplot2::ggplot(data = data, mapping = ggplot2::aes(x = .data[[x_axis_col]], y = .data[[y_axis_col]], group = .data[[target]], color = .data[[target]]))
   } else {
     plot <- ggplot2::ggplot(data = data, mapping = ggplot2::aes(x = .data[[x_axis_col]], y = .data[[y_axis_col]], fill = .data[[target]]))
@@ -107,12 +107,12 @@ GenerateDistPlot <- function(level, target, data, x_axis_col, y_axis_col, color_
   if (level == "jitter") plot <- plot + ggplot2::geom_jitter(size = 0.5) + ggplot2::theme_bw()
   if (level == "barplot") plot <- plot + ggplot2::geom_bar(stat = "identity", position = bar_position) +  ggplot2::theme_bw() # ENABLE TO CUSTOMIZE stat
   if (level == "boxplot") plot <- plot + ggplot2::geom_boxplot() + ggplot2::theme_bw() + ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, vjust = 0.5, hjust = 1))
-  if (level == "line") plot <- plot + ggplot2::geom_line() + ggplot2::geom_point() + ggplot2::theme_bw() + ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, vjust = 0.5, hjust = 1), strip.text = ggplot2::element_blank())
+  if (level == "dot") plot <- plot + ggplot2::geom_point() + ggplot2::theme_bw() + ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, vjust = 0.5, hjust = 1), strip.text = ggplot2::element_blank())
 
   # Customize the colors
   if (is.null(color_palette) && length(unique(data[[target]])) < 36) color_palette <- gradual_groups_35
   if (!(is.null(color_palette))){
-    if (level == "jitter" || (level == "line")) plot <- plot + ggplot2::scale_color_manual(values = color_palette) else  plot <- plot + ggplot2::scale_fill_manual(values = color_palette)
+    if (level == "jitter" || (level == "dot")) plot <- plot + ggplot2::scale_color_manual(values = color_palette) else  plot <- plot + ggplot2::scale_fill_manual(values = color_palette)
   }
 
   if(isTRUE(add_titles)) plot <- plot + ggplot2::labs(x = x_axis_col, y = paste(x_axis_col, "usage counts")) # + ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5, size = 15))
@@ -170,23 +170,34 @@ DrawDonutPlot <- function(data, var_numerical, var_categorical, color_palette, s
 
 DrawRadarPlot <- function(data, show_legend, var_color, var_categorical, var_numerical){
 
+  var_color_sym <- rlang::sym(var_color)
+
   radar_data <- data %>%
     dplyr::select(
       .data[[var_color]],
       .data[[var_categorical]],
       .data[[var_numerical]]
     ) %>%
+    # Reshape the data to a wide format
     tidyr::pivot_wider(
-      names_from  = .data[[var_categorical]],
+      names_from = .data[[var_categorical]],
       values_from = .data[[var_numerical]],
-      values_fill = stats::setNames(list(0), var_numerical)
-    )
+      values_fill = 0
+    ) %>%
+    # Add a normalization step
+    # dplyr::mutate(total_codons = rowSums(dplyr::select(., -!!var_color_sym))) %>%
+    # dplyr::mutate(dplyr::across(-c(total_codons, (.data[[var_color]])), ~ .x / total_codons)) %>%
+    # dplyr::select(-total_codons)
+    dplyr::mutate(total_codons = rowSums(dplyr::select(., -!!var_color_sym))) %>%
+    dplyr::mutate(dplyr::across(-c("total_codons", var_color), ~ .x / .data$total_codons)) %>%
+    dplyr::select(-"total_codons")
+
 
   plot <- ggradar::ggradar(radar_data,
                            background.circle.colour = "white",
                            grid.min = 0, grid.mid = 0.5, grid.max = 1,
                            gridline.min.linetype = 1, gridline.mid.linetype = 1, gridline.max.linetype = 1,
-                           group.line.width = 0,8, group.point.size = 2,
+                           group.line.width = 0.8, group.point.size = 2,
                            legend.position = show_legend)
   return(plot)
 }
@@ -198,3 +209,40 @@ GenerateProportionPlot <- function(level, data, var_numerical, var_categorical, 
   if (level == "bar") plot <- DrawBarCountsPlot(data = data, var_numerical = var_numerical, var_categorical = var_categorical, var_color = var_color, color_palette = color_palette, show_legend = show_legend)
   return(plot)
 }
+
+SignificanceSymbol <- function(pvalue) {
+  dplyr::case_when(is.na(pvalue) ~ NA_character_,
+                   pvalue <= 0.001 ~ "***",
+                   pvalue <= 0.01  ~ "**",
+                   pvalue <= 0.05  ~ "*",
+                   TRUE ~ "ns")
+}
+
+Compute_tTE_Significance <- function(merged, x_col = "class", target_col, group_col = NULL) {
+
+  if(length(unique(merged[[target_col]])) != 2) return(NULL)  # skip if not 2 levels
+
+  target_levels <- sort(unique(merged[[target_col]]))
+  print(target_levels)
+  if (!is.null(group_col)) {
+    sig_table <- merged %>%
+      dplyr::group_by(.data[[x_col]], .data[[group_col]]) %>%
+      dplyr::summarise(
+        p_value = tryCatch(stats::wilcox.test(tTE ~ .data[[target_col]])$p.value, error = function(e) NA_real_), .groups = "drop")
+  } else {
+    sig_table <- merged %>%
+      dplyr::group_by(.data[[x_col]]) %>%
+      dplyr::summarise(
+        p_value = tryCatch(stats::wilcox.test(tTE ~ .data[[target_col]])$p.value, error = function(e) NA_real_),
+        .groups = "drop"
+      )
+  }
+
+  if (nrow(sig_table) > 0) sig_table <- sig_table %>%
+    dplyr::mutate(p_signif = SignificanceSymbol(.data$p_value), group1 = target_levels[1], group2 = target_levels[2])
+
+  return(sig_table)
+}
+
+
+

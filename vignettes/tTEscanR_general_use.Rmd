@@ -248,17 +248,21 @@ tTEobject <- Compute_tTE(object = tTEobject, level = "both", overwrite = TRUE)
 For visualization purposes, a set of **target conditions** (e.g. a specific group of cells) can be defined, allowing comparison of their **tTE scores** against those of all other conditions in the dataset. In this example, we focus on neurons as the target group but exclude the ENS neurons from the selection to refine the analysis.
 
 ```{r}
-targets_neuron <- data.frame(search = c("neuron", "ENS neurons"), class = c("neuron", "other"))
+conditions_metadata <- tTEobject@meta.data$ConditionsLabels
+conditions_metadata$group <- "other"
+conditions_metadata$group[grep("neuron", conditions_metadata$conditions)] <- "neurons"
+conditions_metadata$group[grep("ENS neuron", conditions_metadata$conditions)] <- "other"
 ```
 
 ```{r, fig.width =  6, fig.height = 4, fig.align = 'center'}
 # Use tTEobject@meta.data$tTEresults_codon to assess the codon-anticodon level
-tTE_ScoresPlot(data = tTEobject@meta.data$tTEresults_AA, conditions = c("tissue", "cell.type"), name_sep = "-", targets = targets_neuron)
+tTE_ScoresPlot(data = tTEobject@meta.data$tTEresults_AA, metadata = conditions_metadata, 
+               index_col = "conditions", class_col = "group", add_stats = FALSE)
 ```
 
 ## 4. Differential expression analysis 
 
-The **`ExecuteDESeq2runner()`** function performs differential expression analysis with DESeq2 and generates multiple plots to display the results. When datasets share the same `conditions` and `name_sep` settings, they can be processed together in a single run. The input to this function must be a list of matrices.
+The **`RunDEAnalysis()`** function performs differential expression analysis with DESeq2 and generates multiple plots to display the results. When datasets share the same `conditions` and `name_sep` settings, they can be processed together in a single run. The input to this function must be a list of matrices.
 
 ```{r}
 # Other outputs that could be analyzed:
@@ -270,10 +274,10 @@ The **`ExecuteDESeq2runner()`** function performs differential expression analys
 AA_results <- list(AADemand = tTEobject@assays$AADemand, AASupply = tTEobject@assays$AASupply)
 ```
 
-The outputs of the **`ExecuteDESeq2runner()`** function vary depending on the parameters enabled. In this example, the results include: (i) a heatmap, (ii) PCA plots (based on the selected number of principal components), and (iii) the size corrected input matrix. A separate list of outputs is returned for each matrix included in the input list.
+The outputs of the **`RunDEAnalysis()`** function vary depending on the parameters enabled. In this example, the results include: (i) a heatmap, (ii) PCA plots (based on the selected number of principal components), and (iii) the size corrected input matrix. A separate list of outputs is returned for each matrix included in the input list.
 
 ```{r, message = FALSE, warning = FALSE, eval = FALSE}
-all_DESeq2_results <- ExecuteDESeq2runner(list_data = AA_results, metadata = metadata, heatmap = TRUE, PCA = TRUE, numPC = 5)
+all_DESeq2_results <- RunDEAnalysis(list_data = AA_results, metadata = metadata, heatmap = TRUE, PCA = TRUE, numPC = 5)
 ```
 
 ## 5. References

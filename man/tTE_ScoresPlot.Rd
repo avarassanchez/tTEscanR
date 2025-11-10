@@ -6,25 +6,32 @@
 \usage{
 tTE_ScoresPlot(
   data,
-  conditions,
-  name_sep,
-  targets,
+  metadata,
+  class_col,
+  index_col,
+  target_col = NULL,
+  group_col = NULL,
   color_palette = NULL,
   save_format = NULL,
   out_name = NULL,
   out_directory = NULL,
   show_legend = "none",
-  add_titles = TRUE
+  add_titles = TRUE,
+  add_stats = TRUE
 )
 }
 \arguments{
 \item{data}{A tTE results table obtained from \code{\link{Compute_tTE}}.}
 
-\item{conditions}{A character vector specifying condition labels for samples.}
+\item{metadata}{A table with additional information regarding the conditions in \code{data}.}
 
-\item{name_sep}{A string delimiter used in \code{conditions} to separate the sample group labels.}
+\item{class_col}{Name of the categorical variable to reflect in the plot.}
 
-\item{targets}{A table defining key feature clusters to highlight. The first column should contain the conditions to select, and the second column the labels to use in the comparisons.}
+\item{index_col}{Name of the categorical variable that links the conditions in \code{data} with the \code{metadata}.}
+
+\item{target_col}{Optional; name of the categorical variable to reflect in the plot (the most specific level).}
+
+\item{group_col}{Optional; name of the categorical variable to reflect in the plot (the most general level).}
 
 \item{color_palette}{Optional; a vector of color codes to customize plot appearance.}
 
@@ -37,9 +44,11 @@ tTE_ScoresPlot(
 \item{show_legend}{Either \code{"none"} (default), \code{"top"}, \code{"bottom"}, \code{"right"} or \code{"left"} to specify the position of the legend in the plot.}
 
 \item{add_titles}{Logical; if \code{TRUE}, includes titles in the plot. Defaults to \code{TRUE}.}
+
+\item{add_stats}{Logical; if \code{TRUE}, performs a statistical analysis based on the available parameters. Defaults to \code{TRUE}.}
 }
 \value{
-A \code{ggplot} object representing the tTE scores. If \code{save_format} is provided, the plot will also be saved to the specified location.
+A \code{ggplot} object representing the tTE scores. If \code{save_format} is provided, the plot will also be saved to the specified location. If \code{add_stats} reports a table with the statitical measures summarized.
 }
 \description{
 This function generates a violin plot to visualize the distribution of tTE scores across different condition. The tTE scores should be obtained using \code{\link{Compute_tTE}}.

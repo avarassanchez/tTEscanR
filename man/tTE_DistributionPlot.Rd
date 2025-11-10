@@ -25,9 +25,9 @@ tTE_DistributionPlot(
 \arguments{
 \item{data}{A long format table. This format can be obtained using \code{\link{DataToLongFormat}}.}
 
-\item{plot}{Either \code{"jitter"} (default), \code{"barplot"}, \code{"boxplot"} or \code{"line"} to indicate the type of plot to generate.}
+\item{plot}{Either \code{"jitter"} (default), \code{"barplot"}, \code{"boxplot"} or \code{"dot"} to indicate the type of plot to generate.}
 
-\item{bar_position}{Either \code{"dodge"} (default), \code{"stack"} or \code{"fill"} to indicate the display of the plot if \code{plot} is \code{line}.}
+\item{bar_position}{Either \code{"dodge"} (default), \code{"stack"} or \code{"fill"} to indicate the display of the plot if \code{plot} is \code{"barplot"}.}
 
 \item{x_axis_col}{Name of the categorical variable to reflect in the plot.}
 

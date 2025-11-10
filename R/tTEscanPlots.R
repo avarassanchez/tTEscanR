@@ -8,8 +8,8 @@
 #' It is crucial to ensure consistency between the name of the columns in \code{data} and the parameters \code{x_axis_col}, \code{y_axis_col} and \code{condition_col}.
 #'
 #' @param data A long format table. This format can be obtained using \code{\link{DataToLongFormat}}.
-#' @param plot Either \code{"jitter"} (default), \code{"barplot"}, \code{"boxplot"} or \code{"line"} to indicate the type of plot to generate.
-#' @param bar_position Either \code{"dodge"} (default), \code{"stack"} or \code{"fill"} to indicate the display of the plot if \code{plot} is \code{line}.
+#' @param plot Either \code{"jitter"} (default), \code{"barplot"}, \code{"boxplot"} or \code{"dot"} to indicate the type of plot to generate.
+#' @param bar_position Either \code{"dodge"} (default), \code{"stack"} or \code{"fill"} to indicate the display of the plot if \code{plot} is \code{"barplot"}.
 #' @param x_axis_col Name of the categorical variable to reflect in the plot.
 #' @param y_axis_col Name of the numerical variable to reflect in the plot.
 #' @param condition_col Name of the categorical variable to group the data points.
@@ -35,7 +35,7 @@ tTE_DistributionPlot <- function(data, plot = "jitter", bar_position = "dodge", 
 
   # Checking the input parameters
   CheckDataInLongFormat(data) # Data in long format.
-  CheckValueInData(param = "plot", observed = plot, expected = c("jitter", "boxplot", "barplot", "line")) # Valid plot layout
+  CheckValueInData(param = "plot", observed = plot, expected = c("jitter", "boxplot", "barplot", "dot")) # Valid plot layout
   CheckValueInData(param = "_col", observed = c(x_axis_col, y_axis_col, condition_col), expected = colnames(data)) # All columns present in data
 
   if (!is.null(facet_col)){
@@ -200,9 +200,12 @@ tTE_ProportionPlot <- function(data, plot = "bar", var_numerical, var_categorica
 #' The plot allows the user to easily compare the tTE distribution between different conditions, with the option to highlight specific feature clusters based on the provided \code{targets}.
 #'
 #' @param data A tTE results table obtained from \code{\link{Compute_tTE}}.
-#' @param conditions A character vector specifying condition labels for samples.
-#' @param name_sep A string delimiter used in \code{conditions} to separate the sample group labels.
-#' @param targets A table defining key feature clusters to highlight. The first column should contain the conditions to select, and the second column the labels to use in the comparisons.
+#' @param metadata A table with additional information regarding the conditions in \code{data}.
+#' @param index_col Name of the categorical variable that links the conditions in \code{data} with the \code{metadata}.
+#' @param class_col Name of the categorical variable to reflect in the plot.
+#' @param target_col Optional; name of the categorical variable to reflect in the plot (the most specific level).
+#' @param group_col Optional; name of the categorical variable to reflect in the plot (the most general level).
+#' @param add_stats Logical; if \code{TRUE}, performs a statistical analysis based on the available parameters. Defaults to \code{TRUE}.
 #' @param color_palette Optional; a vector of color codes to customize plot appearance.
 #' @param save_format Optional; either \code{"png"} or \code{"pdf"} to specify the format to save the plot.
 #' @param out_name Optional; name for the saved plot (if \code{save_format} specified).
@@ -210,49 +213,67 @@ tTE_ProportionPlot <- function(data, plot = "bar", var_numerical, var_categorica
 #' @param show_legend Either \code{"none"} (default), \code{"top"}, \code{"bottom"}, \code{"right"} or \code{"left"} to specify the position of the legend in the plot.
 #' @param add_titles Logical; if \code{TRUE}, includes titles in the plot. Defaults to \code{TRUE}.
 #'
-#' @return A \code{ggplot} object representing the tTE scores. If \code{save_format} is provided, the plot will also be saved to the specified location.
+#' @return A \code{ggplot} object representing the tTE scores. If \code{save_format} is provided, the plot will also be saved to the specified location. If \code{add_stats} reports a table with the statitical measures summarized.
 #' @export
 
-tTE_ScoresPlot <- function(data, conditions, name_sep, targets, color_palette = NULL, save_format = NULL,
-                           out_name = NULL, out_directory = NULL, show_legend = "none", add_titles = TRUE){
+tTE_ScoresPlot <- function(data, metadata, class_col, index_col, target_col = NULL, group_col = NULL, color_palette = NULL, save_format = NULL,
+                           out_name = NULL, out_directory = NULL, show_legend = "none", add_titles = TRUE, add_stats = TRUE) {
 
-  ###
-  # DESCRIPTION: This function takes the output table of Compute_tTE(), which contains the tTE scores nd the significant scores.
-  # It performs a targeted approach displaying the tTE scores of a selected conditions against all the others.
-  ###
+  required_cols <- c("condition", "tTE", "p_value", "neg_log10_tTE_p_value")
+  expected <- colnames(metadata)
 
-  # Check that all the required columns are in the input data
-  CheckValueInData(param = "data", observed = colnames(data), expected = c("condition", "tTE", "p_value", "neg_log10_tTE_p_value"))
-  if (is.numeric(data$condition)) stop(paste("Error in `data`: Column condition is not categorical."))
-  if (!(is.numeric(data$tTE))) stop(paste("Error in `data`: Column tTE is not categorical."))
-  if (!(is.numeric(data$p_value))) stop(paste("Error in `data`: Column p_value is not categorical."))
-  if (!(is.numeric(data$neg_log10_tTE_p_value))) stop(paste("Error in `data`: Column neg_log10_tTE_p_value is not categorical."))
+  if (!all(required_cols %in% colnames(data))) stop("data missing required columns")
+  if (!(index_col %in% colnames(metadata))) stop(paste("Please, specify a proper", index_col, "parameter.\n"), paste("Supported formats:", paste(required_cols, collapse = ", ")))
+  if (!(class_col %in% colnames(metadata))) stop(paste("Please, specify a proper", class_col, "parameter.\n"), paste("Supported formats:", paste(expected, collapse = ", ")))
+  if (!is.null(target_col) && !(target_col %in% colnames(metadata))) stop(paste("Please, specify a proper", target_col, "parameter.\n"), paste("Supported formats:", paste(required_cols, collapse = ", ")))
+  if (!is.null(group_col) && !(group_col %in% colnames(metadata))) stop(paste("Please, specify a proper", group_col, "parameter.\n"), paste("Supported formats:", paste(required_cols, collapse = ", ")))
 
-  data <- tidyr::separate(data, .data$condition, into = conditions, sep = name_sep)
-  data$class <- "other" # Initialize the class column - all values set to "other"
+  merged <- dplyr::left_join(data, metadata, by = c("condition" = index_col))
+  merged$class <- merged[[class_col]]
 
-  # Iterates over the number of targets (groups of interest to compare)
-  for (i in 1:nrow(targets)) data$class[grep(targets[i,1], data[[conditions[2]]])] <- targets[i,2]
+  if (!is.null(target_col)) merged$target <- merged[[target_col]] else merged$target <- merged$class
 
-  # Evaluates the color_palette if specified
-  if(!(is.null(color_palette)) && (length(color_palette) != length(unique(data$class)))){
-    stop("Wrong number of colors in `color_palette`.\n",
-         "Required colors: one per condition in `targets` plus an extra for the non-targeted groups.\n",
-         paste("Number of colors needed:", length(unique(data$class))))
+  plot <- ggplot2::ggplot(merged, ggplot2::aes(x = .data$class, y = .data$tTE, fill = .data$target)) +
+    ggplot2::geom_violin(trim = FALSE, position = ggplot2::position_dodge(width = 0.8)) +
+    ggplot2::geom_jitter(shape = 16, size = 1, position = ggplot2::position_jitterdodge(dodge.width = 0.8, jitter.width = 0.15)) +
+    ggplot2::theme_bw() +
+    ggplot2::labs(x = class_col, y = "tTE", fill = target_col %||% "Group")
+
+  if (length(merged[class_col]) > 5) plot <- plot + ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, hjust = 1, vjust = 0.5))
+  if (!is.null(group_col)) plot <- plot + ggplot2::facet_wrap(stats::as.formula(paste("~", group_col)), scales = "free_x")
+  if (!is.null(color_palette)) plot <- plot + ggplot2::scale_fill_manual(values = color_palette)
+
+  if (add_titles) {
+    title_text <- paste("tTE scores by", class_col)
+    if (!is.null(target_col)) title_text <- paste(title_text, "highlighting", target_col)
+    if (!is.null(group_col)) title_text <- paste(title_text, "faceted by", group_col)
+    plot <- plot + ggplot2::labs(title = title_text)
   }
 
-  # Defines the plot background
-  plot <- ggplot2::ggplot(data = data, mapping = ggplot2::aes(x = .data$class, y = .data$tTE, fill = .data$class)) +
-    ggplot2::theme_bw() + ggplot2::geom_violin() + ggplot2::geom_jitter(shape = 16, position = ggplot2::position_jitter(0.2), size = 3)
+  plot <- plot + ggplot2::theme(legend.position = show_legend)
 
-  # Customization
-  if (!(is.null(color_palette))) plot <- plot + ggplot2::scale_fill_manual(values = color_palette) # Incorporates the color_palette (if any)
-  plot <- plot + ggplot2::theme(legend.position = show_legend) # Incorporates the legend
-  if (isTRUE(add_titles)) plot + ggplot2::labs(title = "Theoretical translation efficiencies (tTE)")
-  plot + ggplot2::labs(x = "Condition classification", y = "tTE") # Adding standard titles to the plot
-  if (!is.null(save_format)) SavePlot(plot = plot, save_format = save_format, out_name = out_name, out_directory = out_directory) # Save the ggplot
+  sig_table <- NULL
+  if (!is.null(target_col) && add_stats) {
+    sig_table <- Compute_tTE_Significance(merged, x_col = "class", target_col = target_col, group_col = group_col)
 
-  return(plot) # Returns the generated violin plot and exports a file if enabled.
+    if (!is.null(sig_table) && nrow(sig_table) > 0) {
+      y_max <- max(merged$tTE, na.rm = TRUE) * 1.05  # stars above violins
+      plot <- plot + ggpubr::stat_pvalue_manual(sig_table, x = "class", y.position = y_max, label = "p_signif", hide.ns = TRUE)
+    }
+  }
+
+  if (!is.null(save_format)) SavePlot(plot = plot, save_format = save_format, out_name = out_name, out_directory = out_directory)
+
+  if (isTRUE(add_stats)){
+    if (is.null(add_stats)){
+      message("The statistics could not be computed, check the selected comparisons.")
+      return(plot)
+    } else {
+      return(list(plot = plot, stats = sig_table))
+    }
+  } else {
+    return(plot)
+  }
 }
 
 #' Correlation Plot: Exonic Codon Background - Mean Codon Usage
@@ -407,6 +428,27 @@ tTE_PermutationPlot <- function(permut_data, sig_data, color_palette = NULL, sav
   if (!(is.null(color_palette))) plot <- plot + ggplot2::scale_fill_manual(values = aa_colors) # Considering the user's color_palette (if any)
   plot <- plot + ggplot2::theme_bw() + ggplot2::theme(legend.position = show_legend) # Including the legend
   if (isTRUE(add_titles)) plot <- plot + ggplot2::labs(title = "Histogram of Codon Frequencies in Genes of Interest", x = "Frequency", y = "Count") # Adding standard titles to the plot
+  if (!is.null(save_format)) SavePlot(plot = plot, save_format = save_format, out_name = out_name, out_directory = out_directory) # Save the ggplot
+
+  return(plot)
+}
+
+CorrelationCutoffPlot <- function(data, add_titles = TRUE, save_format = NULL, out_name = NULL, out_directory = NULL, show_legend = "bottom") {
+
+  cor_long <- data %>%
+    tidyr::pivot_longer(cols = c("anticodon_spearman", "supply_spearman"), names_to = "type", values_to = "spearman_corr")
+
+  # Defining the plot background
+  plot <- ggplot2::ggplot(cor_long, ggplot2::aes(x = .data$cutoff, y = .data$spearman_corr, color = .data$type)) +
+    ggplot2::geom_point(size = 2, alpha = 0.8) +
+    ggplot2::scale_color_manual(
+      values = c("anticodon_spearman" = "#1b9e77", "supply_spearman" = "#d95f02"),
+      labels = c("Anticodon", "Supply")) +
+    ggplot2::theme_bw() + ggplot2::theme(legend.position = show_legend)
+
+  if (isTRUE(add_titles)) plot <- plot + ggplot2::labs(x = "Sample size (number of cuts)", y = "Spearman Correlation",
+                                                      color = "Feature Type", title = "Correlation vs Reference Across Cutoff Thresholds")
+
   if (!is.null(save_format)) SavePlot(plot = plot, save_format = save_format, out_name = out_name, out_directory = out_directory) # Save the ggplot
 
   return(plot)

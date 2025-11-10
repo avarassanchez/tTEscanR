@@ -6,7 +6,7 @@
 \usage{
 ComputeSizeCorrection(
   data,
-  metadata = NULL,
+  metadata,
   corr_factor = NULL,
   reduce = 100,
   verbose = TRUE

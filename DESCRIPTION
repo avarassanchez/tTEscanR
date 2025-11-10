@@ -3,7 +3,7 @@ Title: An advanced R-based package to quantify and visualize translation efficie
 Version: 0.0.0.9000
 Authors@R: 
     person("Ana", "Varas-Sánchez", , "ana.varas@scilifelab.se", role = c("aut", "cre"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
+           comment = c(ORCID = "0009-0006-0187-8968"))
 Description: Tools to compute codon usage from mRNA and anticodon usage from tRNA data.
     Includes pre-processing and visualization options cover the user needs.
     Allows to analyze bulk and single-cell sequencing data.
@@ -46,5 +46,8 @@ Suggests:
     GenomicRanges,
     ggradar,
     Seurat,
-    Signac
+    Signac, 
+    Rtsne,
+    ggpubr,
+    uwot
 Config/testthat/edition: 3

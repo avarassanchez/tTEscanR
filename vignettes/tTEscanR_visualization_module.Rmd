@@ -296,23 +296,30 @@ The **`tTE_ScoresPlot()`** function generates a **violin plot** to compare the *
 As **tTE_ScoresPlot()** uses violin plots, it is important to ensure that each group, especially the targeted condition, has a **sufficient number of data points**. Violin plots may not provide a reliable representation of the distribution if the sample size is too small. Alternatively, **tTE_DistributionPlot** and **tTE_ProportionPlot()** could be used.
 :::
 
+```{r}
+tTE_ScoresPlot(data = tTEobject@meta.data$tTEresults_codon, metadata =  tTEobject@meta.data$ConditionsLabels, index_col = "conditions", 
+               class_col = "tissue",
+                add_stats = FALSE)
+```
+
 ```{r target_immune}
 # Targeted condition: lymphoid and myeloid cells
-targets_cells <- data.frame(search = c("Myeloid", "Lymphoid"), class = c("myeloid", "lymphoid"))
+conditions_metadata <- tTEobject@meta.data$ConditionsLabels
+conditions_metadata$group <- "other"
+conditions_metadata$group[grep("Myeloid", conditions_metadata$conditions)] <- "myeloid"
+conditions_metadata$group[grep("Lymphoid", conditions_metadata$conditions)] <- "lymphoid"
 ```
 
 ```{r score_plot_immune, fig.width = 6, fig.height = 4, fig.align = 'center'}
 # input data has 4 columns: condition, tTE, p_value, neg_log10_tTE_p_value
-
 # Codon-anticodon tTE score
-tTE_ScoresPlot(data = tTEobject@meta.data$tTEresults_codon, name_sep = "-", 
-               conditions = c("tissue", "cell_type"), targets = targets_cells,
-               color_palette = c(myeloid = "#abd9e9", lymphoid = "#f1b6da", other = "#fee0b6"))
+tTE_ScoresPlot(data = tTEobject@meta.data$tTEresults_codon, metadata = conditions_metadata, index_col = "conditions", 
+               class_col = "group",
+               color_palette = c(myeloid = "#abd9e9", lymphoid = "#f1b6da", other = "#fee0b6"), add_stats = FALSE)
 
 # AA demand-supply tTE score
-tTE_ScoresPlot(data = tTEobject@meta.data$tTEresults_AA, name_sep = "-",
-               conditions = c("tissue", "cell_type"), targets = targets_cells,
-               color_palette = c(myeloid = "#abd9e9", lymphoid = "#f1b6da", other = "#fee0b6"))
+tTE_ScoresPlot(data = tTEobject@meta.data$tTEresults_AA,  metadata = conditions_metadata, index_col = "conditions", class_col = "group",
+               color_palette = c(myeloid = "#abd9e9", lymphoid = "#f1b6da", other = "#fee0b6"), add_stats = FALSE)
 ```
 
 In cases where we want to refine the selection of target cell types, such as including or excluding specific subtypes, it is essential to encode this distinction explicitly in the input metadata (`targets`) data frame. 
@@ -321,14 +328,16 @@ For instance, if we aim to focus on **neurons** but exclude cells labeled as **E
 
 ```{r target_neurons}
 # Targeted condition: neurons
-targets_cells_neurons <- data.frame(search = c("neurons", "ENS neurons"), class = c("neurons", "other"))
+conditions_metadata <- tTEobject@meta.data$ConditionsLabels
+conditions_metadata$group <- "other"
+conditions_metadata$group[grep("neuron", conditions_metadata$conditions)] <- "neurons"
+conditions_metadata$group[grep("ENS neuron", conditions_metadata$conditions)] <- "other"
 ```
 
 ```{r score_plot_neurons, fig.width = 6, fig.height = 4, fig.align = 'center'}
 # AA demand-supply tTE score
-tTE_ScoresPlot(data = tTEobject@meta.data$tTEresults_AA, name_sep = "-",
-               conditions = c("tissue", "cell_type"), targets = targets_cells_neurons,
-               color_palette = c(neurons = "#8073ac", other = "#fee0b6"))
+tTE_ScoresPlot(data = tTEobject@meta.data$tTEresults_AA, metadata = conditions_metadata, index_col = "conditions", 
+               class_col = "group", color_palette = c(neurons = "#8073ac", other = "#fee0b6"), add_stats = FALSE)
 ```
 
 # 4. References

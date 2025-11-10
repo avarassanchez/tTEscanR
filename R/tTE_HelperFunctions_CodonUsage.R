@@ -268,8 +268,9 @@ CheckNames_tRNA <- function(data){
   # The tRNA genes need to be located in the rows
   if (is.null(rownames(data))) stop("No tRNA genes found in row names.")
 
-  # Check the actual content of the tRNA gene label
-  tRNA_label <- grepl("^tRNA-[A-Za-z]{3,4}-[ATGC]{3}-[0-9]+-[0-9]+$", rownames(data))
+  # Check the actual content of the tRNA gene label - accepts both tRNA gene or isoacceptor names
+  # tRNA_label <- grepl("^tRNA-[A-Za-z]{3,4}-[ATGC]{3}-[0-9]+-[0-9]+$", rownames(data))
+  tRNA_label <- grepl("^tRNA-[A-Za-z]{3,4}-[ATGC]{3}(-[0-9]+-[0-9]+)?$", rownames(data))
   invalid_rows <- which(!tRNA_label)
 
   # Report if there is any row name that does not follow the requirements above
