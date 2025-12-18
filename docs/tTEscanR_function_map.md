@@ -46,7 +46,7 @@
 
   <!-- Codon Usage -->
   <tr>
-    <td rowspan="7">Codon Usage</td>
+    <td rowspan="8">Codon Usage</td>
     <td rowspan="2">CodonUsage.R</td>
     <td rowspan="2">Main</td>
     <td>ComputeCodonUsage( )</td>
@@ -56,8 +56,8 @@
     <td>ComputeAnticodonUsage( )</td>
   </tr>
   <tr>
-    <td rowspan="5">tTE_HelperFunctions_CodonUsage.R</td>
-    <td rowspan="5">Helper</td>
+    <td rowspan="6">tTE_HelperFunctions_CodonUsage.R</td>
+    <td rowspan="6">Helper</td>
     <td>ComputeCodonExonicBackground( )</td>
     <td rowspan="4">Visible</td>
   </tr>
@@ -72,22 +72,25 @@
   </tr>
   <tr>
     <td>ConsistencyWithCodonFreq( )</td>
-    <td>Internal</td>
+    <td rowspan="2">Internal</td>
+  </tr>
+  <tr>
+    <td>CheckNames_tRNAs( )</td>
   </tr>
 
   <!-- Codon Freq Per Gene -->
   <tr>
-    <td rowspan="8">Codon Freq Per Gene</td>
+    <td rowspan="7">Codon Freq Per Gene</td>
     <td>CodonFreqPerGene.R</td>
     <td>Main</td>
-    <td>ObtainCodonFreqPerGene( )</td>
+    <td>GetCodonFreq( )</td>
     <td>Visible</td>
   </tr>
   <tr>
-    <td rowspan="7">tTE_HelperFunctions_CodonFreq.R</td>
-    <td rowspan="7">Helper</td>
+    <td rowspan="6">tTE_HelperFunctions_CodonFreq.R</td>
+    <td rowspan="6">Helper</td>
     <td>ExtractGenes( )</td>
-    <td rowspan="6">Internal</td>
+    <td rowspan="5">Internal</td>
   </tr>
   <tr>
     <td>ExtractSequences( )</td>
@@ -102,10 +105,7 @@
     <td>FromFASTAtoTable( )</td>
   </tr>
   <tr>
-    <td>CodonOccurrences( )</td>
-  </tr>
-  <tr>
-    <td>ExtractCodonComposition( )</td>
+    <td>ExtractCodons( )</td>
     <td>Visible</td>
   </tr>
 
@@ -114,7 +114,7 @@
     <td rowspan="4">Codon Pool Contribution</td>
     <td>ExamineCodonPoolContribution.R</td>
     <td>Main</td>
-    <td>ExamineCodonPoolContribution( )</td>
+    <td>ShowPoolContribution( )</td>
     <td>Visible</td>
   </tr>
   <tr>
@@ -171,23 +171,38 @@
 
   <!-- DEA -->
   <tr>
-    <td rowspan="9">Differential Expression Analysis</td>
-    <td rowspan="2">DifferentialExpressionAnalysis.R</td>
-    <td rowspan="2">Main</td>
+    <td rowspan="13">Differential Expression Analysis</td>
+    <td rowspan="4">DifferentialExpressionAnalysis.R</td>
+    <td rowspan="4">Main</td>
     <td>ComputeSizeCorrection( )</td>
-    <td rowspan="2">Visible</td>
+    <td rowspan="4">Visible</td>
   </tr>
   <tr>
-    <td>ExecuteDESeq2runner( )</td>
+    <td>RunDEAnalysis( )</td>
   </tr>
   <tr>
-    <td rowspan="7">tTE_HelperFunctions_DEA.R</td>
-    <td rowspan="7">Helper</td>
-    <td>DESeq2runner( )</td>
-    <td rowspan="7">Internal</td>
+    <td>ComputeDEResults( )</td>
   </tr>
   <tr>
+    <td>PlotDEResults( )</td>
+  </tr>
+  <tr>
+    <td rowspan="9">tTE_HelperFunctions_DEA.R</td>
+    <td rowspan="9">Helper</td>
     <td>ComputeDESeq2( )</td>
+    <td rowspan="9">Internal</td>
+  </tr>
+  <tr>
+    <td>TargetedApproach( )</td>
+  </tr>
+  <tr>
+    <td>ExploratoryApproach( )</td>
+  </tr>
+  <tr>
+    <td>MakeScatterPlot( )</td>
+  </tr>
+  <tr>
+    <td>RunDimReduct( )</td>
   </tr>
   <tr>
     <td>GenerateVolcanoPlot( )</td>
@@ -200,9 +215,6 @@
   </tr>
   <tr>
     <td>ProduceElbowPlot( )</td>
-  </tr>
-  <tr>
-    <td>RunPCA( )</td>
   </tr>
 
   <!-- Permutation Test -->
@@ -219,17 +231,53 @@
 
   <!-- General Functions -->
   <tr>
-    <td rowspan="12">General Functions</td>
-    <td rowspan="3">tTE_HelperFunctions_GeneralInternal.R</td>
-    <td rowspan="3">Helper</td>
-    <td>CheckCodonFreqTable( )</td>
-    <td rowspan="3">Internal</td>
+    <td rowspan="24">General Functions</td>
+    <td rowspan="7">GeneralProcessing.R</td>
+    <td rowspan="7">Helper</td>
+    <td>Set_tRNACutoff( )</td>
+    <td rowspan="7">Visible</td>
   </tr>
   <tr>
-    <td>CheckDataFrame( )</td>
+    <td>Get_tRNAMatrix( )</td>
   </tr>
   <tr>
-    <td>CheckGeneAnnotation( )</td>
+    <td>Filter_tRNACuts( )</td>
+  </tr>
+  <tr>
+    <td>Set_tRNAgenes( )</td>
+  </tr>
+  <tr>
+    <td>TransformFormat( )</td>
+  </tr>
+  <tr>
+    <td>MergeMatrices( )</td>
+  </tr>
+  <tr>
+    <td>GroupConditions( )</td>
+  </tr>
+  <tr>
+    <td rowspan="7">tTE_HelperFunctions_GeneralProcessing.R</td>
+    <td rowspan="7">Helper</td>
+    <td>TransformCounts( )</td>
+    <td rowspan="7">Internal</td>
+  </tr>
+  <tr>
+    <td>CutoffMatrix( )</td>
+  </tr>
+  <tr>
+    <td>FilteringCutoffs( )</td>
+  </tr>
+  <tr>
+    <td>ComputeCorrelations( )</td>
+  </tr>
+  <tr>
+    <td>Selection_Cutoff( )</td>
+  </tr>
+  <tr>
+    <td>Generate_tRNAMatrix_SE( )</td>
+  </tr>
+  <tr>
+    <td>Generate_tRNAMAtrix( )</td>
   </tr>
   <tr>
     <td rowspan="3">tTE_HelperFunctions_GeneralInternal_InputData.R</td>
@@ -244,66 +292,68 @@
     <td>FilterByMetadata( )</td>
   </tr>
   <tr>
-    <td rowspan="3">tTE_HelperFunctions_GeneralProcessing.R</td>
+    <td rowspan="3">tTE_HelperFunctions_GeneralInternal_Checks.R</td>
     <td rowspan="3">Helper</td>
-    <td>Get_tRNAMatrix( )</td>
-    <td rowspan="3">Visible</td>
+    <td>CheckCodonFreqTable( )</td>
+    <td rowspan="3">Internal</td>
   </tr>
   <tr>
-    <td>tRNACutsFilter( )</td>
+    <td>CheckDataFrame( )</td>
   </tr>
   <tr>
-    <td>DataToLongFormat( )</td>
+    <td>CheckGeneAnnotation( )</td>
   </tr>
   <tr>
-    <td rowspan="3">tTE_HelperFunctions_GeneralTranslation.R</td>
-    <td rowspan="3">Helper</td>
-    <td>RetrieveTranslation( )</td>
+    <td rowspan="4">tTE_HelperFunctions_GeneralTranslation.R</td>
+    <td rowspan="4">Helper</td>
+    <td>PerformTranslation( )</td>
     <td rowspan="2">Internal</td>
   </tr>
   <tr>
-    <td>PerformTranslation( )</td>
+    <td>RetrieveTranslation( )</td>
   </tr>
   <tr>
     <td>FeaturesToAA( )</td>
     <td>Visible</td>
   </tr>
+  <tr>
+    <td>IsEnsemblID( )</td>
+    <td>Internal</td>
+  </tr>
 
   <!-- Plots -->
 <tr>
-    <td rowspan="6">Plots</td>
-    <td>tTEscanPlots.R</td>
-    <td rowspan="6">Main</td>
+    <td rowspan="19">Plots</td>
+    <td rowspan="7">tTEscanPlots.R</td>
+    <td rowspan="7">Main</td>
     <td>tTE_DistributionPlot( )</td>
     <td rowspan="6">Visible</td>
 </tr>
 <tr>
-    <td>tTEscanPlots.R</td>
     <td>tTE_CompareTargetToMean( )</td>
 </tr>
 <tr>
-    <td>tTEscanPlots.R</td>
     <td>tTE_ProportionPlot( )</td>
 </tr>
 <tr>
-    <td>tTEscanPlots.R</td>
     <td>tTE_ScoresPlot( )</td>
 </tr>
 <tr>
-    <td>tTEscanPlots.R</td>
     <td>tTE_CorrelationPlot( )</td>
 </tr>
 <tr>
-    <td>tTEscanPlots.R</td>
     <td>tTE_PermutationPlot( )</td>
 </tr>
+<tr>
+    <td>CorrelationCutoffPlot( )</td>
+    <td>Internal</td>
+  </tr>
 
 <tr>
-    <td rowspan="10">Plots</td>
-    <td rowspan="10">tTE_HelperFunctions_tTEscanRPlots.R</td>
-    <td rowspan="10">Helper</td>
+    <td rowspan="12">tTE_HelperFunctions_tTEscanRPlots.R</td>
+    <td rowspan="12">Helper</td>
     <td>SavePlot( )</td>
-    <td rowspan="10">Internal</td>
+    <td rowspan="12">Internal</td>
 </tr>
 <tr>
     <td>GetAnnotData( )</td>
@@ -327,10 +377,16 @@
     <td>DrawDonutPlot( )</td>
 </tr>
 <tr>
-    <td>RadarPlot( )</td>
+    <td>DrawRadarPlot( )</td>
 </tr>
 <tr>
     <td>GenerateProportionPlot( )</td>
+</tr>
+<tr>
+    <td>SignificanceSymbol( )</td>
+</tr>
+<tr>
+    <td>Compute_tTE_Significance( )</td>
 </tr>
 
 </table>
