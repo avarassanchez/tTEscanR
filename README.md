@@ -167,14 +167,13 @@ matching_celltypes <- intersect(colnames(mRNA_data), colnames(tRNA_data))
 tTEscanR_obj <- Update_tTEscanR_Object(object = tTEscanR_obj, 
                                        meta.data = list(matching_celltypes), 
                                        meta.data.ids = list("matching_celltypes"), 
-                                       overwrite.metadata = TRUE)
+                                       overwrite = TRUE)
 
 # Compute codon usage with default hg38 canonical codon frequency per gene table.
 tTEscanR_obj <- ComputeCodonUsage(object = tTEscanR_obj, 
                                   codon_freq = NULL, 
                                   species = "hg38", 
-                                  filter = "canonical",
-                                  additional.metrics = TRUE)
+                                  additional_metrics = TRUE)
 
 tTEscanR_obj <- ComputeAnticodonUsage(object = tTEscanR_obj)
 
