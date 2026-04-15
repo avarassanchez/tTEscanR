@@ -5,24 +5,19 @@
   <tr>
     <th>Section</th>
     <th>File</th>
-    <th>File Status</th>
     <th>Function</th>
     <th>Function Status</th>
   </tr>
 
   <!-- tTEscanRObject -->
   <tr>
-    <td rowspan="5">tTEscanRObject</td>
-    <td>tTEscanRObject.R</td>
-    <td>Main</td>
+    <td rowspan="5">tTEscanR Object</td>
+    <td rowspan="5">tTEscanRObject.R</td>
     <td>Create_tTEscanR_Object( )</td>
-    <td>Visible</td>
+    <td rowspan="2">Visible</td>
   </tr>
   <tr>
-    <td rowspan="4">tTE_HelperFunctions_tTEscanRObject.R</td>
-    <td rowspan="4">Helper</td>
     <td>Update_tTEscanR_Object( )</td>
-    <td>Visible</td>
   </tr>
   <tr>
     <td>DefineNewData( )</td>
@@ -39,7 +34,6 @@
   <tr>
     <td>General Pipeline</td>
     <td>tTEscanR_General.R</td>
-    <td>Main</td>
     <td>Run_tTEscanR_pipeline( )</td>
     <td>Visible</td>
   </tr>
@@ -48,7 +42,6 @@
   <tr>
     <td rowspan="8">Codon Usage</td>
     <td rowspan="2">CodonUsage.R</td>
-    <td rowspan="2">Main</td>
     <td>ComputeCodonUsage( )</td>
     <td rowspan="2">Visible</td>
   </tr>
@@ -57,7 +50,6 @@
   </tr>
   <tr>
     <td rowspan="6">tTE_HelperFunctions_CodonUsage.R</td>
-    <td rowspan="6">Helper</td>
     <td>ComputeCodonExonicBackground( )</td>
     <td rowspan="4">Visible</td>
   </tr>
@@ -82,13 +74,15 @@
   <tr>
     <td rowspan="7">Codon Freq Per Gene</td>
     <td>CodonFreqPerGene.R</td>
-    <td>Main</td>
     <td>GetCodonFreq( )</td>
     <td>Visible</td>
   </tr>
   <tr>
     <td rowspan="6">tTE_HelperFunctions_CodonFreq.R</td>
-    <td rowspan="6">Helper</td>
+    <td>ExtractCodons( )</td>
+    <td>Visible</td>
+  </tr>
+  <tr>
     <td>ExtractGenes( )</td>
     <td rowspan="5">Internal</td>
   </tr>
@@ -104,43 +98,33 @@
   <tr>
     <td>FromFASTAtoTable( )</td>
   </tr>
-  <tr>
-    <td>ExtractCodons( )</td>
-    <td>Visible</td>
-  </tr>
 
   <!-- Codon Pool Contribution -->
   <tr>
-    <td rowspan="4">Codon Pool Contribution</td>
-    <td>ExamineCodonPoolContribution.R</td>
-    <td>Main</td>
+    <td rowspan="4">Pool Contribution</td>
+    <td rowspan="4">ExamineCodonPoolContribution.R</td>
     <td>ShowPoolContribution( )</td>
     <td>Visible</td>
   </tr>
   <tr>
-    <td rowspan="3">tTE_HelperFuncitons_PoolContribution.R</td>
-    <td rowspan="3">Helper</td>
     <td>ComputeIndividualGeneCorrelation( )</td>
     <td rowspan="3">Internal</td>
   </tr>
   <tr>
-    <td>ComputeTopNGenes( )</td>
+    <td>AnalyzeTopGeneImpact( )</td>
   </tr>
   <tr>
-    <td>ComputeWithoutTopNGenes( )</td>
+    <td>GetOrCompute( )</td>
   </tr>
 
   <!-- Amino Acid Usage -->
   <tr>
     <td rowspan="3">Amino Acid Usage</td>
-    <td>AAUsage.R</td>
-    <td>Main</td>
+    <td rowspan="3">AAUsage.R</td>
     <td>ComputeAAUsage( )</td>
     <td>Visible</td>
   </tr>
   <tr>
-    <td rowspan="2">tTE_HelperFunctions_AAUsage.R</td>
-    <td rowspan="2">Helper</td>
     <td>GroupAA( )</td>
     <td rowspan="2">Internal</td>
   </tr>
@@ -151,14 +135,11 @@
   <!-- Theoretical Translation Efficiency -->
   <tr>
     <td rowspan="4">Theoretical Translation Efficiency</td>
-    <td>TheoreticalTranslationEfficiency.R</td>
-    <td>Main</td>
+    <td rowspan="4">TheoreticalTranslationEfficiency.R</td>
     <td>Compute_tTE( )</td>
     <td>Visible</td>
   </tr>
   <tr>
-    <td rowspan="3">tTE_HelperFunctions_TranslationEfficiency.R</td>
-    <td rowspan="3">Helper</td>
     <td>ComputeStatisticalSignificance( )</td>
     <td rowspan="3">Internal</td>
   </tr>
@@ -169,16 +150,12 @@
     <td>FilterMatrix( )</td>
   </tr>
 
-  <!-- DEA -->
+  <!-- Abundance analysis -->
   <tr>
     <td rowspan="13">Differential Expression Analysis</td>
-    <td rowspan="4">DifferentialExpressionAnalysis.R</td>
-    <td rowspan="4">Main</td>
-    <td>ComputeSizeCorrection( )</td>
-    <td rowspan="4">Visible</td>
-  </tr>
-  <tr>
+    <td rowspan="3">DifferentialExpressionAnalysis.R</td>
     <td>RunDEAnalysis( )</td>
+    <td rowspan="3">Visible</td>
   </tr>
   <tr>
     <td>ComputeDEResults( )</td>
@@ -187,16 +164,18 @@
     <td>PlotDEResults( )</td>
   </tr>
   <tr>
-    <td rowspan="9">tTE_HelperFunctions_DEA.R</td>
-    <td rowspan="9">Helper</td>
+    <td rowspan="10">tTE_HelperFunctions_DEA.R</td>
+    <td>ComputeSizeCorrection( )</td>
+    <td rowspan="10">Internal</td>
+  </tr>
+  <tr>
+    <td>ComputeAllPairwiseComp( )</td>
+  </tr>
+  <tr>
     <td>ComputeDESeq2( )</td>
-    <td rowspan="9">Internal</td>
   </tr>
   <tr>
     <td>TargetedApproach( )</td>
-  </tr>
-  <tr>
-    <td>ExploratoryApproach( )</td>
   </tr>
   <tr>
     <td>MakeScatterPlot( )</td>
@@ -221,7 +200,6 @@
   <tr>
     <td rowspan="2">Permutation Test</td>
     <td rowspan="2">PermutationTest.R</td>
-    <td rowspan="2">Main</td>
     <td>GetPermutationDist( )</td>
     <td rowspan="2">Visible</td>
   </tr>
@@ -231,14 +209,13 @@
 
   <!-- General Functions -->
   <tr>
-    <td rowspan="24">General Functions</td>
+    <td rowspan="26">General Functions</td>
     <td rowspan="7">GeneralProcessing.R</td>
-    <td rowspan="7">Helper</td>
-    <td>Set_tRNACutoff( )</td>
+    <td>Get_tRNAMatrix( )</td>
     <td rowspan="7">Visible</td>
   </tr>
   <tr>
-    <td>Get_tRNAMatrix( )</td>
+    <td>Set_tRNACutoff( )</td>
   </tr>
   <tr>
     <td>Filter_tRNACuts( )</td>
@@ -256,10 +233,9 @@
     <td>GroupConditions( )</td>
   </tr>
   <tr>
-    <td rowspan="7">tTE_HelperFunctions_GeneralProcessing.R</td>
-    <td rowspan="7">Helper</td>
+    <td rowspan="9">tTE_HelperFunctions_GeneralProcessing.R</td>
     <td>TransformCounts( )</td>
-    <td rowspan="7">Internal</td>
+    <td rowspan="9">Internal</td>
   </tr>
   <tr>
     <td>CutoffMatrix( )</td>
@@ -274,16 +250,21 @@
     <td>Selection_Cutoff( )</td>
   </tr>
   <tr>
-    <td>Generate_tRNAMatrix_SE( )</td>
+    <td>Iterate_tRNACutoff( )</td>
   </tr>
   <tr>
-    <td>Generate_tRNAMAtrix( )</td>
+    <td>CorrelationCutoffPlot( )</td>
   </tr>
   <tr>
-    <td rowspan="3">tTE_HelperFunctions_GeneralInternal_InputData.R</td>
-    <td rowspan="3">Helper</td>
+    <td>SelectionCutoffPlot( )</td>
+  </tr>
+  <tr>
+    <td>Cumulative_SelectionCutoffPlot( )</td>
+  </tr>
+  <tr>
+    <td rowspan="6">tTE_HelperFunctions_GeneralInternal.R</td>
     <td>SelectDefaultData( )</td>
-    <td rowspan="3">Internal</td>
+    <td rowspan="6">Internal</td>
   </tr>
   <tr>
     <td>IdentifyInputFormat( )</td>
@@ -292,10 +273,7 @@
     <td>FilterByMetadata( )</td>
   </tr>
   <tr>
-    <td rowspan="3">tTE_HelperFunctions_GeneralInternal_Checks.R</td>
-    <td rowspan="3">Helper</td>
     <td>CheckCodonFreqTable( )</td>
-    <td rowspan="3">Internal</td>
   </tr>
   <tr>
     <td>CheckDataFrame( )</td>
@@ -305,32 +283,29 @@
   </tr>
   <tr>
     <td rowspan="4">tTE_HelperFunctions_GeneralTranslation.R</td>
-    <td rowspan="4">Helper</td>
+    <td>FeaturesToAA( )</td>
+    <td>Visible</td>
+  </tr>
+  </tr>
     <td>PerformTranslation( )</td>
-    <td rowspan="2">Internal</td>
+    <td rowspan="3">Internal</td>
   </tr>
   <tr>
     <td>RetrieveTranslation( )</td>
   </tr>
   <tr>
-    <td>FeaturesToAA( )</td>
-    <td>Visible</td>
-  </tr>
-  <tr>
     <td>IsEnsemblID( )</td>
-    <td>Internal</td>
   </tr>
 
   <!-- Plots -->
 <tr>
-    <td rowspan="19">Plots</td>
+    <td rowspan="22">Plots</td>
     <td rowspan="7">tTEscanPlots.R</td>
-    <td rowspan="7">Main</td>
     <td>tTE_DistributionPlot( )</td>
     <td rowspan="6">Visible</td>
 </tr>
 <tr>
-    <td>tTE_CompareTargetToMean( )</td>
+    <td>tTE_PlotTargetComparison( )</td>
 </tr>
 <tr>
     <td>tTE_ProportionPlot( )</td>
@@ -350,10 +325,12 @@
   </tr>
 
 <tr>
-    <td rowspan="12">tTE_HelperFunctions_tTEscanRPlots.R</td>
-    <td rowspan="12">Helper</td>
+    <td rowspan="15">tTE_HelperFunctions_tTEscanRPlots.R</td>
     <td>SavePlot( )</td>
-    <td rowspan="12">Internal</td>
+    <td rowspan="15">Internal</td>
+</tr>
+<tr>
+    <td>GetSafeColorScale( )</td>
 </tr>
 <tr>
     <td>GetAnnotData( )</td>
@@ -377,6 +354,9 @@
     <td>DrawDonutPlot( )</td>
 </tr>
 <tr>
+    <td>ComputeRings( )</td>
+</tr>
+<tr>
     <td>DrawRadarPlot( )</td>
 </tr>
 <tr>
@@ -387,6 +367,9 @@
 </tr>
 <tr>
     <td>Compute_tTE_Significance( )</td>
+</tr>
+<tr>
+    <td>Compute_Boxplot_Significance( )</td>
 </tr>
 
 </table>
