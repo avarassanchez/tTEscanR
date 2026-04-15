@@ -43,8 +43,7 @@ Updates an existing **tTEscanR** object by overwriting existing sections or addi
 - `assay`: Optional; a character string (or list of characters) to identify the `counts`.
 - `meta.data`: Optional; a variable (or list of variables) with additional information to be stored in the *"meta.data"* slot.
 - `meta.data.ids`: Optional; a character string (or list of characters) to identify the `meta.data`. 
-- `overwrite.assay`: Logical; if TRUE, overwrites any existing *"assays"* in the `object` if the `assay` label coincides.
-- `overwrite.metadata`: Logical; if TRUE, overwrites any existing *"meta.data"* in the `object` if the `meta.data.ids` label coincides.
+- `overwrite`: Logical; if TRUE, overwrites any existing *"assays"* or *"meta.data"* in the `object`.
 - `verbose`: Logical; if TRUE, displays information messages.
 
 ```{r}
@@ -72,12 +71,10 @@ Estimates codon usage profiles based on gene-level mRNA expression data. It opti
 - `object`: An existing **tTEscanR** object containing a mRNA assay.
 - `codon_freq`: Optional; a user-provided codon frequency-per-gene table.
 - `species`: Either *"hg38"* (human) or *"mm39"* (mouse) to specify the default codon frequency-per-gene table. Required if `codon_freq` is not provided. 
-- `filter`: Either *"canonical"* (default) or *"length"* (longest transcript) to specify which transcript to choose if several are available for the same gene.
 - `reduce`: Numeric; a scaling factor used to normalize large expression values that exceed R's handling capacity.
-- `additional.metrics`: Logical; if TRUE, computes the codon exonic background, the mean codon usage across conditions, and the correlation between the previous.
+- `additional_metrics`: Logical; if TRUE, computes the codon exonic background, the mean codon usage across conditions, and the correlation between the previous.
 - `corr_method`: A character string specifying a suitable correlation method.
-- `overwrite.assay`: Logical; if TRUE, overwrites any existing *"assays"* in the `object`.
-- `overwrite.metadata`: Logical; if TRUE, overwrites any existing *"meta.data"* in the `object`.
+- `overwrite`: Logical; if TRUE, overwrites any existing *"assays"* or *"meta.data"* in the `object`.
 - `verbose`: Logical; if TRUE, displays information messages.
 
 **Note:** The table with the information regarding the condition's labels (columns in count matrices) should be stored as "ConditionsLables" in the **tTEscanR** object. Additionally, in order to be able to compute the additional metrics the **tTEscanR** object will have to contain a "CorrectionFactor" metadata.
@@ -92,15 +89,13 @@ tTEscanR_obj <- Update_tTEscanR_Object(object = tTEscanR_obj,
 
 ```{r}
 # Here we use: 
-# - Default human hg38 codon frequency per gene table
-# - Canonical setting to filter potential mRNA transcript repetitions
+# - Default human canonical hg38 codon frequency per gene table
 # - Enable to translate the genes if no matching formats are detected
 
 tTEscanR_obj <- ComputeCodonUsage(object = tTEscanR_obj, 
                                   codon_freq = NULL, 
                                   species = "hg38", 
-                                  filter = "canonical",
-                                  additional.metrics = TRUE,
+                                  additional_metrics = TRUE,
                                   corr_method = "spearman")
 ```
 
@@ -114,8 +109,7 @@ Calculates anticodon usage profiles from tRNA gene expression data. It summarize
 
 **Parameters:**
 - `object`: An existing **tTEscanR** object containing a tRNA assay.
-- `overwrite.assay`: Logical; if TRUE, overwrites any existing *"assays"* in the `object`.
-- `overwrite.metadata`: Logical; if TRUE, overwrites any existing *"meta.data"* in the `object`.
+- `overwrite`: Logical; if TRUE, overwrites any existing *"assays"* or *"meta.data"* in the `object`.
 - `verbose`: Logical; if TRUE, displays information messages.
 
 ```{r}
@@ -136,14 +130,14 @@ Computes the amino acid (AA) demand and/or supply from a given codon or anticodo
     - "demand", computes amino acid demand from the codon usage matrix.</li>
     - "supply", computes amino acid supply from the anticodon usage matrix.</li>
     - "both", computes both amino acid demand and supply.</li>
-- `overwrite.assay`: Logical; if TRUE, overwrites any existing *"assays"* in the `object`. 
+- `overwrite`: Logical; if TRUE, overwrites any existing *"assays"* or *"meta.data"* in the `object`.
 - `verbose`: Logical; if TRUE, displays information messages.
 
 ```{r}
 tTEscanR_obj <- ComputeAAUsage(object = tTEscanR_obj, level = "demand")
 tTEscanR_obj <- ComputeAAUsage(object = tTEscanR_obj, level = "supply")
 
-tTEscanR_obj <- ComputeAAUsage(object = tTEscanR_obj,  evel = "both", overwrite.assay = TRUE)
+tTEscanR_obj <- ComputeAAUsage(object = tTEscanR_obj,  evel = "both", overwrite = TRUE)
 ```
 
 ### 1.4. tTE computation
@@ -160,16 +154,18 @@ Computes the tTE score across matching conditions at the codon-anticodon usage l
     - "codon", computes tTE from codon-anticodon usage.</li>
     - "aa", computes tTE from amino acid demand and supply.</li>
     - "both", computes tTE from codon-anticodon usage and amino acid demand and supply.</li>
+- `genetic_code`: A character string specifying the genetic code to be used.
 - `corr_method`: A character string specifying a suitable correlation method.
-- `compute.significance`: Logical; if TRUE, computes the p-value of the tTE scores.
-- `overwrite`: Logical; if TRUE, overwrites any existing *"meta.data"* in the `object`.
+- `compute_significance`: Logical; if TRUE, computes the p-value of the tTE scores.
+- `overwrite`: Logical; if TRUE, overwrites any existing *"assays"* or *"meta.data"* in the `object`.
 - `verbose`: Logical; if TRUE, displays information messages.
 
 **Note:** Here we are not pre-defining a "corr_factor" parameter as it has been previously added to the **tTEscanR**. However, if a different factor is desired, the "corr_factor· metadata should be chaged correspondingly using `Update_tTEscanR_Object()`.
 
 ```{r}
 tTEscanR_obj <- Compute_tTE(object = tTEscanR_obj,
-                            level = "aa", 
+                            level = "aa",
+                            genetic_code = "Standard",
                             corr_method = "spearman",
                             compute.significance = TRUE)
 ```
@@ -208,6 +204,30 @@ tRNA_expression_matrix <- Get_tRNAMatrix(chrom = chromatin_object,
                                          save = FALSE)
 
 # The generated tRNA_expression_matrix corresponds to the tRNA_data available in tTEscanR
+```
+
+<hr>
+
+**Function_** `Set_tRNACutoff()`.
+
+Retrieves an optimal dataset-specific threshold to filter the tRNA expression data.
+
+**Parameters**
+- `data`: The (single-cell) tRNA gene expression data containing tRNA cuts as rows and conditions as columns.
+- `num_iter`: Numeric; value to select the number of iteration to perform in order to determine the optimal cutoff.
+- `cutoffs_limits`: Vector; Minimum and maximum values to test to search for the optimal tRNA threhsold.
+- `generate_plot`: Logic; if TRUE, generates a correlation plot.
+- `slope_thrshold`: Numeric; value to consider for the determination of the correlation stability.
+- `rho_threshold`: Numeric; value to consider for the determination of the correlation strength.
+
+
+```{r}
+tRNA_optimal_cutoff <- Set_tRNACutoff(data = tRNA_data,
+                                      num_iter = 1000,
+                                      cutoffs_limits = c(50, 1000),
+                                      generate_plot = TRUE,
+                                      slope_threshold = 0.001,
+                                      rho_threshold = 0.5)
 ```
 
 <hr>
