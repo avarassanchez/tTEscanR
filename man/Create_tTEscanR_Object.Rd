@@ -15,11 +15,11 @@ Create_tTEscanR_Object(
 \arguments{
 \item{counts}{A count \code{matrix} (or \code{list} of matrices) that will be stored in the \code{assays} slot.}
 
-\item{assay}{Optional; a \code{character} string (or \code{list} of characters) to identify the \code{counts}. Required if \code{counts} is not a named list.}
+\item{assay}{Optional; a \code{character} string (or \code{list} of characters) to identify the \code{counts}. Required if \code{counts} is not a named \code{list}.}
 
 \item{meta.data}{Optional; a variable (or \code{list} of variables) with additional information that will be stored in \code{meta.data} slot.}
 
-\item{meta.data.ids}{Optional; a \code{character} string (or \code{list} with the labels) to identify the \code{meta.data}. Required if \code{meta.data} is not a named list.}
+\item{meta.data.ids}{Optional; a \code{character} string (or \code{list} with the labels) to identify the \code{meta.data}. Required if \code{meta.data} is not a named \code{list}.}
 
 \item{verbose}{Logical; if \code{TRUE}, displays information messages. Defaults to \code{TRUE}.}
 }
@@ -32,21 +32,25 @@ The object consists of two main components; \code{assays}, which stores data mat
 and \code{meta.data}, which stores associated information and additional intermediate calculations.
 A \code{tTEscanR_Object} can be created using a single dataset, or initialized with a list of datasets provided at once.
 Additional assays and metadata layers can be appended later using the \code{\link{Update_tTEscanR_Object}} function.
-
+}
+\details{
 In order to ensure robustness throughout the pipeline \strong{specific ids} have been assigned and should be respected by the user.
 \strong{\code{assays} slot:}
 \itemize{
 \item mRNA and tRNA count matrices as \code{"mRNA"} and \code{"tRNA"}
 \item Codon and anticodon usage count matrices as \code{"CodonUsage"} and \code{"AnticodonUsage"}
 \item Amino acid demand and supply count matrices as \code{"AADemand"} and \code{"AASupply"}
+\item Size corrected count matrices contain the prefix \code{"SizeCorrected"} added to the raw count matrices names (e.g. \code{"SizeCorrected_mRNA} or \code{"SizeCorrectedCodonUsage})
 \strong{\code{meta.data} slot:}
 \item Table with the conditions of the mRNA and tRNA data as \code{"ConditionsLabels"}
 \item Active correction factor to use when running differential expression analyses as \code{"CorrectionFactor"}
+\item Optional; Identifier \code{DataMetadataIndex} to indicate the column in \code{"ConditionsLabels"} that contains the labels of the conditions of the \code{assay}.
 }
 }
 \examples{
-data(subset_mRNA_data, subset_tRNA_data, metadata)
-tTEscanR_obj <- Create_tTEscanR_Object(counts = list(mRNA = subset_mRNA_data,
-                                                     tRNA = subset_tRNA_data),
-                                       meta.data = metadata, meta.data.ids = "ConditionsLabels")
+data(default_tTEscanR_mRNA_data, default_tTEscanR_tRNA_data, default_tTEscanR_metadata)
+tTEscanR_obj <- Create_tTEscanR_Object(counts = list(mRNA = default_tTEscanR_mRNA_data,
+                                                     tRNA = default_tTEscanR_tRNA_data),
+                                       meta.data = default_tTEscanR_metadata,
+                                       meta.data.ids = "ConditionsLabels")
 }

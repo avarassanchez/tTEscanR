@@ -5,3 +5,4 @@
 ^custom_checks\.R$
 ^\.Rhistory$
 ^docs$
+^data-raw$

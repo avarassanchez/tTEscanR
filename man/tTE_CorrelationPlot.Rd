@@ -22,7 +22,7 @@ tTE_CorrelationPlot(
 )
 }
 \arguments{
-\item{data}{A long format table. This format can be obtained using \code{\link{DataToLongFormat}}.}
+\item{data}{A long format table. This format can be obtained using \code{\link{TransformFormat}}.}
 
 \item{plot}{Either \code{"MeanCodonUsage"} (default) or \code{"PoolDiversity"} to indicate the \code{data} source.}
 

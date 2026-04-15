@@ -1,17 +1,20 @@
-ExtractGenes <- function(ensembl, filter, retain.mitochondrial, verbose = TRUE){
+ExtractGenes <- function(ensembl, filter, retain_mitochondrial, retain_geneversion, verbose = TRUE){
 
   ###
   # CALL: CallingEnsembl()
   # DESCRIPTION: This function uses biomaRt to get the genes of a target organism (based on the input ensembl) and returns a table.
   ###
 
-  if (verbose) message("- Retriving protein coding genes & filtering out mitochondrial genes.")
-  if (isFALSE(retain.mitochondrial)){ # Exclude mitochondrial genes
-    prot_coding_ensembl <- biomaRt::getBM(attributes = c("ensembl_gene_id", "ensembl_transcript_id", "chromosome_name", "external_gene_name",
+  if (verbose) message("- Retriving protein coding genes & filtering out mitochondrial genes (if applicable).")
+
+  id_attributes <- if (isTRUE(retain_geneversion)) c("ensembl_gene_id_version", "ensembl_transcript_id_version") else c("ensembl_gene_id", "ensembl_transcript_id")
+
+  if (isFALSE(retain_mitochondrial)){ # Exclude mitochondrial genes
+    prot_coding_ensembl <- biomaRt::getBM(attributes = c(id_attributes, "chromosome_name", "external_gene_name",
                                                          "transcript_start", "transcript_end", "transcript_is_canonical"),
                                           filters = c("biotype", "chromosome_name"), values = list("protein_coding", setdiff(c(1:22, "X", "Y"), "MT")), mart = ensembl)
   } else { # Retain all protein coding genes
-    prot_coding_ensembl <- biomaRt::getBM(attributes = c("ensembl_gene_id", "ensembl_transcript_id", "chromosome_name", "external_gene_name",
+    prot_coding_ensembl <- biomaRt::getBM(attributes = c(id_attributes, "chromosome_name", "external_gene_name",
                                                          "transcript_start", "transcript_end", "transcript_is_canonical"),
                                           filters = "biotype", values = "protein_coding", mart = ensembl)
   }
@@ -29,57 +32,57 @@ ExtractGenes <- function(ensembl, filter, retain.mitochondrial, verbose = TRUE){
   return(prot_coding_ensembl) # Returns a table with the features retrieved by getBM()
 }
 
-ExtractSequences <- function(transcripts, ensembl){
+ExtractSequences <- function(transcripts, ensembl, retain_geneversion){
 
   ###
   # CALL: CallingEnsembl()
   # DESCRIPTION: This function takes a list of transcript ids and retrieves the actual nucleotide sequence.
   ###
 
-  transcript_sequences <- biomaRt::getSequence(id = transcripts, type = "ensembl_transcript_id", seqType = "coding", mart = ensembl)
+  id_attribute <- if (isTRUE(retain_geneversion)) "ensembl_transcript_id_version" else "ensembl_transcript_id"
+
+  transcript_sequences <- biomaRt::getSequence(id = transcripts, type = id_attribute, seqType = "coding", mart = ensembl)
   return(transcript_sequences) # Returns a table with 2 columns: (i) transcript id, and (ii) nucleotide sequence
 }
 
-CallingEnsembl <- function(dataset_name, transcripts, filter, retain.mitochondrial, verbose){
+CallingEnsembl <- function(dataset_name, transcripts, filter, retain_mitochondrial, retain_geneversion, verbose){
 
   ###
   # CALL: ObtainCodonFreqPerGene()
-  # DESCRIPTION: This function retrieves nucleotide sequence of the protein-coding genes of a target organism, in an exploratory or targeted (user-defined list) way.
+  # DESCRIPTION: This function retrieves nucleotide sequences of the protein-coding genes of a target organism, in an exploratory or targeted (user-defined list) way.
   ###
 
-  results.list <- list() # Empty list to store the results
+  translator_table <- NULL
 
-  message("2 . Retrieving Ensembl dataset.")
+  message("2 . Retrieving the Ensembl dataset.")
   ensembl <- biomaRt::useEnsembl(biomart = "ensembl", dataset = dataset_name)
 
   if (is.null(transcripts)){
     if (verbose) message("- Retrieving the protein-coding transcripts.")
 
-    transcripts <- ExtractGenes(ensembl = ensembl, filter = filter, retain.mitochondrial = retain.mitochondrial) # Get table with the features of all protein-coding transcripts
+    transcripts <- ExtractGenes(ensembl = ensembl, filter = filter, retain_mitochondrial = retain_mitochondrial,
+                                retain_geneversion = retain_geneversion) # Get table with the features of all protein-coding transcripts
 
     # Define a translator table with the different ids of a gene
     translator_table <- data.frame(transcripts$ensembl_transcript_id, transcripts$ensembl_gene_id, transcripts$external_gene_name)
     colnames(translator_table) <- c("ensembl_transcript_id", "ensembl_gene_id", "external_gene_name")
-    results.list <- append(results.list, list(translator_table))
-
     transcripts <- transcripts$ensembl_transcript_id # Retrieve the transcript ids
   }
 
-  message("  2 . COMPLETED\n", "3 . Extracting the genomic sequence of each transcript.")
-  transcript_sequences <- ExtractSequences(transcripts = transcripts, ensembl = ensembl) # Based on a list of ids retrieve the actual sequence
-  if (nrow(transcript_sequences) == 0) stop(paste("No transcripts were found.\n", "Please revise the `transcripts` if applicable."))
+  message("2 . COMPLETED\n", "3 . Extracting the genomic sequence of each transcript.")
+  transcript_sequences <- ExtractSequences(transcripts = transcripts, ensembl = ensembl, retain_geneversion = retain_geneversion) # Based on a list of ids retrieve the actual sequence
+  if (nrow(transcript_sequences) == 0) stop(paste("No transcripts were found.\n", "Please revise the 'transcripts' if applicable."))
 
   unavailable <- which(transcript_sequences$coding == "Sequence unavailable")
   if (length(unavailable) != 0){
     if (verbose) message(paste("- There are", length(unavailable), "transcripts which sequence is unavailable.\n"), "- These transcripts will be removed.")
-    if(length(unavailable) == length(transcript_sequences)) stop("No transcripts were found.\n", "Please revise the `transcripts` if applicable.")
+    if(length(unavailable) == length(transcript_sequences)) stop("No transcripts were found with available sequences.\n", "Please revise the 'transcripts' if applicable.")
     transcript_sequences <- transcript_sequences[-unavailable, ]
   }
 
   if (verbose) message(paste("- Number of protein coding transcripts:", nrow(transcript_sequences)))
-  results.list <- append(results.list, list(transcript_sequences)) # Use the list to ensure that all the entries are interpreted as a single object
-  message("  3 . COMPLETED")
-  return(results.list) # Returns a list with the translator table between gene identifiers (if possible) and the sequences of the genes
+  message("3 . COMPLETED")
+  return(list(translator_table = translator_table, transcript_sequences = transcript_sequences)) # Returns a list with the translator table between gene identifiers (if possible) and the sequences of the genes
 }
 
 CheckFASTAFormat <- function(file){
@@ -89,16 +92,19 @@ CheckFASTAFormat <- function(file){
   # DESCRIPTION: This function checks if the input file corresponds to a FASTA file, otherwise reports an error.
   ###
 
-  lines <- readLines(file)
+  lines <- readLines(file, n = 100, warn = FALSE) # Perform a quick check to only consider a subset of the file so that not all the FASTA file is loaded into the memory
+
   header <- grepl("^>", lines)
-  if (!any(header)) stop("No headers found ('>'). Not a valid FASTA file.")
-  if (length(lines) < 2) stop("File too short to contain valid FASTA records.")
+  if (!grepl("^>", lines[1])) stop("Not a valid FASTA file. The first line must be a header ('>').")
+  if (length(lines) < 2) stop("File too short or empty. Not a valid FASTA file.")
 
   invalid_lines <- which(!header && !grepl("^[ATGCatgcnNUu]+$", lines))
   if (length(invalid_lines) > 0) stop("Invalid sequence characters found on lines:", paste(invalid_lines, collapse = ", "))
+
+  return(invisible(TRUE))
 }
 
-FromFASTAtoTable <- function(data, transcripts, retain.mitochondrial, verbose){
+FromFASTAtoTable <- function(data, transcripts, retain_mitochondrial, verbose){
 
   ###
   # CALL: ObtainCodonFreqPerGene()
@@ -111,12 +117,12 @@ FromFASTAtoTable <- function(data, transcripts, retain.mitochondrial, verbose){
 
   # Generate a table with the ids and the nucleotide sequences
   transcript_sequences <- data.frame(coding = unname(as.character(protein_coding_data)), ensembl_transcript_id = names(protein_coding_data), stringsAsFactors = FALSE)
-  if (nrow(transcript_sequences) == 0) stop("There are no protein coding transcripts.")
+  if (nrow(transcript_sequences) == 0) stop("There are no protein-coding transcripts.")
 
-  if (isFALSE(retain.mitochondrial)){ # Filter out mitochondrial genes
+  if (isFALSE(retain_mitochondrial)){ # Filter out mitochondrial genes
     if (verbose) message("- Mitochondrial genes will be removed.")
     mitochondrial_index <- grepl("chromosome:[^:]+:MT|gene_symbol:MT-|mitochondrial", transcript_sequences$ensembl_transcript_id, ignore.case = TRUE)
-    if (nrow(transcript_sequences) == length(mitochondrial_index)) stop("All the protein coding transcripts correspond to mitochondrial genes.")
+    if (nrow(transcript_sequences) == length(mitochondrial_index)) stop("All the protein-coding transcripts correspond to mitochondrial genes.")
     transcript_sequences <- transcript_sequences[!mitochondrial_index, ]
   }
 
@@ -131,14 +137,14 @@ FromFASTAtoTable <- function(data, transcripts, retain.mitochondrial, verbose){
                                      transcript_length = nchar(transcript_sequences$coding), stringsAsFactors = FALSE)
 
   if(!is.null(transcripts)){ # Targeted approach based on the transcripts input parameter
-    if (verbose) message("- Trimming by the ids included as `transcripts`.")
+    if (verbose) message("- Trimming by the ids included as 'transcripts'.")
 
     targeted_indexes <- list(targeted_indexes_gene_id = which(transcript_sequences$ensembl_gene_id %in% transcripts),
                              targeted_indexes_transcript_id = which(transcript_sequences$ensembl_transcript_id %in% transcripts),
                              targeted_indexes_gene_name = which(transcript_sequences$external_gene_name %in% transcripts))
 
     if ((length(targeted_indexes$targeted_indexes_gene_id) == 0) && (length(targeted_indexes$targeted_indexes_transcript_id) == 0) && (length(targeted_indexes$targeted_indexes_gene_name) == 0)){
-      stop("None of the ids given in `transcripts` have been found.\n", "Supported formats: Ensembl transcript id, Ensembl gene id and external gene name.")
+      stop("None of the ids given in 'transcripts' have been found.\n", "Supported formats: Ensembl transcript id, Ensembl gene id and external gene name.")
     }
 
     # Select the column of the ids that have a higher match with the input list of ids
@@ -146,15 +152,15 @@ FromFASTAtoTable <- function(data, transcripts, retain.mitochondrial, verbose){
     transcript_sequences <- transcript_sequences[targeted_indexes, ]
   }
 
-  if (nrow(transcript_sequences) == 0) stop("There are no protein coding transcripts.")
-  if (verbose) message(paste("- Number of protein coding transcripts:", nrow(transcript_sequences)))
+  if (nrow(transcript_sequences) == 0) stop("There are no protein-coding transcripts.")
+  if (verbose) message(paste("- Number of protein-coding transcripts:", nrow(transcript_sequences)))
 
   # Generate a translator table with the above variables
   translator_table <- data.frame(transcript_sequences$ensembl_transcript_id, transcript_sequences$ensembl_gene_id, transcript_sequences$external_gene_name)
   translator_table <- translator_table[!is.na(translator_table$external_gene_name), ] # Remove the entries that do not have external gene names
   colnames(translator_table) <- c("ensembl_transcript_id", "ensembl_gene_id", "external_gene_name")
 
-  return(list(transcript_sequences, translator_table)) # Returns the table with the ids and the sequences filtered (if applicable), and the translator table of the gene annotation formats
+  return(list(transcript_sequences = transcript_sequences, translator_table = translator_table)) # Returns the table with the ids and the sequences filtered (if applicable), and the translator table of the gene annotation formats
 }
 
 #' Extract Codon Composition of Sequences
@@ -168,9 +174,9 @@ FromFASTAtoTable <- function(data, transcripts, retain.mitochondrial, verbose){
 #' @export
 #'
 #' @examples
-#' codon_composition <- ExtractCodonComposition(sequences = list("ATGCGTACG", "TTAAGGCCG"))
+#' codon_composition <- ExtractCodons(sequences = list("ATGCGTACG", "TTAAGGCCG"))
 
-ExtractCodonComposition <- function(sequences, verbose = TRUE){
+ExtractCodons <- function(sequences, verbose = TRUE){
 
   ###
   # CALL: User or ObtainCodonFreqPerGene()
@@ -178,47 +184,64 @@ ExtractCodonComposition <- function(sequences, verbose = TRUE){
   ###
 
   if (verbose) message("- Extracting the nucleotide sequences:")
-  n <- if (!is.null(nrow(sequences))) nrow(sequences) else length(sequences) # Number of sequences to analyze
-  pb <- utils::txtProgressBar(min = 0, max = n, style = 3) # Start a time counter to track the progress of the function execution
 
-  for (i in 1:n) { # Iterates over each sequence
+  # 1. Safely determine if the input is a dataframe/matrix or a plain vector
+  is_tabular <- is.data.frame(sequences) || is.matrix(sequences)
+  n <- if (is_tabular) nrow(sequences) else length(sequences)
 
-    if(!is.null(nrow(sequences))){ # Dealing with a table: (i) nucleotide sequence, (ii) sequence id
-      transcript_id <- sequences[, 2][i] # Extract the sequence id
-      sequence <- sequences[, 1][i] # Extract the actual nucleotide sequence
-    } else { # Dealing with a list
-      transcript_id <- paste("sequence", i, sep = "_") # Define a standard id for each sequence
-      sequence <- sequences[i] # Retrieve the actual nucleotide sequence
+  pb <- utils::txtProgressBar(min = 0, max = n, style = 3)
+
+  bases <- c("A", "C", "G", "T")
+  all_64_codons <- apply(expand.grid(bases, bases, bases), 1, paste, collapse = "")
+
+  counts_list <- vector("list", n)
+  transcript_names <- character(n)
+
+  for (i in seq_len(n)) {  # Iterates over each sequence
+
+    if (is_tabular) {
+      sequence <- as.character(sequences[i, 1])
+      transcript_id <- if (ncol(sequences) >= 2) as.character(sequences[i, 2]) else paste("sequence", i, sep = "_")
+    } else {
+      sequence <- as.character(sequences[i])
+      transcript_id <- paste("sequence", i, sep = "_")
     }
 
-    # Ensure the validity of the sequence: (i) proper nucleotides, (ii) divided into triplets
-    valid_nucleotides <- grepl("^[ATGCatgcnNUu]+$", sequence)
+    transcript_names[i] <- transcript_id
+
+    # Ensure the validity of the sequence
+    sequence <- toupper(sequence)
+    sequence <- gsub("U", "T", sequence)
+
+    valid_nucleotides <- grepl("^[ATGCN]+$", sequence) # Removed 'U' since we just gsub'd it
     if (isFALSE(valid_nucleotides)) stop(paste("Invalid sequence characters found in sequence:", transcript_id))
 
-    # Generate the table with the counts - Count the number of appearances of each codon in each sequence
-    if (nchar(sequence) %% 3 != 0)  stop("The sequence length is not a multiple of 3.")
-    sequence <- substr(sequence, 1, (nchar(sequence) %/% 3) * 3) # Divide the nucleotide sequence into triplets
-    codon_counts <- as.data.frame(table(substring(sequence, seq(1, nchar(sequence) - 2, 3), seq(3, nchar(sequence), 3))))
-    colnames(codon_counts) <- c("codons", transcript_id) # Add the codons as a column not as rownames
+    # Strict multiple of 3 check
+    if (nchar(sequence) %% 3 != 0) {
+      warning(sprintf("Transcript %s length is not a multiple of 3. Skipping.", transcript_id))
+      utils::setTxtProgressBar(pb, i)
+      next  # Skip this sequence, but don't stop the whole function
+    }
 
-    codon_freq_per_gene_matrix <- if (i == 1) codon_counts else merge(codon_freq_per_gene_matrix, codon_counts, all = TRUE)
-    if (ncol(codon_freq_per_gene_matrix) == 0 || nrow(codon_freq_per_gene_matrix) == 0) stop("Incorrect dimensions.")
+    # Generate the table with the counts
+    triplets <- substring(sequence, seq(1, nchar(sequence) - 2, 3), seq(3, nchar(sequence), 3))
+    codon_counts <- table(factor(triplets, levels = all_64_codons)) # 'triplets' is already uppercase
+    counts_list[[i]] <- as.numeric(codon_counts)
 
-    utils::setTxtProgressBar(pb, i) # Increase the progress bar
+    utils::setTxtProgressBar(pb, i)
   }
 
-  close(pb) # Stop the progress bar
-  if (verbose) message("- Extraction completed.")
+  close(pb)
+  if (verbose) message("\n- Extraction completed.\n- Assembling matrix...")
 
-  # Give proper format to the matrix
-  rownames(codon_freq_per_gene_matrix) <- codon_freq_per_gene_matrix[, 1]
-  codon_freq_per_gene_matrix[is.na(codon_freq_per_gene_matrix)] <- 0
-  codon_freq_per_gene_matrix <- codon_freq_per_gene_matrix[, 2:ncol(codon_freq_per_gene_matrix)]
+  # Filter out the skipped sequences
+  valid_indices <- !sapply(counts_list, is.null)
+  if (!any(valid_indices)) stop("No valid sequences remained after filtering.")
 
-  codonsN <- grep(pattern = "N", x = rownames(codon_freq_per_gene_matrix)) # Removing undefined codons (if any)
-  if (length(codonsN) != 0){
-    if (verbose)  message("- There are codons with unknown bases (N nucleotides).\n", "- These codons will be removed.")
-    codon_freq_per_gene_matrix <- codon_freq_per_gene_matrix[-codonsN, ]
-  }
-  return(codon_freq_per_gene_matrix) # Output the codon per gene matrix
+  # Give proper format to the matrix (do.call cbind is incredibly fast here!)
+  codon_freq_per_gene_matrix <- do.call(cbind, counts_list[valid_indices])
+  rownames(codon_freq_per_gene_matrix) <- all_64_codons
+  colnames(codon_freq_per_gene_matrix) <- transcript_names[valid_indices]
+
+  return(codon_freq_per_gene_matrix)
 }

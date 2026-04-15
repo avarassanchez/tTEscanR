@@ -8,33 +8,27 @@ ComputeCodonUsage(
   object,
   codon_freq = NULL,
   species = NULL,
-  filter = "canonical",
   reduce = 100,
-  additional.metrics = TRUE,
+  additional_metrics = TRUE,
   corr_method = "spearman",
-  overwrite.assay = FALSE,
-  overwrite.metadata = FALSE,
+  overwrite = FALSE,
   verbose = TRUE
 )
 }
 \arguments{
 \item{object}{A \code{tTEscanR_Object} containing a mRNA assay.}
 
-\item{codon_freq}{Optional; a user-provided codon frequency-per-gene table. If necessary, it can be computed using \code{\link{ObtainCodonFreqPerGene}}.}
+\item{codon_freq}{Optional; a user-provided codon frequency-per-gene table. If necessary, it can be computed using \code{\link{GetCodonFreq}}.}
 
 \item{species}{Optional; either \code{"hg38"} (human) or \code{"mm39"} (mouse) to load the default settings. Required if \code{codon_freq} is not provided.}
 
-\item{filter}{Optional; either \code{"canonical"} (default) or \code{"length"} (longest transcript) to specify which transcript to choose if several are available for the same gene.}
-
 \item{reduce}{Numeric; a scaling factor used to normalize large expression values that exceed R's handling capacity. Defaults to 100.}
 
-\item{additional.metrics}{Logical; if \code{TRUE}, computes: (i) codon exonic background, (ii) mean codon usage, and (iii) correlation between the previous metrics. Defaults to \code{TRUE}.}
+\item{additional_metrics}{Logical; if \code{TRUE}, computes: (i) codon exonic background, (ii) mean codon usage, and (iii) correlation between the previous metrics. Defaults to \code{TRUE}.}
 
-\item{corr_method}{A correlation method accepted by \code{\link{cor}}. Required if \code{additional.metrics} is \code{TRUE}. Defaults to \code{"spearman"}.}
+\item{corr_method}{A correlation method accepted by \code{\link{cor}}. Required if \code{additional_metrics} is \code{TRUE}. Defaults to \code{"spearman"}.}
 
-\item{overwrite.assay}{Logical; if \code{TRUE}, overwrites any existing assay in the \code{object}. Defaults to \code{FALSE}.}
-
-\item{overwrite.metadata}{Logical; if \code{TRUE}, overwrites any existing metadata in the \code{object}. Defaults to \code{FALSE}.}
+\item{overwrite}{Logical; if \code{TRUE}, overwrites any existing assay and metadata in the \code{object}. Defaults to \code{FALSE}.}
 
 \item{verbose}{Logical; if \code{TRUE}, displays information messages. Defaults to \code{TRUE}.}
 }
@@ -47,12 +41,13 @@ This function estimates \strong{codon usage profiles} based on gene-level mRNA e
 It optionally accepts pre-computed codon frequency tables or uses internally generated default tables when not provided.
 When enabled, it can evaluate the correlation between background codon composition and observed mean codon usage.
 If the additional metrics are to be computed the input \code{tTEscanR_Object} needs to have a \strong{"CorrectionFactor"} stored in the \code{"meta.data"} slot.
+The default \code{codon_freq} were built using the canonical filter to select one transcript if several were available for the same gene.
 }
 \examples{
-data(subset_mRNA_data, metadata)
-tTEscanR_obj <- Create_tTEscanR_Object(counts = subset_mRNA_data, assay = "mRNA",
-                                       meta.data = list(metadata, "tissue"),
+data(default_tTEscanR_mRNA_data, default_tTEscanR_metadata)
+tTEscanR_obj <- Create_tTEscanR_Object(counts = default_tTEscanR_mRNA_data, assay = "mRNA",
+                                       meta.data = list(default_tTEscanR_metadata, "tissue"),
                                        meta.data.ids = list("ConditionsLabels", "CorrectionFactor"))
 tTEscanR_obj <- ComputeCodonUsage(object = tTEscanR_obj, species = "hg38",
-                                  additional.metrics = FALSE, reduce = 1000)
+                                  additional_metrics = FALSE, reduce = 1000)
 }

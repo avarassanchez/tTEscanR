@@ -7,9 +7,10 @@
 ComputeMeanUsage(
   data,
   assay = NULL,
-  mode = "raw",
+  mode = c("raw", "size-corrected", "long_format"),
   metadata = NULL,
-  corr_factor = NULL,
+  id_col = NULL,
+  batch = NULL,
   verbose = TRUE
 )
 }
@@ -22,7 +23,9 @@ ComputeMeanUsage(
 
 \item{metadata}{Optional; a \code{data.frame} with the meta-information related with the conditions in \code{data}. There has to be one column with the same labels as the column names.}
 
-\item{corr_factor}{Optional; a factor based on \code{metadata} columns to define the variable to correct for. Required if \code{mode} is \code{"raw"} and \code{data} is not a \code{tTEscanR_Object}.}
+\item{id_col}{Optional; a factor based on \code{metadata} columns to define the variable to use to link it with the \code{data}. If \code{NULL} the column with the highest agreement will be automatically selected.}
+
+\item{batch}{Optional; a factor based on \code{metadata} columns to define the variable to correct for. Required if \code{mode} is \code{"raw"} and \code{data} is not a \code{tTEscanR_Object}.}
 
 \item{verbose}{Logical; if \code{TRUE}, displays information messages. Defaults to \code{TRUE}.}
 }
@@ -32,15 +35,15 @@ An updated \code{tTEscanR_Object} if \code{data} is a \code{tTEscanR_Object}. A 
 \description{
 This function computes the \strong{average usage} of codon, anticodons, or amino acids across conditions, useful for summarizing feature usage trends across sample groups.
 It supports direct input of a count matrix and extraction from a \code{tTEscanR_Object}.
-When the input \code{data} is a \code{tTEscanR_Object} the parameters \code{metadata} and \code{corr_factor} will be extracted from the object, and ignored if specified as input parameters.
+When the input \code{data} is a \code{tTEscanR_Object} the parameters \code{metadata} and \code{batch} will be extracted from the object, and ignored if specified as input parameters.
 Therefore, variables \code{assay} and \code{metadata} need to be coherent with the rules described in \code{\link{Create_tTEscanR_Object}}.
 }
 \examples{
-data(subset_tRNA_data, metadata)
-tTEscanR_obj <- Create_tTEscanR_Object(counts = subset_tRNA_data, assay = "tRNA",
-                                       meta.data = list(metadata, "tissue"),
+data(default_tTEscanR_tRNA_data, default_tTEscanR_metadata)
+tTEscanR_obj <- Create_tTEscanR_Object(counts = default_tTEscanR_tRNA_data, assay = "tRNA",
+                                       meta.data = list(default_tTEscanR_metadata, "tissue"),
                                        meta.data.ids = list("ConditionsLabels", "CorrectionFactor"))
-# Input: tTEscanR object containing metadata and corr_factor parameters
+# Input: tTEscanR object containing metadata and batch parameters
 tTEscanR_obj <- ComputeAnticodonUsage(object = tTEscanR_obj)
 anticodon_mean_usage <- ComputeMeanUsage(data = tTEscanR_obj, assay = "AnticodonUsage")
 }

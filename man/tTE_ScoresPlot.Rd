@@ -10,14 +10,15 @@ tTE_ScoresPlot(
   class_col,
   index_col,
   target_col = NULL,
-  group_col = NULL,
+  facet_col = NULL,
   color_palette = NULL,
   save_format = NULL,
   out_name = NULL,
   out_directory = NULL,
   show_legend = "none",
   add_titles = TRUE,
-  add_stats = TRUE
+  add_stats = TRUE,
+  show_outliers = FALSE
 )
 }
 \arguments{
@@ -29,9 +30,9 @@ tTE_ScoresPlot(
 
 \item{index_col}{Name of the categorical variable that links the conditions in \code{data} with the \code{metadata}.}
 
-\item{target_col}{Optional; name of the categorical variable to reflect in the plot (the most specific level).}
+\item{target_col}{Optional; name of the categorical variable to perform the statistical comparison (the most specific level). Used if \code{add_stats} is \code{TRUE}.}
 
-\item{group_col}{Optional; name of the categorical variable to reflect in the plot (the most general level).}
+\item{facet_col}{Optional; name of the categorical variable separate the plot into different panels.}
 
 \item{color_palette}{Optional; a vector of color codes to customize plot appearance.}
 
@@ -46,6 +47,8 @@ tTE_ScoresPlot(
 \item{add_titles}{Logical; if \code{TRUE}, includes titles in the plot. Defaults to \code{TRUE}.}
 
 \item{add_stats}{Logical; if \code{TRUE}, performs a statistical analysis based on the available parameters. Defaults to \code{TRUE}.}
+
+\item{show_outliers}{Logical; if \code{TRUE}, labels the outlier data points based on \code{index_col}.}
 }
 \value{
 A \code{ggplot} object representing the tTE scores. If \code{save_format} is provided, the plot will also be saved to the specified location. If \code{add_stats} reports a table with the statitical measures summarized.

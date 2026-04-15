@@ -1,27 +1,86 @@
-test_that("Check the codon frequency per gene function - ObtainCodonFreqPerGene()", {
+test_that("Check the codon frequency per gene function - GetCodonFreq()", {
 
-  # CASE 1: error - no input specified
-  expect_error(ObtainCodonFreqPerGene(dataset_name = NULL, genes_file = NULL, transcripts = NULL, filter = "canonical", out_format = "external_gene_name", verbose = TRUE))
-  # CASE 2: error - wrong genes_file
-  expect_error(ObtainCodonFreqPerGene(dataset_name = NULL, genes_file = genes, transcripts = NULL, filter = "canonical", out_format = "external_gene_name", verbose = TRUE))
+  base_args <- list(out_format = "external_gene_name", verbose = FALSE)
+
+  # CASE 1: NULL inputs
+  expect_error(do.call(GetCodonFreq, c(list(dataset_name = NULL, genes_file = NULL), base_args)), "specify either")
+
+  # CASE 2: Invalid genes_file type
+  expect_error(do.call(GetCodonFreq, c(list(dataset_name = NULL, genes_file = 123), base_args)))
 })
 
-test_that("Check the codon composition - ExtractCodonComposition()", {
+test_that("ExtractCodons produces an accurate count matrix", {
 
-  # CASE 1: no error - base cases
-  expect_no_error(ExtractCodonComposition(sequences = "ATGCTGCAT", verbose = FALSE)) # using T bases
-  expect_no_error(ExtractCodonComposition(sequences = "AUGCUGCAU", verbose = FALSE)) # using U bases
-  expect_no_error(ExtractCodonComposition(sequences = "atgctgcat", verbose = FALSE)) # using T bases
-  expect_no_error(ExtractCodonComposition(sequences = "augcugcau", verbose = FALSE)) # using U bases
+  seq1 <- "ATGCGTACG" # 3 codons: ATG, CGT, ACG
+  seq2 <- "TTAAGGCCG" # 3 codons: TTA, AGG, CCG
+  input_list <- list(s1 = seq1, s2 = seq2)
 
-  expect_no_error(ExtractCodonComposition(sequences = list("ATGCTGCAT"), verbose = FALSE)) # list of one sequence
-  expect_no_error(ExtractCodonComposition(sequences = list("ATGCTGCAT", "ATGCTGCAT"), verbose = FALSE)) # list of multiple sequences
+  res <- ExtractCodons(sequences = input_list, verbose = FALSE)
 
-  sequences_example <- data.frame(sequences = c("ATGCTGCAT", "ATGCTGCAT"), ids = c("sequence1", "sequence2"))
-  expect_no_error(ExtractCodonComposition(sequences = sequences_example, verbose = FALSE)) # dataframe as input
+  expect_true(is.matrix(res))
+  expect_type(res, "double")
+  expect_equal(ncol(res), 2)
+  expect_true(all(grepl("sequence_1|sequence_2", colnames(res)))) # Check if names are inherited from list or auto-generated
 
-  # CASE 2: error - wrong sequences input
-  expect_error(ExtractCodonComposition(sequences = ATGCTGCAT, verbose = FALSE)) # not a string
-  expect_error(ExtractCodonComposition(sequences = "ATGCTGCATC", verbose = FALSE)) # not a multiple of 3 - ERROR
-  expect_error(ExtractCodonComposition(sequences = "ARGCRGCAR", verbose = FALSE)) # wrong nucleotide bases
+  expect_equal(unname(colSums(res)), c(3, 3)) # Each sequence has 9 bases -> 3 codons. The column sums must be 3.
+
+  expect_true("ATG" %in% rownames(res)) # Ensure "ATG" is present and has a count of 1 in the first sequence
+  expect_equal(res["ATG", 1], 1)
+  expect_equal(res["ATG", 2], 0)
+
+  # RNA and DNA versions of the same sequence should produce identical data frames
+  rna_res <- ExtractCodons(sequences = "AUGCUGCAU", verbose = FALSE)
+  dna_res <- ExtractCodons(sequences = "ATGCTGCAT", verbose = FALSE)
+
+  expect_equal(rna_res, dna_res)
+})
+
+test_that("ExtractCodons handles data.frame inputs correctly", {
+  df_input <- data.frame(seqs = c("ATGCGTACG", "TTAAGGCCG"), id = c("seq1", "seq2"))
+  res_df <- ExtractCodons(sequences = df_input, verbose = FALSE)
+
+  expect_true(is.matrix(res_df))
+  expect_type(res_df, "double")
+  expect_equal(sum(res_df), 6) # 6 unique codons total in this example
+})
+
+test_that("ExtractCodons correctly parses sequences and handles inputs", {
+
+  expected_counts <- c(ATG = 1, CTG = 1, CAT = 1)
+  variants <- c("ATGCTGCAT", "AUGCUGCAU", "atgctgcat", "augcugcau")
+
+  for (seq in variants) {
+    res <- ExtractCodons(sequences = seq, verbose = FALSE)
+    expect_equal(as.numeric(res[names(expected_counts), 1]), unname(expected_counts), info = paste("Failed on variant:", seq))
+  }
+
+  # Dealing with a named list
+  seq_list <- list(s1 = "ATGCTGCAT", s2 = "ATGCTGCAT")
+  res_list <- ExtractCodons(sequences = seq_list, verbose = FALSE)
+  expect_equal(ncol(res_list), 2)
+  expect_equal(unname(colSums(res_list)), c(3, 3)) # Each seq has 3 codons
+
+  # Dealing with a list
+  seq_list <- list("ATGCTGCAT", "ATGCTGCAT")
+  res_list <- ExtractCodons(sequences = seq_list, verbose = FALSE)
+  expect_equal(ncol(res_list), 2)
+  expect_equal(unname(colSums(res_list)), c(3, 3))
+
+  # Dealing with a vector
+  seq_vector <- c("ATGCTGCAT", "ATGCTGCAT")
+  res_vector <- ExtractCodons(sequences = seq_vector, verbose = FALSE)
+  expect_equal(ncol(res_vector), 2)
+  expect_equal(unname(colSums(res_vector)), c(3, 3))
+
+  # Dealing with a dataframe without ids
+  seq_df <- data.frame(sequences = c("ATGCTGCAT", "ATGCTGCAT"))
+  res_dg <- ExtractCodons(sequences = seq_df, verbose = FALSE)
+  expect_equal(ncol(res_dg), 2)
+  expect_equal(unname(colSums(res_dg)), c(3, 3))
+
+
+  expect_error(ExtractCodons(sequences = 12345), "character")
+  expect_warning(ExtractCodons(sequences = c("ATGCTGCAT", "ATGCTGCATC")), "multiple of 3")
+  expect_error(suppressWarnings(ExtractCodons(sequences = "ATGCTGCATC")), "No valid sequences remained after filtering")
+  expect_error(ExtractCodons(sequences = "ARGCRGCAR"), "Invalid sequence characters")
 })

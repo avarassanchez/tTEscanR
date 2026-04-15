@@ -4,19 +4,12 @@
 \alias{ComputeAnticodonUsage}
 \title{Compute Anticodon Usage from tRNA Gene Expression Data}
 \usage{
-ComputeAnticodonUsage(
-  object,
-  overwrite.assay = FALSE,
-  overwrite.metadata = FALSE,
-  verbose = TRUE
-)
+ComputeAnticodonUsage(object, overwrite = FALSE, verbose = TRUE)
 }
 \arguments{
 \item{object}{A \code{tTEscanR_Object} containing a tRNA assay.}
 
-\item{overwrite.assay}{Logical; if \code{TRUE}, overwrites any existing assay in the \code{object}. Defaults to \code{FALSE}.}
-
-\item{overwrite.metadata}{Logical; if \code{TRUE}, overwrites any existing metadata in the \code{object}. Defaults to \code{FALSE}.}
+\item{overwrite}{Logical; if \code{TRUE}, overwrites any existing assay and metadata in the \code{object}. Defaults to \code{FALSE}.}
 
 \item{verbose}{Logical; if \code{TRUE}, displays information messages. Defaults to \code{TRUE}.}
 }
@@ -29,7 +22,7 @@ It summarizes the expression of tRNAs by their anticodon identity, which can be 
 The tRNA gene names need to be properly annotated for proper recognition. Expected format: tRNA-Asn-GTT-5-1.
 }
 \examples{
-data(subset_tRNA_data)
-tTEscanR_obj <- Create_tTEscanR_Object(counts = subset_tRNA_data, assay = "tRNA")
+data(default_tTEscanR_tRNA_data)
+tTEscanR_obj <- Create_tTEscanR_Object(counts = default_tTEscanR_tRNA_data, assay = "tRNA")
 tTEscanR_obj <- ComputeAnticodonUsage(object = tTEscanR_obj)
 }

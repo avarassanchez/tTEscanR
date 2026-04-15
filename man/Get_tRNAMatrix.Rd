@@ -2,14 +2,14 @@
 % Please edit documentation in R/GeneralProcessing.R
 \name{Get_tRNAMatrix}
 \alias{Get_tRNAMatrix}
-\title{Convert a Chromatin Assay into a tRNA Expression Matrix}
+\title{Generate a tRNA expression matrix}
 \usage{
 Get_tRNAMatrix(
-  chrom,
-  assay = NULL,
-  tRNA_annotations,
+  data,
+  assay = "peaks",
+  confidence_set,
+  tRNA_name_map,
   flanking_region = 100,
-  species = NULL,
   name_sep = c("-", "-"),
   save = TRUE,
   out_name = NULL,
@@ -18,31 +18,29 @@ Get_tRNAMatrix(
 )
 }
 \arguments{
-\item{chrom}{A \code{ChromatinAssay} or \code{SeuratObject} containing tRNA data.}
+\item{data}{\code{SummarizedExperiment}, \code{ChromatinAssay}, or \code{SeuratObject}.}
 
-\item{assay}{Optional; a character string specifying the name of the assay to retrieve from the \code{chrom} if it is a \code{SeuratObject}.}
+\item{assay}{Optional; a character string specifying the name of the assay to retrieve from \code{data} if it is a \code{SeuratObject}. Defaults to \code{"peaks"}.}
 
-\item{tRNA_annotations}{A directory path to tRNA annotations in .ss format.}
+\item{confidence_set}{A directory path to tRNA annotations (confidence set) in .ss or .bed format.}
+
+\item{tRNA_name_map}{Optional; a \code{data.frame} with the tRNA gene names linked to \code{tRNA_annotations}.}
 
 \item{flanking_region}{Integer; number of nucleotides that form the flanking region of each tRNA. Defaults to 100.}
 
-\item{species}{Either \code{"hg38"} (human) or \code{"mm39"} (mouse) to specify which default reference tRNA prediction file to use. Required if \code{tRNA_annotations} is not provided.}
-
 \item{name_sep}{A string delimiter to format the tRNA gene names in the output matrix. Defaults to \code{c("-", "-")}.}
 
-\item{save}{Logical; if \code{TRUE}, the output tRNA expression matrix will be saved as a \code{.rds} file. Defaults to \code{TRUE}.}
+\item{save}{Logical; if \code{TRUE} stores the generated tRNA matrix into a file.}
 
-\item{out_name}{Optional; name for the output file. Required if \code{save} is enabled.}
+\item{out_name}{Optional; name for the saved plot (if \code{save} specified).}
 
-\item{out_directory}{Optional; path to the directory where the output file will be saved. Required if \code{save} is enabled.}
+\item{out_directory}{Optional; path to the directory where the plot will be saved (if \code{save} specified).}
 
 \item{verbose}{Logical; if \code{TRUE}, displays information messages. Defaults to \code{TRUE}.}
 }
 \value{
-A tRNA expression matrix with tRNA genes as rows and samples or conditions as columns.
+Sparse matrix of tRNA counts (tRNAs x cells)
 }
 \description{
-This function extracts tRNA expression data from a given \code{ChromatinAssay} or \code{SeuratObject} and formats it into a standardized expression matrix.
-if no \code{tRNA_annotations} is provided, internal annotations for human (\code{"hg38"}) and mouse (\code{"mm39"}) can be used.
-Optionally, the resulting matrix can be saved to a file for downstream analysis.
+Generate a tRNA expression matrix
 }

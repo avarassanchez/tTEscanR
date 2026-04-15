@@ -5,27 +5,24 @@
 \title{Run Codon Usage Permutation Test (Background)}
 \usage{
 GetPermutationDist(
-  n_permutations = 1000,
+  n_permut = 1000,
   n_features = 100,
   target_data = NULL,
   codon_freq = NULL,
   species = NULL,
-  filter = "canonical",
   verbose = TRUE
 )
 }
 \arguments{
-\item{n_permutations}{Numeric; number of permutations to perform. Defaults to 1000.}
+\item{n_permut}{Numeric; number of permutations to perform. Defaults to 1000.}
 
 \item{n_features}{Numeric; number of features to select in each permutation. Defaults to 100. If \code{target_data} is given this parameter will take its length.}
 
 \item{target_data}{Optional; a mRNA expression count matrix with features as rows and conditions as columns.}
 
-\item{codon_freq}{Optional; a user-provided codon frequency per gene table. If necessary, it can be computed using \code{\link{ObtainCodonFreqPerGene}}.}
+\item{codon_freq}{Optional; a user-provided codon frequency per gene table. If necessary, it can be computed using \code{\link{GetCodonFreq}}.}
 
 \item{species}{Optional, a \code{character} string specifying the species reference genome version (used if \code{codon_freq} is not provided or \code{translate} is \code{TRUE}). Supported values include \code{"hg38"} (human) and \code{"mm39"} (mouse).}
-
-\item{filter}{Optional; a \code{character} string specifying how to choose among multiple transcripts per gene either \code{"canonical"} (default) or \code{"length"} (longest transcript).}
 
 \item{verbose}{Logical; if \code{TRUE}, displays information messages. Defaults to \code{TRUE}.}
 }
@@ -36,8 +33,8 @@ A table with the codons and their frequencies after computing all the permutatio
 This function performs a \strong{permutation test} to compare a mRNA dataset to the reference codon frequency-per-gene matrix.
 }
 \examples{
-data(subset_mRNA_data)
+data(default_tTEscanR_mRNA_data)
 
-genes <- subset_mRNA_data[1:20, ]
-permut <- GetPermutationDist(n_permutations = 100, target_data = genes, species = "hg38")
+genes <- default_tTEscanR_mRNA_data[1:20, ]
+permut <- GetPermutationDist(n_permut = 100, target_data = genes, species = "hg38")
 }

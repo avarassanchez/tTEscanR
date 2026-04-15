@@ -65,7 +65,7 @@ library(tTEscanR)
 In this tutorial, we will analyze a single-cell fetal human atlas described in *[@Cao2020]* and *[@Domcke2020]*, and previously examined by *[@Gao2022]*. A this data and a subset of it are included in **tTEscanR** and can be directly loaded.
 
 ```{r load_data_mRNA, message = FALSE, warning = FALSE}
-data(subset_mRNA_data)
+data(default_tTEscanR_mRNA_data)
 ```
 
 **Dimensions:** 9900 genes (rows) x 172 cell types (columns)
@@ -75,7 +75,7 @@ data(subset_mRNA_data)
 **Columns:** The cell type labels are composed of two parts: tissue - cell type (e.g. Adrenal-Adrenocortical cells)
 
 ```{r load_data_tRNA, message = FALSE, warning = FALSE}
-data(subset_tRNA_data)
+data(default_tTEscanR_tRNA_data)
 ```
 
 **Dimensions:** 377 tRNA genes (rows) x 89 cell types (columns)
@@ -95,7 +95,7 @@ The **pre-processing module** formats and standardizes input matrices to ensure 
 The **`tRNACutsFilter()`** function filters out **samples or conditions** with low total tRNA expression, helping to ensure overall **data quality**. 
 
 ```{r filter_tRNAs, message = FALSE, warning = FALSE}
-filtered_tRNA_data <- tRNACutsFilter(data = subset_tRNA_data, cutoff = 5000)
+filtered_tRNA_data <- Filter_tRNACuts(data = default_tTEscanR_tRNA_data, cutoff = 5000)
 ```
 
 ### 2.2. Defining the tTEscanR object
@@ -105,27 +105,27 @@ The **tTEscanR object** is a centralized data structure that stores input matric
 In order to ensure robustness throughout the pipeline **specific ids** have been assigned and should be respected by the user (see the documentation for more details).
 :::
 
-The **`Create_tTEscanR_Object()`** function initializes a new **tTEscanR** object to store and organize analysis data. The input can be either a **single matrix** or a **list of matrices** (to support multiple datasets), and may optionally include **metadata**. For proper functionality, all input matrices must be clearly and appropriately named. To modify, extend, or update an existing **tTEscanR** object with new data or metadata, use **`Update_tTEscanR_Object()`**. 
+The **`Create_tTEscanR_Object()`** function initializes a new **tTEscanR** object to store and organize analysis data. The input can be either a **single matrix** or a **list of matrices** (to support multiple datasets), and may optionally include **metadata**. For proper functionality, all input matrices must be appropriately named. To modify, extend, or update an existing **tTEscanR** object with new data or metadata, use **`Update_tTEscanR_Object()`**. 
 
 ```{r metadata_definition, message = FALSE, warning = FALSE}
-data(metadata)
+data(default_tTEscanR_metadata)
 ```
 
 ```{r create_tTEscanR_object, message = FALSE, warning = FALSE}
 # Adding the mRNA and tRNA datasest to the object
-tTEobject <- Create_tTEscanR_Object(counts = list(subset_mRNA_data, subset_tRNA_data), assay = list("mRNA", "tRNA"), 
-                                    meta.data = metadata, meta.data.ids = "ConditionsLabels") 
+tTEobject <- Create_tTEscanR_Object(counts = list(default_tTEscanR_mRNA_data, filtered_tRNA_data), assay = list("mRNA", "tRNA"), 
+                                    meta.data = default_tTEscanR_metadata, meta.data.ids = "ConditionsLabels") 
 ```
 
 ```{r update_tTEscanR_object, message = FALSE, warning = FALSE}
 # Updating the object created before some metadata for reference
-matching_celltypes <- intersect(colnames(subset_mRNA_data), colnames(subset_tRNA_data))
+matching_celltypes <- intersect(colnames(default_tTEscanR_mRNA_data), colnames(filtered_tRNA_data))
 
 tTEobject <- Update_tTEscanR_Object(object = tTEobject, meta.data = matching_celltypes, 
-                                    meta.data.ids = "matching_celltypes", overwrite.metadata = TRUE)
+                                    meta.data.ids = "matching_celltypes", overwrite = TRUE)
 ```
 
-Each component of a **tTEscanR** object can be accessed using the `@` symbol to refer to its main slots - for example, `tTEobject@assays` or `tTEobject@meta.data`. Within these slots, specific elements can be accessed using the `$` symbol. For instance: to access the mRNA assay, `tTEobject@assays\$mRNA`, or to access the metadata for matching cell types, `tTEobject@meta.data\$matching_celltypes`. This structure provides fleible and intuitive access to both expression data and associated metadata. 
+Each component of a **tTEscanR** object can be accessed using the `@` symbol to refer to its main slots - for example, `tTEobject@assays` or `tTEobject@meta.data`. Within these slots, specific elements can be accessed using the `$` symbol. For instance: to access the mRNA assay, `tTEobject@assays\$mRNA`, or to access the metadata for matching cell types, `tTEobject@meta.data\$matching_celltypes`. This structure provides flexible and intuitive access to both expression data and associated metadata. 
 
 ## 3. Standard workflow
 
@@ -158,8 +158,8 @@ In addition to generating the codon usage matrix, **`ComputeCodonUsage()`** can 
 # It has to be stored as CorrectionFactor
 tTEobject <- Update_tTEscanR_Object(object = tTEobject, meta.data = "tissue", meta.data.ids = "CorrectionFactor")
 
-tTEobject <- ComputeCodonUsage(object = tTEobject, codon_freq = NULL, species = "hg38", filter = "canonical", 
-                               additional.metrics = TRUE, overwrite.assay = TRUE, overwrite.metadata = TRUE)
+tTEobject <- ComputeCodonUsage(object = tTEobject, codon_freq = NULL, species = "hg38", 
+                               additional_metrics = TRUE, overwrite = TRUE)
 ```
 
 ```{r correlation_plot_mean, message = FALSE, warning = FALSE}
@@ -176,20 +176,21 @@ tTE_CorrelationPlot(data = correlation_mean_background, plot = "MeanCodonUsage",
                     add_titles = TRUE, show_legend = "none")
 ```
 
-You can further evaluate the codon usage output using **`ExaminePoolContribution()`**, which quantifies the contribution of the most highly expressed genes to the overall codon pool across different conditions. This analysis helps identify whether codon usage is dominated by a small subset of highly expressed transcripts or is broadly distributed across the transcriptome.
+You can further evaluate the codon usage output using **`ShowPoolContribution()`**, which quantifies the contribution of the most highly expressed genes to the overall codon pool across different conditions. This analysis helps identify whether codon usage is dominated by a small subset of highly expressed transcripts or is broadly distributed across the transcriptome.
 
 ```{r codon_pool_contribution, message = FALSE, warning = FALSE}
-tTEobject <- ExaminePoolContribution(object = tTEobject, N = 10, species = "hg38", overwrite.assay = TRUE, overwrite.metadata = TRUE)
+tTEobject <- ShowPoolContribution(object = tTEobject, N = 10, species = "hg38", overwrite = TRUE)
 ```
 
 ```{r correlation_plot_diversity, message = FALSE, warning = FALSE}
 # Transforming the data
 codon_pool_diversity <- tTEobject@meta.data$CodonPoolContribution_Results$top10GenesCodonPoolDiversity
+colnames(codon_pool_diversity) <- c("condition", "original_top_contribution", "baseline_correlation")
 codon_pool_diversity <- codon_pool_diversity %>%
   tidyr::separate(.data$condition, into = c("tissue", "cell_type"), sep = "-")
 
 tTE_CorrelationPlot(data = codon_pool_diversity, plot = "PoolDiversity",
-                    x_axis_col = "codon_diversity", y_axis_col = "condition_correlations_to_mean_codon_usage", 
+                    x_axis_col = "original_top_contribution", y_axis_col = "baseline_correlation", 
                     condition_col = "tissue", label_col = "cell_type", show_legend = "right")
 ```
 
@@ -223,14 +224,14 @@ tTEobject <- ComputeAAUsage(object = tTEobject, level = "supply")
 
 ```{r ammino_acid, message = FALSE, warning = FALSE}
 # Computing simultaneously AA demand and supply
-tTEobject <- ComputeAAUsage(object = tTEobject, level = "both", overwrite.assay = TRUE)
+tTEobject <- ComputeAAUsage(object = tTEobject, level = "both", overwrite = TRUE)
 ```
 
 ### 3.4. Theoretical Translation Efficiency (tTE) computation
 
 The **`Compute_tTE()`** function calculates the **Theoretical Translation Efficiency (tTE)** by measuring the correlation between: (i) codon usage and anticodon availability, or (ii) amino acid demand and amino acid supply. Users can compute these correlations separately or in combination. To ensure accurate correlation between these data sources, it is crucial that the mRNA and tRNA datasets share matching conditions (i.e. identical column names representing the same samples or groups).
 
-```{r tTE_score_codon, eval = FALSE}
+```{r tTE_score_codon, message = FALSE, warning = FALSE,eval = FALSE}
 # Computing tTE at the codon-anticodon level
 tTEobject <- Compute_tTE(object = tTEobject, level = "codon")
 ```
@@ -245,10 +246,19 @@ tTEobject <- Compute_tTE(object = tTEobject, level = "aa")
 tTEobject <- Compute_tTE(object = tTEobject, level = "both", overwrite = TRUE)
 ```
 
+```{r}
+conditions_metadata <- tTEobject@meta.data$ConditionsLabels
+```
+
+```{r, fig.width =  6, fig.height = 4, fig.align = 'center'}
+# Use tTEobject@meta.data$tTEresults_codon to assess the codon-anticodon level
+tTE_ScoresPlot(data = tTEobject@meta.data$tTEresults_AA, metadata = conditions_metadata, 
+               index_col = "conditions", class_col = "tissue", add_stats = FALSE)
+```
+
 For visualization purposes, a set of **target conditions** (e.g. a specific group of cells) can be defined, allowing comparison of their **tTE scores** against those of all other conditions in the dataset. In this example, we focus on neurons as the target group but exclude the ENS neurons from the selection to refine the analysis.
 
 ```{r}
-conditions_metadata <- tTEobject@meta.data$ConditionsLabels
 conditions_metadata$group <- "other"
 conditions_metadata$group[grep("neuron", conditions_metadata$conditions)] <- "neurons"
 conditions_metadata$group[grep("ENS neuron", conditions_metadata$conditions)] <- "other"
@@ -257,7 +267,7 @@ conditions_metadata$group[grep("ENS neuron", conditions_metadata$conditions)] <-
 ```{r, fig.width =  6, fig.height = 4, fig.align = 'center'}
 # Use tTEobject@meta.data$tTEresults_codon to assess the codon-anticodon level
 tTE_ScoresPlot(data = tTEobject@meta.data$tTEresults_AA, metadata = conditions_metadata, 
-               index_col = "conditions", class_col = "group", add_stats = FALSE)
+               index_col = "conditions", class_col = "group", add_stats = TRUE)
 ```
 
 ## 4. Differential expression analysis 
@@ -277,7 +287,12 @@ AA_results <- list(AADemand = tTEobject@assays$AADemand, AASupply = tTEobject@as
 The outputs of the **`RunDEAnalysis()`** function vary depending on the parameters enabled. In this example, the results include: (i) a heatmap, (ii) PCA plots (based on the selected number of principal components), and (iii) the size corrected input matrix. A separate list of outputs is returned for each matrix included in the input list.
 
 ```{r, message = FALSE, warning = FALSE, eval = FALSE}
-all_DESeq2_results <- RunDEAnalysis(list_data = AA_results, metadata = metadata, heatmap = TRUE, PCA = TRUE, numPC = 5)
+all_DESeq2_results <- RunDEAnalysis(list_data = AA_results, metadata = metadata, heatmap = TRUE, dim_reduct =  "PCA", numPC = 2, batch = "tissue",
+                                    color_factor = "tissue", show_legend = "right", label_factor = "cell.type")
+
+grid.draw(all_DESeq2_results$plots$AADemand$heatmap) # Visualize the heatmap plot
+all_DESeq2_results$plots$AADemand$exploratory$ElbowPlot # Visualize the elbow plot
+all_DESeq2_results$plots$AADemand$exploratory$PC1_vs_PC2 # Visualize the PCA plot
 ```
 
 ## 5. References

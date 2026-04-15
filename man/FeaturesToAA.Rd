@@ -7,8 +7,9 @@
 FeaturesToAA(
   data_to_translate,
   position = NULL,
-  notation.from,
-  notation.to,
+  genetic_code = "Standard",
+  notation_from = c("codon", "anticodon"),
+  notation_to = c("aa", "anticodon", "codon"),
   verbose = TRUE
 )
 }
@@ -17,9 +18,11 @@ FeaturesToAA(
 
 \item{position}{Optional; either \code{"row"}, \code{"column"} or \code{<column_name>} to specify the location of the genes or features in \code{data_to_translate}. Required if \code{data_to_transalte} is a \code{data.frame}.}
 
-\item{notation.from}{Either \code{"codon"} or \code{"anticodon"} to select the input format of the features in \code{data_to_translate}.}
+\item{genetic_code}{A \code{character} string to specify the genetic code to be used. Defaults to \code{"Standard"}.}
 
-\item{notation.to}{Either \code{"codon"}, \code{"anticodon"} or \code{"aa"} to select the output format of the features in \code{data_to_translate}.}
+\item{notation_from}{Either \code{"codon"} or \code{"anticodon"} to select the input format of the features in \code{data_to_translate}.}
+
+\item{notation_to}{Either \code{"codon"}, \code{"anticodon"} or \code{"aa"} to select the output format of the features in \code{data_to_translate}.}
 
 \item{verbose}{Logical; if \code{TRUE}, displays information messages. Defaults to \code{TRUE}.}
 }
@@ -30,16 +33,15 @@ Translated features (codons, anticodons or amino acids) from \code{data_to_trans
 This function converts: codons and anticodons into anticodons, codons or amino acids based on the genetic code.
 }
 \examples{
-data(subset_mRNA_data, metadata)
-tTEscanR_obj <- Create_tTEscanR_Object(counts = subset_mRNA_data, assay = "mRNA",
-                                       meta.data = list(metadata, "tissue"),
+data(default_tTEscanR_mRNA_data, default_tTEscanR_metadata)
+tTEscanR_obj <- Create_tTEscanR_Object(counts = default_tTEscanR_mRNA_data, assay = "mRNA",
+                                       meta.data = list(default_tTEscanR_metadata, "tissue"),
                                        meta.data.ids = list("ConditionsLabels", "CorrectionFactor"))
 tTEscanR_obj <- ComputeCodonUsage(object = tTEscanR_obj, codon_freq = NULL,
-                                  species = "hg38", filter = "canonical",
-                                  additional.metrics = FALSE, reduce = 1000)
+                                  species = "hg38", additional_metrics = FALSE)
 codons <- rownames(tTEscanR_obj@assays$CodonUsage)
-codons_to_AA <- FeaturesToAA(data_to_translate = codons, notation.from = "codon",
-                             notation.to = "aa")
-codons_to_anticodons <- FeaturesToAA(data_to_translate = codons, notation.from = "codon",
-                                     notation.to = "anticodon")
+codons_to_AA <- FeaturesToAA(data_to_translate = codons, notation_from = "codon",
+                             notation_to = "aa")
+codons_to_anticodons <- FeaturesToAA(data_to_translate = codons, notation_from = "codon",
+                                     notation_to = "anticodon")
 }

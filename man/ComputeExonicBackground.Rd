@@ -13,13 +13,13 @@ ComputeExonicBackground(data)
 A \code{matrix} with the codon exonic background.
 }
 \description{
-This function calculates the \strong{codon usage background} based solely on exonic sequence composition, independent of gene expression levels.
-It provides a reference distribution of codon frequencies across conditions, used to normalize/compare against observed codon usage patterns derived from expression data.
+This function calculates the \strong{codon/anticodon usage background} based solely on exonic sequence composition, independent of expression levels.
+It provides a reference distribution of codon/anticodon frequencies across conditions, used to normalize/compare against observed usage patterns derived from expression data.
 }
 \examples{
-data(subset_mRNA_data)
-tTEscanR_obj <- Create_tTEscanR_Object(counts = subset_mRNA_data, assay = "mRNA")
+data(default_tTEscanR_mRNA_data)
+tTEscanR_obj <- Create_tTEscanR_Object(counts = default_tTEscanR_mRNA_data, assay = "mRNA")
 tTEscanR_obj <- ComputeCodonUsage(object = tTEscanR_obj, species = "hg38",
-                                  additional.metrics = FALSE, reduce = 1000)
+                                  additional_metrics = FALSE, reduce = 1000)
 exonic_background <- ComputeExonicBackground(data = tTEscanR_obj@assays$CodonUsage)
 }

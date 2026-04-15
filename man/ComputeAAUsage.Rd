@@ -4,14 +4,22 @@
 \alias{ComputeAAUsage}
 \title{Compute Amino Acid (AA) Demand or Supply}
 \usage{
-ComputeAAUsage(object, level, overwrite.assay = FALSE, verbose = TRUE)
+ComputeAAUsage(
+  object,
+  level,
+  genetic_code = "Standard",
+  overwrite = FALSE,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{object}{A \code{tTEscanR_Object} containing codon and/or anticodon usage assays to be analyzed.}
 
 \item{level}{Either \code{"demand"}, \code{"supply"} or \code{"both"} to indicate which analysis to perform.}
 
-\item{overwrite.assay}{Logical; if \code{TRUE}, overwrites any existing assay in the \code{object}. Defaults to \code{FALSE}}
+\item{genetic_code}{A \code{character} string to specify the genetic code to be used. Defaults to \code{"Standard"}.}
+
+\item{overwrite}{Logical; if \code{TRUE}, overwrites any existing assay in the \code{object}. Defaults to \code{FALSE}}
 
 \item{verbose}{Logical; if \code{TRUE}, displays information messages. Defaults to \code{TRUE}}
 }
@@ -23,9 +31,19 @@ This function calculates the amino acid (AA) demand and/or supply from a codon a
 It aggregates the contribution of their features based on the standard genetic code (mapping codons/anticodons to AA),
 The resulting values reflect total usage (demand) or availability (supply) of each amino acid, depending on the input type.
 }
+\details{
+In order to generalize the analysis to any organism available in Ensembl, tTEscanR can be used with the 33 different genetic codes described by NCBI Taxonomy:
+
+“Standard”, "Vertebrate Mitochondrial”, "Yeast Mitochondrial”, ”Mold Mitochondrial; Protozoan Mitochondrial; Coelenterate Mitochondrial; Mycoplasma; Spiroplasma”,
+"Invertebrate Mitochondrial”, "Ciliate Nuclear; Dasycladacean Nuclear; Hexamita Nuclear”, "Echinoderm Mitochondrial; Flatworm Mitochondrial”, ”Euplotid Nuclear”,
+"Bacterial, Archaeal and Plant Plastid”, "Alternative Yeast Nuclear”, "Ascidian Mitochondrial”, "Alternative Flatworm Mitochondrial”, "Blepharisma Macronuclear”,
+"Chlorophycean Mitochondrial”, "Trematode Mitochondrial”, "Scenedesmus obliquus mitochondrial”, "Thraustochytrium mitochondrial code”, "Rhabdopleuridae Mitochondrial”,
+"Candidate Division SR1 and Gracilibacteria”, "Pachysolen tannophilus Nuclear”, "Karyorelict Nuclear”, "Condylostoma Nuclear”, "Mesodinium Nuclear”, "Peritrich Nuclear”,
+"Blastocrithidia Nuclear”, "Balanophoraceae Plastid”, "Cephalodiscidae Mitochondrial"
+}
 \examples{
-data(subset_tRNA_data)
-tTEscanR_obj <- Create_tTEscanR_Object(counts = subset_tRNA_data, assay = "tRNA")
+data(default_tTEscanR_tRNA_data)
+tTEscanR_obj <- Create_tTEscanR_Object(counts = default_tTEscanR_tRNA_data, assay = "tRNA")
 tTEscanR_obj <- ComputeAnticodonUsage(object = tTEscanR_obj)
 tTEscanR_obj <- ComputeAAUsage(object = tTEscanR_obj, level = "supply")
 }

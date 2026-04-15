@@ -13,6 +13,7 @@ tTE_DistributionPlot(
   condition_col,
   ncols = 1,
   facet_col = NULL,
+  add_stats = FALSE,
   color_palette = NULL,
   targeted_arg = NULL,
   save_format = NULL,
@@ -23,7 +24,7 @@ tTE_DistributionPlot(
 )
 }
 \arguments{
-\item{data}{A long format table. This format can be obtained using \code{\link{DataToLongFormat}}.}
+\item{data}{A long format table. This format can be obtained using \code{\link{TransformFormat}}.}
 
 \item{plot}{Either \code{"jitter"} (default), \code{"barplot"}, \code{"boxplot"} or \code{"dot"} to indicate the type of plot to generate.}
 
@@ -38,6 +39,8 @@ tTE_DistributionPlot(
 \item{ncols}{Numeric; number of columns for arranging panels. Defaults to 1.}
 
 \item{facet_col}{Optional; name of the categorical variable to divide the plot into different panels. Required if \code{ncols} bigger than 1.}
+
+\item{add_stats}{Logical; if \code{TRUE}, performs a statistical analysis based on the available parameters. Defaults to \code{FALSE}.}
 
 \item{color_palette}{Optional; a vector of color codes to customize plot appearance.}
 

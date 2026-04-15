@@ -4,20 +4,27 @@ Version: 0.0.0.9000
 Authors@R: 
     person("Ana", "Varas-Sánchez", , "ana.varas@scilifelab.se", role = c("aut", "cre"),
            comment = c(ORCID = "0009-0006-0187-8968"))
-Description: Tools to compute codon usage from mRNA and anticodon usage from tRNA data.
-    Includes pre-processing and visualization options cover the user needs.
-    Allows to analyze bulk and single-cell sequencing data.
-    Expands the previously published tTE pipeline (GitHub - wgao688/sc_tRNA_mRNA).
+Description:  Translation elongation is dependent on codon-anticodon interactions, 
+    with suitable nucleotide pairing being essential for efficient translation. 
+    To quantify this relationship, we previously developed a computational pipeline 
+    (GitHub - wgao688/sc_tRNA_mRNA) that uses mRNA codon usage relative to tRNA anticodon 
+    availability as a proxy for theoretical translation efficiency (tTE). Here, we introduce 
+    tTEscanR, a powerful  and user-friendly R-based package that extends this approach to 
+    quantify translation efficiency from both bulk and single-cell sequencing data. tTEscanR 
+    is a versatile tool for exploring translation efficiency in diverse cellular processes, 
+    disease mechanisms, and therapeutic development. It also features an advanced visualization 
+    module to generate high-quality plots, enhancing result interpretation and communication.
 License: MIT + file LICENSE
 Imports:
-    methods, 
-    dplyr, 
-    Matrix, 
+    methods,
+    dplyr,
+    Matrix,
     stats,
     tibble,
     rlang,
     Biostrings,
     magrittr,
+    purrr,
     tidyr
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -45,9 +52,14 @@ Suggests:
     tRNAscanImport,
     GenomicRanges,
     ggradar,
+    S4Vectors,
     Seurat,
     Signac, 
     Rtsne,
     ggpubr,
-    uwot
+    IRanges,
+    GenomeInfoDb,
+    uwot,
+    ComplexHeatmap,
+    patchwork
 Config/testthat/edition: 3

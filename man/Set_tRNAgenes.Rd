@@ -2,20 +2,20 @@
 % Please edit documentation in R/GeneralProcessing.R
 \name{Set_tRNAgenes}
 \alias{Set_tRNAgenes}
-\title{Translate chromatin coordinates to tRNA genes}
+\title{Annotate the tRNA genes from tRNA tags}
 \usage{
 Set_tRNAgenes(data, tRNA_bed, flanking_region = 100)
 }
 \arguments{
-\item{data}{A tRNA expression matrix with tRNA genes as rows and samples or conditions as columns. Can be generated using \code{\link{Get_tRNAMatrix}}}
+\item{data}{A \code{matrix} with tRNA tags as rows.}
 
-\item{tRNA_bed}{A string indicating the path to the \code{".bed"} file from the organism's reference genome}
+\item{tRNA_bed}{Path to the directory that contains the .bed file}
 
-\item{flanking_region}{Integer; number of nucleotides that form the flanking region of each tRNA. Defaults to 100.}
+\item{flanking_region}{Numeric; number of bases to include expand the region interrogated. Defaults to 100.}
 }
 \value{
-The \code{data} tRNA expression data with the tRNA genes annotated for the given fragment coordinates.
+A \code{data} with the translated tRNA gene names.
 }
 \description{
-Translate chromatin coordinates to tRNA genes
+Annotate the tRNA genes from tRNA tags
 }

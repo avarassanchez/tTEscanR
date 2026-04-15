@@ -4,12 +4,14 @@
 \alias{ObtainSignificance}
 \title{Assess Significance (P-value) & Corrects for Multiple Hypothesis Testing}
 \usage{
-ObtainSignificance(dist, value, verbose = TRUE)
+ObtainSignificance(dist, value, padj_threshold = 0.05, verbose = TRUE)
 }
 \arguments{
 \item{dist}{A table with the codons and their frequencies after completing a permutation test. Output from \code{\link{GetPermutationDist}}.}
 
 \item{value}{A \code{list} of \code{data.frame} of the codon exonic background of a mRNA gene expression matrix. The codon exonic background can be computed in \code{\link{ComputeCodonUsage}}.}
+
+\item{padj_threshold}{Numeric; p-value threshold used for highlighting significant features in the volcano plot. Defaults to 0.05.}
 
 \item{verbose}{Logical; if \code{TRUE}, displays information messages. Defaults to \code{TRUE}.}
 }
@@ -20,20 +22,20 @@ A table with the codon exonic background and their significance level before (p-
 Assess Significance (P-value) & Corrects for Multiple Hypothesis Testing
 }
 \examples{
-data(subset_mRNA_data, metadata)
-selected_genes <- subset_mRNA_data[1:20, ]
-permutation_test <- GetPermutationDist(n_permutations = 100, target_data = selected_genes,
+data(default_tTEscanR_mRNA_data, default_tTEscanR_metadata)
+selected_genes <- default_tTEscanR_mRNA_data[1:20, ]
+permutation_test <- GetPermutationDist(n_permut = 100, target_data = selected_genes,
                                        species = "hg38")
-tTEscanR_obj <- Create_tTEscanR_Object(counts = subset_mRNA_data, assay = "mRNA",
-                                       meta.data = list(metadata, "tissue"),
+tTEscanR_obj <- Create_tTEscanR_Object(counts = default_tTEscanR_mRNA_data, assay = "mRNA",
+                                       meta.data = list(default_tTEscanR_metadata, "tissue"),
                                        meta.data.ids = list("ConditionsLabels", "CorrectionFactor"))
 tTEscanR_obj <- ComputeCodonUsage(object = tTEscanR_obj, species = "hg38",
-                                  additional.metrics = FALSE, reduce = 1000)
+                                  additional_metrics = FALSE, reduce = 1000)
 
 codon_usage <- tTEscanR_obj@assays$CodonUsage
 codon_background <- rowSums(codon_usage) / sum(rowSums(codon_usage))
 codons_to_AA <- FeaturesToAA(data_to_translate = names(codon_background),
-                             notation.from = "codon", notation.to = "aa")
+                             notation_from = "codon", notation_to = "aa")
 codon_background <- data.frame(group = codons_to_AA, codon = names(codon_background),
                                freq = as.numeric(codon_background), row.names = NULL)
 significance <- ObtainSignificance(dist = permutation_test, value = codon_background)

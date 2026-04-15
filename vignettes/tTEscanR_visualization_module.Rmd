@@ -44,7 +44,7 @@ cat('
 
 # 1. Overview
 
-**tTEscanR** includes a dedicated **visualization module** that provides multiple functions for generating plots based on the output tables produced at each step of the analysis. The primary goal of this module is to facilitate a more intuitive and streamlined interpretation of results, allowing researchers to easily explore an understand their data. Additionally, it helps summarize complex findings in a visually accessible manner, enhancing the overall clarity and impact of the analysis. 
+**tTEscanR** includes a dedicated **visualization module** that provides multiple functions for generating plots based on the output tables produced at each step of the analysis. The primary goal of this module is to facilitate a more intuitive and streamlined interpretation of results, allowing researchers to easily explore and understand their data. Additionally, it helps summarize complex findings in a visually accessible manner, enhancing the overall clarity and impact of the analysis. 
 
 ```{r setup, message = FALSE, warning = FALSE}
 # install.packages("/avarassanchez/tTEscanR")
@@ -55,12 +55,12 @@ library(tTEscanR)
 To illustrate the usage of each plotting function and demonstrate the flexibility provided by various parameters, we will first run **tTEscanR**. In this tutorial, we will analyze a single-cell fetal human atlas described in *[@Cao2020]* and *[@Domcke2020]*, and previously examined by *[@Gao2022]*. A subset of this dataset is included as a default dataset in **tTEscanR** and can be directly loaded to performm the analysis. A step-by-step explanation of this pipeline is available in the **tTEscanR User Guide** vignette.
 
 ```{r load_datasets, message = FALSE, warning = FALSE}
-data(mRNA_data, tRNA_data, metadata)
+data(default_tTEscanR_mRNA_data, default_tTEscanR_tRNA_data, default_tTEscanR_metadata)
 ```
 
 ```{r execute_workflow, message = FALSE, warning = FALSE}
-tTEobject <- Run_tTEscanR_pipeline(mRNA_data = subset_mRNA_data,  tRNA_data = subset_tRNA_data, metadata = metadata, species = "hg38", 
-                                   corr_factor = "tissue", runDESeq = FALSE, verbose = FALSE)
+tTEobject <- Run_tTEscanR_pipeline(mRNA_data = default_tTEscanR_mRNA_data,  tRNA_data = default_tTEscanR_tRNA_data, metadata = default_tTEscanR_metadata, 
+                                   species = "hg38", batch = "tissue", runDESeq = FALSE, verbose = FALSE)
 ```
 
 <hr>
@@ -79,19 +79,19 @@ The visualization functions in **tTEscanR** are not limited to outputs generated
 |------------------------|-------------------------------------------------|
 | `tTE_ProportionPlot()` | Shows features' frequencies differences within and between conditions |
 | `tTE_DistributionPlot()` | Displays features' distributions across conditions |
-| `tTE_CompareTargetToMean()` | Variation of `tTE_DistributionPlot()` to compare a target feature against the mean across conditions |
+| `tTE_PlotTargetComparison()` | Variation of `tTE_DistributionPlot()` to compare a target feature against the mean across conditions |
 | `tTE_CorrelationPlot()` | Features correlation |
 | `tTE_PermutationPlot()` | Compares the baseline codon exonic background against the current codon usage |
 | `tTE_ScorePlot()` | Represents the tTE scores obtained from `Compute_tTE()` |
 
 ## 2.1. Data transformation
 
-There are **helper functions** in **tTEscanR** designed to properly transform data for downstream analysis and visualization. the data. One such function is **`DataToLongFormat()`**, which converts a count matrix, with features as rows and conditions as columns, into a **long-format table**. In this format, each row-column combination from the original matrix becomes an individual row in the output.
+There are **helper functions** in **tTEscanR** designed to properly transform data for downstream analysis and visualization. the data. One such function is **`TransformFormat()`**, which converts a count matrix, with features as rows and conditions as columns, into a **long-format table**. In this format, each row-column combination from the original matrix becomes an individual row in the output.
 
 The function also provides an option to **normalize** the input data. Parameters such as `rownames_to_column`, `names_to` and `values_to` allow users to customize the names of the columns in the resulting long-format table.
 
 ::: {.note}
-The **normalization** performed by **DataToLongFormat()** is done by converting the raw counts into relative abundances (i.e. dividing each column by its column-wise sum).
+The **normalization** performed by **TransformFormat()** is done by converting the raw counts into relative abundances (i.e. dividing each column by its column-wise sum).
 :::
 
 ```{r, eval = FALSE}
@@ -99,10 +99,10 @@ tTEobject@assays$CodonUsage[1:5, 1:5]
 ```
 
 ```{r codon_usage_data_transform}
-long_format_codon_usage <- DataToLongFormat(data = tTEobject@assays$CodonUsage, normalize = TRUE,
-                                            rownames_to_column = "codon",  # features (rownames) of the CodonUsage matrix
-                                            names_to = "condition", # conditions (colnames) of the CodonUsage matrix
-                                            values_to = "usage") # values of the CodonUsage matrix
+long_format_codon_usage <- TransformFormat(data = tTEobject@assays$CodonUsage, normalize = TRUE,
+                                           rownames_to_column = "codon",  # features (rownames) of the CodonUsage matrix
+                                           names_to = "condition", # conditions (colnames) of the CodonUsage matrix
+                                           values_to = "usage") # values of the CodonUsage matrix
 
 # long_format_codon_usage contains 3 columns: codon, condition, usage
 # We are going to divide the condition column into tissue and cell_type
@@ -115,10 +115,10 @@ head(long_format_codon_usage)
 ```
 
 ```{r aa_demand_data_transform}
-long_format_AA_demand <- DataToLongFormat(data = tTEobject@assays$AADemand, normalize = TRUE,
-                                          rownames_to_column = "AA", # features (rownames) of the AADemand matrix
-                                          names_to = "condition", # conditions (colnames) of the AADemand matrix
-                                          values_to = "demand") # values of the AADemand matrix
+long_format_AA_demand <- TransformFormat(data = tTEobject@assays$AADemand, normalize = TRUE,
+                                         rownames_to_column = "AA", # features (rownames) of the AADemand matrix
+                                         names_to = "condition", # conditions (colnames) of the AADemand matrix
+                                         values_to = "demand") # values of the AADemand matrix
 
 # long_format_AA_demand contains 3 columns: AA, condition, demand
 # We are going to divide the condition column into tissue and cell_type
@@ -213,13 +213,13 @@ In this example, we introduce a pre-defined `color_palette` to explicitly assign
 
 ```{r, fig.width =  6, fig.height = 4, fig.align = 'center'}
 # Codon usage distribution plot (barplot)
-tTE_DistributionPlot(data = long_format_codon_usage_tissues, plot = "boxplot", x_axis_col = "codon", y_axis_col = "usage",
+tTE_DistributionPlot(data = long_format_codon_usage_tissues, plot = "boxplot", x_axis_col = "codon", y_axis_col = "usage", add_stats = FALSE,
                      condition_col = "tissue", color_palette = c(Heart = "#de77ae", Spleen = "#7fbc41"), show_legend = "bottom", add_titles = FALSE)
 ```
 
 <hr>
 
-The **`tTE_CompareTargetToMean()`** function extends the functionality of **`tTE_DistributionPlot()`** by allowing direct comparison between a target confition and the overall mean. This visualization helps identify how codon, anticodon, or amino acid usage in the selected condition deviates from the average profile.  
+The **`tTE_PlotTargetComparison()`** function extends the functionality of **`tTE_DistributionPlot()`** by allowing direct comparison between a target confition and the overall mean. This visualization helps identify how codon, anticodon, or amino acid usage in the selected condition deviates from the average profile.  
 
 **Function-specific parameters:**
 
@@ -240,13 +240,13 @@ metadata_brain <- data.frame(label = colnames(brain_codon_usage), stringsAsFacto
 metadata_brain <- tidyr::separate(metadata_brain, label, into = c("tissue", "cell.type"), sep = "-")
 metadata_brain$conditions <- colnames(brain_codon_usage)
  
-mean_brain_codon_usage <- ComputeMeanUsage(data = brain_codon_usage, metadata = metadata_brain, corr_factor = "tissue", verbose = FALSE)
+mean_brain_codon_usage <- ComputeMeanUsage(data = brain_codon_usage, metadata = metadata_brain, batch = "tissue", verbose = FALSE)
 ```
 
 Based on the calculations above, the plot illustrates: (i) the mean codon usage of the cerebellum cells as **purple dots**, (ii) the overallcmean codon usage across conditions as **grey bars**, and (iii) the difference between the two as **blue lines**.
 
 ```{r compare_to_mean_plot, fig.width = 7, fig.height = 4, fig.align = 'center'}
-tTE_CompareTargetToMean(target_data = data.frame(mean_brain_codon_usage), 
+tTE_PlotTargetComparison(target_data = data.frame(mean_brain_codon_usage), 
                         overall_data = data.frame(tTEobject@meta.data$CodonUsage_AdditionalMetrics$MeanCodonUsage), 
                         x_axis_col = "feature", y_axis_col = "mean_usage_across_conditions",
                         show_difference = TRUE, add_titles = FALSE)
@@ -265,7 +265,7 @@ mean_codon_usage <- tTEobject@meta.data$CodonUsage_AdditionalMetrics$MeanCodonUs
 mean_codon_usage$codon <- mean_codon_usage$feature
 
 mean_codon_usage <- FeaturesToAA(data_to_translate = mean_codon_usage, position = "feature", 
-                                 notation.from = "codon", notation.to = "aa", verbose = FALSE)
+                                 notation_from = "codon", notation_to = "aa", verbose = FALSE)
 ```
 
 ```{r proportion_plot_mean_codon, fig.width = 7, fig.height = 5, fig.align = 'center'}
@@ -280,7 +280,7 @@ cerebrum_indexes_AA <- grep("Cerebrum", colnames(tTEobject@assays$AADemand))
 brain_indexes_AA <- c(cerebellum_indexes_AA, cerebrum_indexes_AA)
 brain_AAdemand <- tTEobject@assays$AADemand[, brain_indexes_AA]
         
-mean_brain_AAdemand <- ComputeMeanUsage(data = brain_AAdemand, metadata = metadata_brain, corr_factor = "tissue", verbose = FALSE)
+mean_brain_AAdemand <- ComputeMeanUsage(data = brain_AAdemand, metadata = metadata_brain, batch = "tissue", verbose = FALSE)
 ```
 
 ```{r proportion_plot_brain_mean, fig.width = 6, fig.height = 4, fig.align = 'center'}
@@ -297,9 +297,8 @@ As **tTE_ScoresPlot()** uses violin plots, it is important to ensure that each g
 :::
 
 ```{r}
-tTE_ScoresPlot(data = tTEobject@meta.data$tTEresults_codon, metadata =  tTEobject@meta.data$ConditionsLabels, index_col = "conditions", 
-               class_col = "tissue",
-                add_stats = FALSE)
+tTE_ScoresPlot(data = tTEobject@meta.data$tTEresults_codon, metadata = tTEobject@meta.data$ConditionsLabels, 
+               index_col = "conditions", class_col = "tissue", add_stats = FALSE)
 ```
 
 ```{r target_immune}
@@ -313,9 +312,8 @@ conditions_metadata$group[grep("Lymphoid", conditions_metadata$conditions)] <- "
 ```{r score_plot_immune, fig.width = 6, fig.height = 4, fig.align = 'center'}
 # input data has 4 columns: condition, tTE, p_value, neg_log10_tTE_p_value
 # Codon-anticodon tTE score
-tTE_ScoresPlot(data = tTEobject@meta.data$tTEresults_codon, metadata = conditions_metadata, index_col = "conditions", 
-               class_col = "group",
-               color_palette = c(myeloid = "#abd9e9", lymphoid = "#f1b6da", other = "#fee0b6"), add_stats = FALSE)
+tTE_ScoresPlot(data = tTEobject@meta.data$tTEresults_codon, metadata = conditions_metadata, index_col = "conditions", class_col = "group",
+               color_palette = c(myeloid = "#abd9e9", lymphoid = "#f1b6da", other = "#fee0b6"), add_stats = TRUE)
 
 # AA demand-supply tTE score
 tTE_ScoresPlot(data = tTEobject@meta.data$tTEresults_AA,  metadata = conditions_metadata, index_col = "conditions", class_col = "group",
@@ -337,7 +335,7 @@ conditions_metadata$group[grep("ENS neuron", conditions_metadata$conditions)] <-
 ```{r score_plot_neurons, fig.width = 6, fig.height = 4, fig.align = 'center'}
 # AA demand-supply tTE score
 tTE_ScoresPlot(data = tTEobject@meta.data$tTEresults_AA, metadata = conditions_metadata, index_col = "conditions", 
-               class_col = "group", color_palette = c(neurons = "#8073ac", other = "#fee0b6"), add_stats = FALSE)
+               class_col = "group", color_palette = c(neurons = "#8073ac", other = "#fee0b6"), add_stats = TRUE)
 ```
 
 # 4. References

@@ -7,20 +7,23 @@
 RunDEAnalysis(
   list_data,
   metadata,
-  target_factor = NULL,
-  corr_factor = NULL,
-  fc_threshold = 1,
-  pval_threshold = 0.05,
+  condition = NULL,
+  batch = NULL,
+  reference = NULL,
   reduce = 100,
-  heatmap = TRUE,
-  dim.reduct = "PCA",
-  numPC = 2,
+  dim_reduct = NULL,
   color_factor = NULL,
+  heatmap = TRUE,
   shape_factor = NULL,
-  color_palette = NULL,
   label_factor = NULL,
-  sig_axis = TRUE,
-  verbose = TRUE
+  highlight_median = FALSE,
+  numPC = 2,
+  color_palette = NULL,
+  fc_threshold = 1,
+  padj_threshold = 0.05,
+  label_significant = TRUE,
+  verbose = TRUE,
+  show_legend = "none"
 )
 }
 \arguments{
@@ -28,33 +31,39 @@ RunDEAnalysis(
 
 \item{metadata}{A \code{data.frame} with the data associated to the conditions in the matrices of \code{list_data}. There has to be one column with the same labels as the column names.}
 
-\item{target_factor}{Optional; a factor based on \code{metadata} columns to define the comparisons to perform in a targeted analysis. Defaults to \code{NULL}.}
+\item{condition}{Optional; a factor based on \code{metadata} columns to define the comparisons to perform in a targeted analysis. Defaults to \code{NULL}.}
 
-\item{corr_factor}{Optional; name of the categorical variable to correct the data. Required if \code{dim.reduct} specified.}
+\item{batch}{Optional; name of the categorical variable in \code{metadata} to correct the data.}
 
-\item{fc_threshold}{Numeric; fold change threshold used for highlighting significant features in the volcano plot (if \code{targets} is specified). Defaults to 1.}
-
-\item{pval_threshold}{Numeric; p-value threshold used for highlighting significant features in the volcano plot. Required if \code{targets} is specified. Defaults to 0.05.}
+\item{reference}{Optional; factor from the \code{batch} variable to use as reference for the corrections. If not specified, the 1st factor that appears will be used instead.}
 
 \item{reduce}{Numeric; a scaling factor used to normalize large expression values that exceed R's handling capacity. Defaults to 100.}
 
+\item{dim_reduct}{Either \code{"PCA"}, \code{"UMAP"} or \code{"tSNE"} to specify the dimensionality reduction approach to be executed. Defaults to \code{"PCA"}.}
+
+\item{color_factor}{Optional; name of the categorical variable in \code{metadata} to group by color the data points. Used if \code{dim_reduct} specified.}
+
 \item{heatmap}{Logical; if \code{TRUE}, generates a heatmap for exploratory analysis. Not applicable if \code{targets} is specified. Defaults to \code{TRUE}.}
 
-\item{dim.reduct}{Either \code{"PCA"}, \code{"UMAP"} or \code{"tSNE"} to specify the dimensionality reduction approach to be executed. Defaults to \code{"PCA"}.}
+\item{shape_factor}{Optional; name of the categorical variable in \code{metadata} to group by shape the data points. Used if \code{dim_reduct} specified.}
 
-\item{numPC}{Numeric; number of principal components to include in the PCA analysis. Required if \code{dim.reduct} is \code{"PCA"}. Defaults to 2.}
+\item{label_factor}{Optional; name of the categorical variable to label the data points. Used if \code{dim_reduct} specified.}
 
-\item{color_factor}{Optional; name of the categorical variable to group by color the data points. Used if \code{dim.reduct} specified.}
+\item{highlight_median}{Logical; if \code{TRUE} the data points of each cluster will be summarized into the median. Defaults to \code{FALSE}.}
 
-\item{shape_factor}{Optional; name of the categorical variable to group by shape the data points. Used if \code{dim.reduct} specified.}
+\item{numPC}{Numeric; number of principal components to include in the PCA analysis. Required if \code{dim_reduct} is \code{"PCA"}. Defaults to 2.}
 
 \item{color_palette}{Optional; a \code{vector} of color codes to customize the plot appearance.}
 
-\item{label_factor}{Optional; name of the categorical variable to label the data points. Used if \code{dim.reduct} specified.}
+\item{fc_threshold}{Numeric; fold change threshold used for highlighting significant features in the volcano plot (if \code{targets} is specified). Defaults to 1.}
 
-\item{sig_axis}{Logical; if \code{TRUE} displays the axis of the plots based on \code{fc_threshold} and \code{pval_threshold}. Defaults to \code{TRUE}.}
+\item{padj_threshold}{Numeric; p-value threshold used for highlighting significant features in the volcano plot. Defaults to 0.05.}
+
+\item{label_significant}{Logical; if \code{TRUE} displays the axis of the plots based on \code{fc_threshold} and \code{padj_threshold}. Defaults to \code{TRUE}.}
 
 \item{verbose}{Logical; if \code{TRUE}, displays information messages. Defaults to \code{TRUE}.}
+
+\item{show_legend}{Either \code{"none"} (default), \code{"top"}, \code{"bottom"}, \code{"right"} or \code{"left"} to specify the position of the legend in the plot.}
 }
 \value{
 A \code{list} of outputs per each matrix in \code{list_data}, based on the enabled parameters: (i) exploratory plots (heatmap and/or PCA), (ii) targeted plot (volcano), and (iii) size-corrected \code{data}.
@@ -64,7 +73,8 @@ This function applies differential expression analysis using the DESeq2 framewor
 It supports both exploratory visualizations (heatmap and PCA) and targeted comparisons using a custom contrast table.
 }
 \examples{
-data(subset_mRNA_data, metadata)
-DE_analysis <- RunDEAnalysis(list_data = list(mRNA = subset_mRNA_data),
-                             metadata = metadata, corr_factor = "tissue")
+data(default_tTEscanR_tRNA_data, default_tTEscanR_metadata)
+DE_analysis <- RunDEAnalysis(list_data = list(mRNA = default_tTEscanR_tRNA_data),
+                             metadata = default_tTEscanR_metadata, batch = "tissue",
+                             color_factor = "tissue")
 }

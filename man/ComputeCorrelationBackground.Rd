@@ -2,14 +2,14 @@
 % Please edit documentation in R/tTE_HelperFunctions_CodonUsage.R
 \name{ComputeCorrelationBackground}
 \alias{ComputeCorrelationBackground}
-\title{Compute the Correlation Between Mean Codon Usage and Codon Exonic Background}
+\title{Compute the Correlation Between Mean Usage and Exonic Background}
 \usage{
 ComputeCorrelationBackground(mean, background, corr_method = "spearman")
 }
 \arguments{
-\item{mean}{A \code{matrix} representing mean codon usage across condition. Can be computed using \code{\link{ComputeMeanUsage}}.}
+\item{mean}{A \code{matrix} representing mean usage across condition. Can be computed using \code{\link{ComputeMeanUsage}}.}
 
-\item{background}{A \code{matrix} or table representing codon frequencies in exonic regions. Can be computed using \code{\link{ComputeExonicBackground}}.}
+\item{background}{A \code{matrix} or table representing frequencies in exonic regions. Can be computed using \code{\link{ComputeExonicBackground}}.}
 
 \item{corr_method}{A correlation method accepted by \code{\link{cor}}. Defaults to \code{"spearman"}.}
 }
@@ -17,19 +17,19 @@ ComputeCorrelationBackground(mean, background, corr_method = "spearman")
 Integer; correlation information between \code{mean} and \code{background}.
 }
 \description{
-This function calculates the \strong{correlation} between observed \strong{mean codon usage} and the \strong{codon exonic background}.
-It provides a metric for evaluating how much codon usage is driven by underlying sequence composition versus condition-specific expression.
+This function calculates the \strong{correlation} between observed \strong{mean usage} and the \strong{exonic background}.
+It provides a metric for evaluating how much usage is driven by underlying sequence composition versus condition-specific expression.
 }
 \examples{
-data(subset_mRNA_data, metadata)
-tTEscanR_obj <- Create_tTEscanR_Object(counts = subset_mRNA_data, assay = "mRNA")
+data(default_tTEscanR_mRNA_data, default_tTEscanR_metadata)
+tTEscanR_obj <- Create_tTEscanR_Object(counts = default_tTEscanR_mRNA_data, assay = "mRNA")
 tTEscanR_obj <- ComputeCodonUsage(object = tTEscanR_obj, species = "hg38",
-                                  additional.metrics = FALSE, reduce = 1000)
+                                  additional_metrics = FALSE, reduce = 1000)
 exonic_background <- ComputeExonicBackground(data = tTEscanR_obj@assays$CodonUsage)
-# Input: expression count matrix, need to provide metadata and corr_factor parameters
+# Input: expression count matrix, need to provide metadata and batch parameters
 mean_codon_usage <- ComputeMeanUsage(data = tTEscanR_obj@assays$CodonUsage,
-                                     mode = "raw", metadata = metadata,
-                                     corr_factor = "tissue")
+                                     mode = "raw", metadata = default_tTEscanR_metadata,
+                                     batch = "tissue")
 correlation_background <- ComputeCorrelationBackground(mean = mean_codon_usage,
                                                        background = exonic_background)
 }

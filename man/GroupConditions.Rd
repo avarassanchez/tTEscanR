@@ -4,12 +4,12 @@
 \alias{GroupConditions}
 \title{Aggregates data by group}
 \usage{
-GroupConditions(data, group.labels)
+GroupConditions(data, group_labels)
 }
 \arguments{
 \item{data}{A \code{matrix} with the features to group for as columns.}
 
-\item{group.labels}{A \code{vector} with the metadata features to group the columns in \code{data}}
+\item{group_labels}{A \code{vector} with the metadata features to group the columns in \code{data}}
 }
 \value{
 A \code{matrix} with the conditions merged based on the metadata.
@@ -23,5 +23,5 @@ data <- data.frame(sample_1 = c(10, 5, 20), sample_2 = c(15, 8, 25),
                    sample_5 = c(4, 5, 6), sample_6 = c(7, 8, 9))
 rownames(data) <- c("gene_1", "gene_2", "gene_3")
 groups <- c("cond_A", "cond_A", "cond_A", "cond_B", "cond_B", "cond_B")
-data_combined <- GroupConditions(data = data, group.labels = groups)
+data_combined <- GroupConditions(data = data, group_labels = groups)
 }

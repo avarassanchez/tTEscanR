@@ -59,7 +59,7 @@ library(tTEscanR)
 The reference **codon frequency-per-gene** matrix represents the codon distribution of each protein-coding gene in a reference genome.
 :::
 
-The **`ObtainCodonComposition()`** function computes the reference codon frequency-per-gene matrix. It retrieves the codon composition table for any organism supported by **Ensembl**. The function returns a list containing: (i) a codon frequency-per-gene-matrix, and (ii) a gene translator table mapping between Ensembl IDs and gene names. This output can be used directly in downstream codon usage analyses.
+The **`GetCodonFreq()`** function computes the reference codon frequency-per-gene matrix. It retrieves the codon composition table for any organism supported by **Ensembl**. The function returns a list containing: (i) a codon frequency-per-gene-matrix, and (ii) a gene translator table mapping between Ensembl IDs and gene names. This output can be used directly in downstream codon usage analyses.
 
 ```{r, message = FALSE, warning = FALSE}
 library(biomaRt)
@@ -67,12 +67,11 @@ library(biomaRt)
 
 ```{r datasets_ensembl, message = TRUE, warning = FALSE, eval = FALSE}
 datasets <- biomaRt::listDatasets(useEnsembl(biomart = "ensembl")) 
-
 ```
 
-One of the main advantages of the **`ObtainCodonComposition()`** function is that it can be applied to any organism available at Ensembl. As a reference we can use `hsapiens_gene_ensembl` for hg38 human genome and `mmusculus_gene_ensembl` for mm39 mouse genome. Other organism names can be extracted using `datasets$dataset.
+One of the main advantages of the **`GetCodonFreq()`** function is that it can be applied to any organism available at Ensembl. As a reference we can use `hsapiens_gene_ensembl` for hg38 human genome and `mmusculus_gene_ensembl` for mm39 mouse genome. Other organism names can be extracted using `datasets$dataset.
 
-In the example below, we will use both human and mouse reference dataset and the canonical and length filters to show the potential of the **`ObtainCodonComposition()`** function. 
+In the example below, we will use both human and mouse reference dataset and the canonical and length filters to show the potential of the **`GetCodonFreq()`** function. 
 
 **Example 1:** 
 <li>Reference hg38 dataset</li>
@@ -81,10 +80,8 @@ In the example below, we will use both human and mouse reference dataset and the
 <li>External gene name as output</li>
 
 ```{r canonical_codon_freq_per_gene, message = TRUE, warning = FALSE, eval = FALSE}
-codon_freq_results_canonical <- ObtainCodonFreqPerGene(dataset_name = "hsapiens_gene_ensembl", 
-                                                       filter = "canonical",
-                                                       retain.mitochondrial = FALSE,
-                                                       out_format = "external_gene_name")
+codon_freq_results_canonical <- GetCodonFreq(dataset_name = "hsapiens_gene_ensembl", filter = "canonical", retain_geneversion = TRUE,
+                                             retain_mitochondrial = FALSE, out_format = "external_gene_name") 
 ```
 
 ```{r canonical_codon_freq_per_gene_results, message = TRUE, warning = FALSE, eval = FALSE}
@@ -99,10 +96,8 @@ hg38_gene_translator_table_canonical <- codon_freq_results_canonical[[1]]
 <li>Ensembl gene id as output</li>
 
 ```{r length_codon_freq_per_gene, message = TRUE, warning = FALSE, eval = FALSE}
-codon_freq_results_length <- ObtainCodonFreqPerGene(dataset_name = "hsapiens_gene_ensembl", 
-                                                   filter = "canonical",
-                                                   retain.mitochondrial = FALSE,
-                                                   out_format = "ensembl_gene_id")
+codon_freq_results_length <- GetCodonFreq(dataset_name = "mmusculus_gene_ensembl", filter = "length",
+                                          retain_mitochondrial = TRUE, out_format = "ensembl_gene_id")
 ```
 
 ```{r length_codon_freq_per_gene_results, message = TRUE, warning = FALSE, eval = FALSE}
@@ -110,3 +105,18 @@ mm39_codon_freq_table_length <- codon_freq_results_length[[2]]
 mm39_gene_translator_table_length <- codon_freq_results_length[[1]]
 ```
 
+**Example 3:** 
+<li>Using a</li>
+<li>Canonical filter</li>
+<li>Removing mitochondrial genes</li>
+<li>Ensembl transcript id as output</li>
+
+```{r transcript_codon_freq_per_gene, message = TRUE, warning = FALSE, eval = FALSE}
+codon_freq_results_transcript <- GetCodonFreq(dataset_name = "drerio_gene_ensembl", filter = "length",
+                                              retain_mitochondrial = TRUE, out_format = "ensembl_transcript_id")
+```
+
+```{r transcript_codon_freq_per_gene_results, message = TRUE, warning = FALSE, eval = FALSE}
+drerio_codon_freq_table_length <- codon_freq_results_transcript[[2]] 
+drerio_gene_translator_table_length <- codon_freq_results_transcript[[1]]
+```

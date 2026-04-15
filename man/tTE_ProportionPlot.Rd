@@ -10,16 +10,22 @@ tTE_ProportionPlot(
   var_numerical,
   var_categorical,
   var_color = NULL,
+  facet_col = NULL,
   color_palette = NULL,
+  num_limits = NULL,
+  num_rings = 5,
   save_format = NULL,
   out_name = NULL,
   out_directory = NULL,
   show_legend = "none",
-  add_titles = TRUE
+  add_titles = TRUE,
+  order = NULL,
+  normalize = TRUE,
+  zoom = FALSE
 )
 }
 \arguments{
-\item{data}{A long format table. This format can be obtained using \code{\link{DataToLongFormat}}.}
+\item{data}{A long format table. This format can be obtained using \code{\link{TransformFormat}}.}
 
 \item{plot}{Either \code{"bar"} (default), \code{"donut"} or \code{"radar"} to indicate the type of plot to generate.}
 
@@ -29,7 +35,13 @@ tTE_ProportionPlot(
 
 \item{var_color}{Optional; name of the categorical variable to group the data points when coloring. Required if \code{plot} is \code{"bar"}.}
 
+\item{facet_col}{Optional; name of the categorical variable to divide the plot into different panels.}
+
 \item{color_palette}{Optional; a vector of color codes to customize plot appearance.}
+
+\item{num_limits}{Optional; a vector with the upper and lower ranges of the values in \code{var_numerical}.}
+
+\item{num_rings}{Optional; a number specifying the amount of rings to display if \code{plot} is \code{"radar"}. Defaults to 5.}
 
 \item{save_format}{Optional; either \code{"png"} or \code{"pdf"} to specify the format to save the plot.}
 
@@ -40,6 +52,12 @@ tTE_ProportionPlot(
 \item{show_legend}{Either \code{"none"} (default), \code{"top"}, \code{"bottom"}, \code{"right"} or \code{"left"} to specify the position of the legend.}
 
 \item{add_titles}{Logical; if \code{TRUE}, includes titles in the plot. Defaults to \code{TRUE}.}
+
+\item{order}{Optional; a vector of the levels to organize the data, based on the \code{var_categorical}.}
+
+\item{normalize}{Logical; if \code{TRUE}, normalizes the data in order to display the relative contribution of the \code{var_categorical}.  Defaults to \code{TRUE}.}
+
+\item{zoom}{Logical; if \code{TRUE}, centers the plot display to the values in \code{data}.Defaults to \code{TRUE}.}
 }
 \value{
 A \code{ggplot} object representing the requested proportion plot. If \code{save_format} is provided, the plot will also be saved to the specified location.

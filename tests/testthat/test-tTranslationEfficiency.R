@@ -1,15 +1,15 @@
 test_that("The different modes to compute the theoretical translation efficiency scores", {
 
-  data(subset_mRNA_data, subset_tRNA_data, metadata)
+  data(default_tTEscanR_mRNA_data, default_tTEscanR_tRNA_data, default_tTEscanR_metadata)
 
-  tTEscanR_obj <- Create_tTEscanR_Object(counts = list(mRNA = subset_mRNA_data, tRNA = subset_tRNA_data), meta.data = list(ConditionsLabels = metadata, CorrectionFactor = "tissue"))
+  tTEscanR_obj <- Create_tTEscanR_Object(counts = list(mRNA = default_tTEscanR_mRNA_data, tRNA = default_tTEscanR_tRNA_data), meta.data = list(ConditionsLabels = default_tTEscanR_metadata, CorrectionFactor = "tissue"))
 
   # CASE 1: assays not present in the object
-  expect_error(Compute_tTE(object = tTEscanR_obj, level = "codon"))
-  expect_error(Compute_tTE(object = tTEscanR_obj, level = "aa"))
-  expect_error(Compute_tTE(object = tTEscanR_obj, level = "both"))
+  expect_error(Compute_tTE(object = tTEscanR_obj, level = "codon"), "not be found")
+  expect_error(Compute_tTE(object = tTEscanR_obj, level = "aa"), "not be found")
+  expect_error(Compute_tTE(object = tTEscanR_obj, level = "both"), "not be found")
 
-  tTEscanR_obj <- ComputeCodonUsage(object = tTEscanR_obj, species = "hg38", additional.metrics = FALSE, reduce = 10000)
+  tTEscanR_obj <- ComputeCodonUsage(object = tTEscanR_obj, species = "hg38", additional_metrics = FALSE, reduce = 10000)
   tTEscanR_obj <- ComputeAnticodonUsage(object = tTEscanR_obj)
 
   expect_no_error(Compute_tTE(object = tTEscanR_obj, level = "codon"))
@@ -20,7 +20,12 @@ test_that("The different modes to compute the theoretical translation efficiency
 
   expect_no_error(Compute_tTE(object = tTEscanR_obj, level = "codon"))
   expect_no_error(Compute_tTE(object = tTEscanR_obj, level = "aa"))
-  expect_no_error(Compute_tTE(object = tTEscanR_obj, level = "both"))
+
+  expect_no_error(Compute_tTE(object = tTEscanR_obj, level = "codon", compute_significance = FALSE))
+  expect_no_error(Compute_tTE(object = tTEscanR_obj, level = "aa", compute_significance = FALSE))
+  expect_no_error(Compute_tTE(object = tTEscanR_obj, level = "both", compute_significance = FALSE))
+  tTEscanR_obj <- Compute_tTE(object = tTEscanR_obj, level = "both")
+  expect_true(all(c("tTEresults_codon", "tTEresults_AA") %in% names(tTEscanR_obj@meta.data)))
 
   # CASE 2: wrong level parameter
   expect_error(Compute_tTE(object = tTEscanR_obj, level = codon)) # level needs to be a string

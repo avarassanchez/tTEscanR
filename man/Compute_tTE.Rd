@@ -6,9 +6,10 @@
 \usage{
 Compute_tTE(
   object,
-  level = "aa",
-  corr_method = "spearman",
-  compute.significance = TRUE,
+  level = c("codon", "aa", "both"),
+  genetic_code = "Standard",
+  corr_method = c("spearman", "pearson", "kendall"),
+  compute_significance = TRUE,
   overwrite = FALSE,
   verbose = TRUE
 )
@@ -16,11 +17,13 @@ Compute_tTE(
 \arguments{
 \item{object}{A \code{tTEscanR_Object} containing a mRNA and a codon usage assay and/or a tRNA and an anticodon usage assay.}
 
-\item{level}{Either \code{"codon"}, \code{"aa"} (default) or \code{"both"} to indicate which analysis to perform. Defaults to \code{"aa"}.}
+\item{level}{Either \code{"codon"}, \code{"aa"} or \code{"both"} to indicate which analysis to perform.}
+
+\item{genetic_code}{A \code{character} string to specify the genetic code to be used. Defaults to \code{"Standard"}.}
 
 \item{corr_method}{A correlation method accepted by \code{\link{cor}}. Defaults to \code{"spearman"}.}
 
-\item{compute.significance}{Logical; if \code{TRUE}, computes the statistical significance (p-value) of the tTE scores. Defaults to \code{TRUE}.}
+\item{compute_significance}{Logical; if \code{TRUE}, computes the statistical significance (p-value) of the tTE scores. Defaults to \code{TRUE}.}
 
 \item{overwrite}{Logical; if \code{TRUE}, overwrites any existing tTE table in the \code{tTEscanR_Object}. Defaults to \code{FALSE}.}
 
@@ -33,13 +36,13 @@ An updated \code{tTEscanR_Object} containing a new layer of information represen
 This function calculates the theoretical translation efficiency (tTE) score by integrating codon-anticodon usage and/or amino acid demand-supply across conditions.
 }
 \examples{
-data(subset_mRNA_data, subset_tRNA_data, metadata)
-tTEscanR_obj <- Create_tTEscanR_Object(counts = list(mRNA = subset_mRNA_data,
-                                                     tRNA = subset_tRNA_data),
-                                       meta.data = list(metadata, "tissue"),
+data(default_tTEscanR_mRNA_data, default_tTEscanR_tRNA_data, default_tTEscanR_metadata)
+tTEscanR_obj <- Create_tTEscanR_Object(counts = list(mRNA = default_tTEscanR_mRNA_data,
+                                                     tRNA = default_tTEscanR_tRNA_data),
+                                       meta.data = list(default_tTEscanR_metadata, "tissue"),
                                        meta.data.ids = list("ConditionsLabels", "CorrectionFactor"))
 tTEscanR_obj <- ComputeCodonUsage(object = tTEscanR_obj, species = "hg38",
-                                  additional.metrics = FALSE, reduce = 10000)
+                                  additional_metrics = FALSE, reduce = 10000)
 tTEscanR_obj <- ComputeAnticodonUsage(object = tTEscanR_obj)
-tTEscanR_obj <- Compute_tTE(object = tTEscanR_obj, level = "codon", compute.significance = FALSE)
+tTEscanR_obj <- Compute_tTE(object = tTEscanR_obj, level = "codon", compute_significance = FALSE)
 }

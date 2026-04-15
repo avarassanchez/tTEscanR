@@ -8,13 +8,14 @@ Run_tTEscanR_pipeline(
   mRNA_data,
   tRNA_data,
   metadata,
-  corr_factor = NULL,
+  batch = NULL,
   corr_method = "spearman",
-  additional.metrics = TRUE,
-  compute.significance = TRUE,
+  additional_metrics = TRUE,
+  compute_significance = TRUE,
   codon_freq = NULL,
   species = NULL,
-  filter = "canonical",
+  genetic_code = "Standard",
+  dim_reduct = NULL,
   reduce = 100,
   runDESeq = TRUE,
   color_factor = NULL,
@@ -28,19 +29,21 @@ Run_tTEscanR_pipeline(
 
 \item{metadata}{A \code{data.frame} with the meta-information related with the conditions in \code{mRNA_data} or \code{tRNA_data}. Just the intersecting conditions will be considered.}
 
-\item{corr_factor}{A factor based on \code{metadata} columns to define the variable to correct for when size correcting the count matrices.}
+\item{batch}{A factor based on \code{metadata} columns to define the variable to correct for when size correcting the count matrices.}
 
 \item{corr_method}{A correlation method accepted by \code{\link{cor}}. Defaults to \code{"spearman"}.}
 
-\item{additional.metrics}{Logical; if \code{TRUE}, computes: (i) codon exonic background, (ii) mean codon usage, and (iii) correlation between the previous metrics. Defaults to \code{TRUE}.}
+\item{additional_metrics}{Logical; if \code{TRUE}, computes: (i) codon exonic background, (ii) mean codon usage, and (iii) correlation between the previous metrics. Defaults to \code{TRUE}.}
 
-\item{compute.significance}{Logical; if \code{TRUE}, computes the statistical significance (p-value) of the tTE scores. Defaults to \code{TRUE}.}
+\item{compute_significance}{Logical; if \code{TRUE}, computes the statistical significance (p-value) of the tTE scores. Defaults to \code{TRUE}.}
 
-\item{codon_freq}{Optional; a user-provided codon frequency-per-gene table. If necessary, it can be computed using \code{\link{ObtainCodonFreqPerGene}}.}
+\item{codon_freq}{Optional; a user-provided codon frequency-per-gene table. If necessary, it can be computed using \code{\link{GetCodonFreq}}.}
 
 \item{species}{Either \code{"hg38"} (human) or \code{"mm39"} (mouse) to specify which default codon frequency-per-gene table to use. Required if \code{codon_freq} not provided or if the gene annotation is inconsistent between both inputs.}
 
-\item{filter}{Either \code{"canonical"} (default) or \code{"length"} (longest transcript) to specify which transcript to choose if several are available for the same gene.}
+\item{genetic_code}{A \code{character} string to specify the genetic code to be used. Defaults to \code{"Standard"}.}
+
+\item{dim_reduct}{Either \code{"PCA"}, \code{"UMAP"} or \code{"tSNE"} to specify the dimensionality reduction approach to be executed if \code{runDESeq} is \code{TRUE}. Defaults to \code{"PCA"}.}
 
 \item{reduce}{Numeric; a scaling factor used to normalize large expression values that exceed R's handling capacity. Defaults to 100.}
 
@@ -59,9 +62,11 @@ Requires an mRNA and tRNA count matrices to compute the codon and anticodon usag
 With matching condition in the former matrices the theoretical translation efficiency would be computed.
 }
 \examples{
-data(subset_mRNA_data, subset_tRNA_data, metadata)
-tTEscanR_obj <- Run_tTEscanR_pipeline(mRNA_data = subset_mRNA_data, tRNA_data = subset_tRNA_data,
-                                      metadata = metadata, species = "hg38",
-                                      corr_factor = "tissue", additional.metrics = FALSE,
-                                      compute.significance = FALSE, runDESeq = FALSE)
+data(default_tTEscanR_mRNA_data, default_tTEscanR_tRNA_data, default_tTEscanR_metadata)
+tTEscanR_obj <- Run_tTEscanR_pipeline(mRNA_data = default_tTEscanR_mRNA_data,
+                                      tRNA_data = default_tTEscanR_tRNA_data,
+                                      metadata = default_tTEscanR_metadata,
+                                      species = "hg38", batch = "tissue",
+                                      additional_metrics = FALSE,
+                                      compute_significance = FALSE, runDESeq = FALSE)
 }
