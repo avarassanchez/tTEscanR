@@ -3,15 +3,15 @@
 
 ## 1. What is tTEscanR?
 
-**tTEscanR**, is a powerful and user-friendly R-based package designed to quantify translation efficiency from bulk and single-cell sequencing data. **tTEscanR** offers a comprehensive approach to quantify translation efficiency by integrating gene expression data and chromatin accessibility data. The modular design of **tTEscanR** ensures flexibility, allowing users to either run independent components or a complete pipeline based on their research needs. Its user-friendly R-based interface simplifies the analysis of complex data, even for researchers with minimal computational experience. 
+**tTEscanR**, is a powerful and user-friendly R-based package designed to quantify translation efficiency from bulk and single-cell sequencing data. **tTEscanR** offers a comprehensive approach to integrate gene expression data and chromatin accessibility data. The modular design of **tTEscanR** ensures flexibility, allowing users to either run independent components or a complete pipeline based on their research needs. **tTEscanR** has a user-friendly R-based interface that simplifies the analysis of complex data, even for researchers with minimal computational experience. 
 
 Additionally, **tTEscanR** includes an advanced visualization module that generates high-quality plots, aiding in interpretation of results and enhancing the ability to communicate findings effectively. Applicable to both bulk and single-cell sequencing data, **tTEscanR** provides a versatile tool for a wide range of experimental setups and biological contexts, enabling deeper exploration of translation efficiency and its role in cellular processes, disease mechanisms, and therapeutic development. 
 
 **Key features:**
+<li>User-friendly R-based interface.</li>
 <li>Compatible with bulk and single-cell data.</li>
 <li>Modular and customizable pipeline.</li>
 <li>High-quality visualizations.</li>
-<li>User-friendly R-based interface.</li>
 
 ## 2. Setup
 
@@ -28,8 +28,8 @@ The **input** data for **tTEscanR** should be preprocessed according to the step
 
 ## 3. Workflow functionalities
 
-The **tTEscanR** package provides a strucutred framework for analyzing codon-anticodon pools and transaltion efficiency.
-<img width="2024" height="1312" alt="tTEscanR_fig1_schema_GH" src="https://github.com/user-attachments/assets/9efc89dc-6acd-41ec-929d-b0cc76445067" />
+The **tTEscanR** package provides a strucutred framework for analyzing codon-anticodon pools in the context of transaltion efficiency.
+<img width="1950" height="2084" alt="schema_tTEscanR_figure1" src="https://github.com/user-attachments/assets/45d40d3e-57be-4f23-b5da-4a6c810d18c1" />
 
 ### 3.1. Core functions
 
@@ -97,12 +97,12 @@ The **tTEscanR** package includes helper functions to support specific steps of 
       <td>Effectively combines matrices.</td>
     </tr>
     <tr>
-      <td><code>MergeConditions()</code></td>
+      <td><code>GroupConditions()</code></td>
       <td>Aggregates the individual columns into conditions based on a reference metadata.</td>
     </tr>
     <tr>
-      <td><code>TransformFormat()</code></td>
-      <td>Modifies the data to fit the requirements of the visualization module.</td>
+      <td><code>FeaturesToAA()</code></td>
+      <td>Translates based on a specified genetic codes codons and/or anticodons to amino acids.</td>
     </tr>
     <tr>
       <td rowspan="4"><b>tRNA preprocessing</b></td>
