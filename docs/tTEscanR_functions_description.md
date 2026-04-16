@@ -47,15 +47,16 @@ Updates an existing **tTEscanR** object by overwriting existing sections or addi
 - `verbose`: Logical; if TRUE, displays information messages.
 
 ```{r}
-data(mRNA_data, tRNA_data, metadata)
+data(default_tTEscanR_mRNA_data, default_tTEscanR_tRNA_data, default_tTEscanR_metadata)
 
 # Adding the mRNA dataset to the object
-tTEscanR_obj <- Create_tTEscanR_Object(counts = list(mRNA_data, tRNA_data),
+tTEscanR_obj <- Create_tTEscanR_Object(counts = list(default_tTEscanR_mRNA_data,
+                                                     default_tTEscanR_tRNA_data),
                                        assay = list("mRNA", "tRNA"))
 
 # Updating the object created before with the tRNA dataset
 tTEscanR_obj <- Update_tTEscanR_Object(object = tTEscanR_obj,
-                                       meta.data = metadata,
+                                       meta.data = default_tTEscanR_metadata,
                                        meta.data.ids = "ConditionsLabels")
 ```
 
@@ -203,7 +204,7 @@ tRNA_expression_matrix <- Get_tRNAMatrix(chrom = chromatin_object,
                                          name_sep = c("-", "-"),
                                          save = FALSE)
 
-# The generated tRNA_expression_matrix corresponds to the tRNA_data available in tTEscanR
+# The default_tTEscanR_tRNA_data available in tTEscanR is a subset of the generated tRNA_expression_matrix
 ```
 
 <hr>
@@ -232,16 +233,16 @@ tRNA_optimal_cutoff <- Set_tRNACutoff(data = tRNA_data,
 
 <hr>
 
-**Function:** `tRNACutsFilter()`.
+**Function:** `Filter_tRNACuts()`.
 
 Filters a tRNA expression matrix by removing tRNA genes (rows) that fall below a specific total read count, specified as a cutoff. It is useful to eliminate low-quality or poorly seqeunced conditions that may bias downstream analyses. 
 
 **Parameters:**
-- `tRNA_data`: The tRNA gene expression data containing tRNA cuts as rows and conditions as columns.
+- `data`: The tRNA gene expression data containing tRNA cuts as rows and conditions as columns.
 - `cutoff`: Minimum expression level required for a condition to be retained.
 
 ```{r}
-tRNA_data_filtered <- tRNACutsFilter(tRNA_data = tRNA_data, cutoff = 5000)
+tRNA_data_filtered <- Filter_tRNACuts(tRNA_data = tRNA_data, cutoff = 5000)
 ```
 
 <hr>
@@ -253,24 +254,26 @@ Verifies and, if necessary, translates gene annotations across multiple vectors 
 **Parameters:** 
 - `data_to_translate`: A vector or dataframe containing gene names or features (codons or anticodons) to be translated.
 - `position`: Either *"row"*, *"column"* or *<column_name>* to specify the location of the features in `data_to_translate`. Required if `data_to_translate` is a data frame. 
-- `notation.from`: Either *"codon"* or *"anticodon"* to select the input format of the features in `data_to_translate`.
-- `notation.to`: Either *"codon"*, *"anticodon"* or *"aa"* to select the output format of the features in `data_to_translate`.
+- `notation_from`: Either *"codon"* or *"anticodon"* to select the input format of the features in `data_to_translate`.
+- `notation_to`: Either *"codon"*, *"anticodon"* or *"aa"* to select the output format of the features in `data_to_translate`.
+- `genetic_code`: A character string specifying the genetic code to be used.
 - `verbose`: Logical; if TRUE, displays information messages.
 
 ```{r}
 codons <- rownames(tTEscanR_obj@assays$CodonUsage)
 codons_to_AA <- FeaturesToAA(data_to_translate = codons,
-                             notation.from = "codon",
-                             notation.to = "aa")
+                             notation_from = "codon",
+                             notation_to = "aa",
+                             genetic_code = "Standard")
 
 codons_to_anticodons <- FeaturesToAA(data_to_translate = codons,
-                                     notation.from = "codon",
-                                     notation.to = "anticodon")
+                                     notation_from = "codon",
+                                     notation_to = "anticodon")
 ```
 
 ### 2.2 Codon frequency table module
 
-**Function:** `ObtainCodonComposition()`.
+**Function:** `GetCodonFreq()`.
 
 Based on an Ensembl reference genome or a user-provided gene sequence file, this function computes a codon frequency-per-gene matrix. It can optionally subset the analysis to specific transcripts and apply filtering criteria when multiple transcripts are available per gene.
 
@@ -279,7 +282,9 @@ Based on an Ensembl reference genome or a user-provided gene sequence file, this
 - `genes_file`: A file path to a table containign gene IDs and their corresponding nucleotide sequences.
 - `transcripts`: Optional; a vector of transcripts or gene IDs to subset the analysis.
 - `filter`:  Either *"canonical"* (default) or *"length"* (longest transcript) to specify which transcript to choose if several are available for the same gene.
-- `retain.mitochondrial`: Logical; if FALSE filters outs the mitochondrial genes.
+- `retain_mitochondrial`: Logical; if FALSE filters outs the mitochondrial genes.
+- `retain_unannotated`: Logical; if FALSE filters out the gene names that do not have an appropriate identifier.
+- `retain_geneversion`: Logical; if FALSE retains the gene versions from the genes ids.
 - `out_format`: Either *"external_gene_name"*, *"ensembl_gene_id"* or *"ensembl_transcript_id"* to specify the annotation of the genes in the output matrix.
 - `verbose`: Logical; if TRUE, displays information messages.
 
@@ -288,24 +293,24 @@ Based on an Ensembl reference genome or a user-provided gene sequence file, this
 datasets <- biomaRt::listDatasets(useEnsembl(biomart = "ensembl"))
 
 # Retrieving the codon frequency per gene matrix from the human reference genome
-human_codon_freq_per_gene_matrix <- ObtainCodonFreqPerGene(dataset_name = "hsapiens_gene_ensembl",
-                                                           filter = "canonical",
-                                                           retain.mitochondrial = FALSE,
-                                                           out_format = "external_gene_name")
+human_codon_freq_per_gene_matrix <- GetCodonFreq(dataset_name = "hsapiens_gene_ensembl",
+                                                 filter = "canonical",
+                                                 retain.mitochondrial = FALSE,
+                                                 out_format = "external_gene_name")
 
 # Using a targeted approach to get the codon frequency of the genes included in the mRNA data 
 targeted_genes <- c("ENSG00000059588", "ENSG00000052841", "ENSG00000173153",
                     "ENSG00000058799", "ENSG00000071203")
 
-targeted_genes_codon_freq_per_gene_matrix <- ObtainCodonFreqPerGene(dataset_name = "hsapiens_gene_ensembl",
-                                                                    transcripts = targeted_genes,
-                                                                    retain.mitochondrial = FALSE,
-                                                                    out_format = "external_gene_name")
+targeted_genes_codon_freq_per_gene_matrix <- GetCodonFreq(dataset_name = "hsapiens_gene_ensembl",
+                                                          transcripts = targeted_genes,
+                                                          retain.mitochondrial = FALSE,
+                                                          out_format = "external_gene_name")
 ```
 
 <hr>
 
-**Function:** `ExtractCodonComposition()`.
+**Function:** `ExtractCodons()`.
 
 Analyzes a given set of nucleotide sequences and computes the count of each codon present. 
 
@@ -314,51 +319,57 @@ Analyzes a given set of nucleotide sequences and computes the count of each codo
 - `verbose`: Logical, if TRUE, displays information messages. 
 
 ```{r}
-codon_composition <- extract_codon_composition(c("ATGCGTACG", "TTAAGGCCG"))
+codon_composition <- ExtractCodons(c("ATGCGTACG", "TTAAGGCCG"))
 ```
 
 ### 2.3. Differential expression analysis module
 
-**Function:** `ExecuteDESeq2runner()`.
+**Function:** `RunDEAnalysis()`.
 
-Performs differential expression analysis using the DESeq2 framework on a matrix or list of matrices of expression values. It supports both explorstory visualizations (heatmap and PCA) and targeted comparisons using a custom contrast table.
+Performs differential expression analysis using the DESeq2 framework on a matrix or list of matrices of expression values. It supports both exploratory visualizations (heatmap and PCA) and targeted comparisons (volcano plots) using a custom contrast table.
 
 **Parameters:**
-- `list_data`: A list of matrices with features as rows and conditions as columns.
-- `metadata`: A table with additional information related to `list_data`.
-- `targets`: Optional; a data frame with one column indicating the conditions to select, and another column with the labels for comparisons.
-- `target_factor`: Optional; A metadata factor (column name) to identify the variable of interest. 
-- `fc_threshold`: Numeric; fold change threshold used for highlighting significant features in the volcano plot. Required if `targets` is specified. 
-- `pval_threshold`: Numeric; p-value threshold used for highlighting significant features in the volcano plot. Required if `targets` is specified.
-- `reduce`: Numeric; a scaling factor used to normalize large expression values that exceed R's handling capacity.
-- `heatmap`: Logical, if TRUE, generates a heatmap for exploratory analysis. Not applicable if `targets` is specified.
-- `PCA`: Logical, if TRUE, generates a principal component analysis. Not applicable if `targets` is specified. 
-- `numPC`: Numeric; number of principal components to consider in the PCA analysis. Required if `PCA` is enabled.
-- `corr_factor`: Optional; a metadata factor (column name) to identify the variable to correct for. Required if `PCA` is enabled.
-- `color_factor`: Optional; a metadata factor (column name) to define the colors in the PCA data points. Required if `PCA` is enabled.
-- `shape_factor`: Optional; a metadata factor (column name) to define the shapes of the PCA data points. Required if `PCA` is enabled.
-- `color_palette`: Optional; a vector of color codes to customize the PCA plot appearance. Required if `PCA` is enabled.
-- `labels`: Logical; if TRUE, displays the data points labels in PCA plot. Required if `PCA` is enabled.
-- `verbose`: Logical; if TRUE, displays information messages.
+- `list_data`: A list of matrices with features as rows and samples or conditions as columns.
+- `metadata`: A data frame with the data associated to the conditions in the matrices of `list_data`.
+- `dim_reduct`: Either "PCA", "UMAP" or "tSNE" to specify the dimensionality reduction approach to be executed.
+- `batch`: Name of the categorical variable in `metadata` to correct the data.
+- `reference`: Factor from the `batch` to use as reference for the corrections.
+- `condition`: Factor from the `metadata` to define the comparisons to perform in a targeted analysis. 
+- `fc_threshold`: Numeric; fold change threshold used for highlighting significant features in the volcano plot.
+- `padj_threshold`: Numeric; p-value threshold used for highlighting significant features in the volcano plot. 
+- `label_significant`: Logical; if TRUE displays the axis of the plots based on `fc_threshold` and `padj_threshold`.
+- `reduce`: Numeric; a scaling factor used to normalize large expression values that exceed R's handling capacity. 
+- `heatmap`: Logical; if TRUE generates a heatmap for exploratory analysis. 
+- `highlight_median`: Logical; if TRUE the data points of each cluster will be summarized into the median. 
+- `numPC`: Numeric; number of principal components to include in the PCA analysis.
+- `show_legend`: Either "none", "top", "bottom", "right" or "left" to specify the position of the legend in the plot.
+- `color_factor`: Name of the categorical variable in `metadata` to group by color the data points. 
+- `shape_factor`: Name of the categorical variable in `metadata` to group by shape the data points. 
+- `color_palette`: Vector of color codes to customize the plot appearance.
+- `label_factor`: Name of the categorical variable to label the data points.
+- `verbose`: Logical; if TRUE displays information messages. 
 
 ```{r}
-datasets_to_analyze <- list(mRNA = mRNA_data, tRNA = tRNA_data)
-differential_expression_mRNA_analysis <- ExecuteDESeq2runner(list_data = datasets_to_analyze,
-                                                             heatmap = TRUE,
-                                                             PCA = TRUE,
-                                                             numPC = 5,
-                                                             color_factor = "tissue",
-                                                             corr_factor = "tissue", 
-                                                             labels = FALSE)
+codon_anticodon_usage <- list(codon = tTEscanR_obj@assays$CodonUsage,
+                              anticodon = tTEscanR_obj@assays$AnticodonUsage)
+dea_codon_analysis <- RunDEAnalysis(list_data = codon_anticodon_usage,
+                                    metadata = default_tTEscanR_metadata,
+                                    dim_reduct = "PCA",
+                                    numPC = 5,
+                                    batch = "tissue",
+                                    color_factor = "cell_type")
 
-# List of outputs: (i) Heatmap, (ii) PCA plot, and (iii) Size corrected data.
 # Each element stored in the list of outputs can be accessed using '$'.
 
 # Targeted approach
-targets_neuron <- data.frame(search = c("neuron", "ENS neurons"),
-                                      class = c("neuron", "other"))
-differential_expression_mRNA_analysis_targeted <- ExecuteDESeq2runner(data = list(target_mRNA = mRNA_data),
-                                                                      targets = targets_neuron,
-                                                                      fc_threshold = 1,
-                                                                      pval_threshold = 0.05)
+default_tTEscanR_metadata$targets <- "other"
+default_tTEscanR_metadata$targets[grep("neuron", default_tTEscanR_metadata$cell.type)] <- "neuron"
+dea_codon_analysis_targeted <- RunDEAnalysis(list_data = dea_codon_analysis,
+                                             metadata = default_tTEscanR_metadata,
+                                             condition = "targets",
+                                             batch = "tissue",
+                                             color_factor = "tissue",
+                                             fc_threshold = 1,
+                                             padj_threshold = 0.05)
+
 ```
