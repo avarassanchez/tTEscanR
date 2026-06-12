@@ -5,44 +5,66 @@
 \title{Compute the Theoretical Translation Efficiency (tTE) score}
 \usage{
 Compute_tTE(
-  object,
-  level = c("codon", "aa", "both"),
-  genetic_code = "Standard",
-  corr_method = c("spearman", "pearson", "kendall"),
-  compute_significance = TRUE,
-  overwrite = FALSE,
-  verbose = TRUE
+    object,
+    level = c("codon", "aa", "both"),
+    genetic_code = "Standard",
+    corr_method = c("spearman", "pearson", "kendall"),
+    compute_significance = TRUE,
+    overwrite = FALSE,
+    verbose = TRUE
 )
 }
 \arguments{
-\item{object}{A \code{tTEscanR_Object} containing a mRNA and a codon usage assay and/or a tRNA and an anticodon usage assay.}
+\item{object}{A \code{tTEscanR_Object} containing a mRNA and a codon usage
+assay and/or a tRNA and an anticodon usage assay.}
 
-\item{level}{Either \code{"codon"}, \code{"aa"} or \code{"both"} to indicate which analysis to perform.}
+\item{level}{Either \code{"codon"}, \code{"aa"} or \code{"both"} to indicate
+which analysis to perform.}
 
-\item{genetic_code}{A \code{character} string to specify the genetic code to be used. Defaults to \code{"Standard"}.}
+\item{genetic_code}{A \code{character} string to specify the genetic code to
+be used. Defaults to \code{"Standard"}.}
 
-\item{corr_method}{A correlation method accepted by \code{\link{cor}}. Defaults to \code{"spearman"}.}
+\item{corr_method}{A correlation method accepted by \code{\link{cor}}.
+Defaults to \code{"spearman"}.}
 
-\item{compute_significance}{Logical; if \code{TRUE}, computes the statistical significance (p-value) of the tTE scores. Defaults to \code{TRUE}.}
+\item{compute_significance}{Logical; if \code{TRUE}, computes the statistical
+significance (p-value) of the tTE scores. Defaults to \code{TRUE}.}
 
-\item{overwrite}{Logical; if \code{TRUE}, overwrites any existing tTE table in the \code{tTEscanR_Object}. Defaults to \code{FALSE}.}
+\item{overwrite}{Logical; if \code{TRUE}, overwrites any existing tTE table
+in the \code{tTEscanR_Object}. Defaults to \code{FALSE}.}
 
-\item{verbose}{Logical; if \code{TRUE}, displays information messages. Defaults to \code{TRUE}.}
+\item{verbose}{Logical; if \code{TRUE}, displays information messages.
+Defaults to \code{TRUE}.}
 }
 \value{
-An updated \code{tTEscanR_Object} containing a new layer of information representing the translation efficiency table for the matching conditions in the mRNA and tRNA data.
+An updated \code{tTEscanR_Object} containing a new layer of
+information
+representing the translation efficiency table for the matching conditions in
+the mRNA and tRNA data.
 }
 \description{
-This function calculates the theoretical translation efficiency (tTE) score by integrating codon-anticodon usage and/or amino acid demand-supply across conditions.
+This function calculates the theoretical translation efficiency (tTE) score
+by integrating codon-anticodon usage and/or amino acid demand-supply across
+conditions.
 }
 \examples{
-data(default_tTEscanR_mRNA_data, default_tTEscanR_tRNA_data, default_tTEscanR_metadata)
-tTEscanR_obj <- Create_tTEscanR_Object(counts = list(mRNA = default_tTEscanR_mRNA_data,
-                                                     tRNA = default_tTEscanR_tRNA_data),
-                                       meta.data = list(default_tTEscanR_metadata, "tissue"),
-                                       meta.data.ids = list("ConditionsLabels", "CorrectionFactor"))
-tTEscanR_obj <- ComputeCodonUsage(object = tTEscanR_obj, species = "hg38",
-                                  additional_metrics = FALSE, reduce = 10000)
+data(
+    default_tTEscanR_mRNA_data, default_tTEscanR_tRNA_data,
+    default_tTEscanR_metadata
+)
+tTEscanR_obj <- CreateObject(
+    counts = list(
+        mRNA = default_tTEscanR_mRNA_data, tRNA = default_tTEscanR_tRNA_data
+    ),
+    meta.data = list(default_tTEscanR_metadata, "tissue"),
+    meta.data.ids = list("ConditionsLabels", "CorrectionFactor")
+)
+tTEscanR_obj <- ComputeCodonUsage(
+    object = tTEscanR_obj, species = "hg38",
+    additional_metrics = FALSE, reduce = 10000
+)
 tTEscanR_obj <- ComputeAnticodonUsage(object = tTEscanR_obj)
-tTEscanR_obj <- Compute_tTE(object = tTEscanR_obj, level = "codon", compute_significance = FALSE)
+tTEscanR_obj <- Compute_tTE(
+    object = tTEscanR_obj, level = "codon", compute_significance = FALSE
+)
 }

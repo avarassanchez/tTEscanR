@@ -3,12 +3,21 @@
 \docType{data}
 \name{default_tTEscanR_metadata}
 \alias{default_tTEscanR_metadata}
-\title{Metadata of mRNA and tRNA data
-This dataset contains the extra information to indicate the conditions of the data}
+\title{Metadata of mRNA and tRNA data}
+\format{
+A data frame with samples as rows and annotation columns such as:
+\describe{
+\item{tissue}{The sequencing batch or sample origin}
+\item{cell.type}{The experimental group or cell type}
+\item{conditions}{The combination of the previous items as will be referred
+in the columns of the count matrices}
+}
+}
 \usage{
 data(default_tTEscanR_metadata)
 }
 \description{
-Metadata of mRNA and tRNA data
-This dataset contains the extra information to indicate the conditions of the data
+This dataset contains the extra information to indicate the conditions of
+the data
 }
+\keyword{datasets}

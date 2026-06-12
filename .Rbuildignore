@@ -6,3 +6,5 @@
 ^\.Rhistory$
 ^docs$
 ^data-raw$
+^\.positai$
+^\.claude$

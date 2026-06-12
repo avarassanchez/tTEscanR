@@ -5,41 +5,58 @@
 \title{Compute Codon Frequency-per-Gene Table}
 \usage{
 GetCodonFreq(
-  dataset_name = NULL,
-  genes_file = NULL,
-  transcripts = NULL,
-  filter = c("canonical", "length"),
-  retain_mitochondrial = FALSE,
-  out_format = c("external_gene_name", "ensembl_transcript_id", "ensembl_gene_id"),
-  retain_unannotated = FALSE,
-  retain_geneversion = TRUE,
-  verbose = TRUE
+    dataset_name = NULL,
+    genes_file = NULL,
+    verbose = TRUE,
+    transcripts = NULL,
+    retain_mitochondrial = FALSE,
+    filter = c("canonical", "length"),
+    retain_unannotated = FALSE,
+    retain_geneversion = TRUE,
+    out_format = c(
+        "external_gene_name", "ensembl_transcript_id", "ensembl_gene_id"
+    )
 )
 }
 \arguments{
-\item{dataset_name}{A character string specifying the Ensembl species dataset name (e.g. \code{"hsapiens_gene_ensembl"}).}
+\item{dataset_name}{A character string specifying the Ensembl species dataset
+name (e.g. \code{"hsapiens_gene_ensembl"}).}
 
 \item{genes_file}{Optional; a path to a FASTA file.}
 
-\item{transcripts}{Optional; a character vector of transcripts or gene IDs to subset the analysis.}
+\item{verbose}{Logical; if \code{TRUE}, displays information messages.
+Defaults to \code{TRUE}.}
 
-\item{filter}{Either \code{"canonical"} (default) or \code{"length"} (longest transcript) to specify which transcript to choose if several are available for the same gene.}
+\item{transcripts}{Optional; a character vector of transcripts or gene IDs to
+subset the analysis.}
 
-\item{retain_mitochondrial}{Logical; if \code{FALSE} filters out the mitochondrial genes. Defaults to \code{FALSE}.}
+\item{retain_mitochondrial}{Logical; if \code{FALSE} filters out the
+mitochondrial genes. Defaults to \code{FALSE}.}
 
-\item{out_format}{Either \code{"external_gene_name"} (default), \code{"ensembl_gene_id"} or \code{"ensembl_transcript_id"} to specify annotation to use in the output codon frequency-per-gene table.}
+\item{filter}{Either \code{"canonical"} or \code{"length"}
+(longest transcript) to specify which transcript to choose if several are
+available for the same gene.}
 
-\item{retain_unannotated}{Logical; if \code{FALSE} filters out the gene names that do not have an \code{"external_gene_name"} identifier. Defaults to \code{FALSE}.}
+\item{retain_unannotated}{Logical; if \code{FALSE} filters out the gene
+names that do not have an \code{"external_gene_name"} identifier. Defaults
+to \code{FALSE}.}
 
-\item{retain_geneversion}{Logical; if \code{FALSE} retains the gene versions from the \code{"ensembl_gene_id"} identifier. Defaults to \code{TRUE}.}
+\item{retain_geneversion}{Logical; if \code{FALSE} retains the gene versions
+from the \code{"ensembl_gene_id"} identifier. Defaults to \code{TRUE}.}
 
-\item{verbose}{Logical; if \code{TRUE}, displays information messages. Defaults to \code{TRUE}.}
+\item{out_format}{Either \code{"external_gene_name"},
+\code{"ensembl_gene_id"} or \code{"ensembl_transcript_id"} to specify
+annotation to use in the output codon frequency-per-gene table.}
 }
 \value{
-Codon frequency-per-gene table and a translator gene annotation table (if available).
+Codon frequency-per-gene table and a translator gene annotation
+table (if available).
 }
 \description{
-This function computes codon usage frequencies for each gene based on a provided set of gene sequences.
-It can optionally subset the analysis to specific transcripts and apply filtering criteria when multiple transcripts are available for the same gene.
-Consequently, no \code{filter} parameter will be considered if parameters \code{transcripts} and \code{genes_file} are given.
+This function computes codon usage frequencies for each gene based on a
+provided set of gene sequences. It can optionally subset the analysis to
+specific transcripts and apply filtering criteria when multiple transcripts
+are available for the same gene. Consequently, no \code{filter} parameter
+will be considered if parameters \code{transcripts} and \code{genes_file}
+are given.
 }

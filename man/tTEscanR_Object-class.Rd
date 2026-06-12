@@ -5,9 +5,11 @@
 \alias{tTEscanR_Object-class}
 \title{The tTEscanR Class}
 \description{
-The \strong{tTEscanR} object is dynamically updated to store \code{assays} and \code{meta.data} at each analysis step.
-Ensures efficient tracking and organization of inputs and outputs throughout the pipeline.
-In order to ensure robustness throughout the pipeline, specific ids have been assigned and should be respected by the user.
+The \strong{tTEscanR} object is dynamically updated to store \code{assays} and
+\code{meta.data} at each analysis step. Ensures efficient tracking and
+organization of inputs and outputs throughout the pipeline. In order to
+ensure robustness throughout the pipeline, specific ids have been assigned
+and should be respected by the user.
 }
 \section{Slots}{
 

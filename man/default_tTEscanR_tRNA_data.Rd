@@ -3,12 +3,16 @@
 \docType{data}
 \name{default_tTEscanR_tRNA_data}
 \alias{default_tTEscanR_tRNA_data}
-\title{tRNA Expression Data Subset
-This dataset contains an example of tRNA gene expression data with tRNA genes as rows and cell types as columns.}
+\title{tRNA Expression Data Subset}
+\format{
+A matrix or data frame where rows represent tRNA gene names
+and columns represent individual samples or cell types.
+}
 \usage{
 data(default_tTEscanR_tRNA_data)
 }
 \description{
-tRNA Expression Data Subset
-This dataset contains an example of tRNA gene expression data with tRNA genes as rows and cell types as columns.
+This dataset contains an example of tRNA gene expression data with tRNA
+genes as rows and cell types as columns.
 }
+\keyword{datasets}

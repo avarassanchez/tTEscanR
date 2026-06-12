@@ -7,30 +7,47 @@
 TransformFormat(data, normalize, rownames_to_column, names_to, values_to)
 }
 \arguments{
-\item{data}{A table to be converted. Supported formats: \code{matrix} or \code{data.frame}.}
+\item{data}{A table to be converted. Supported formats: \code{matrix} or
+\code{data.frame}.}
 
-\item{normalize}{Logical; if \code{TRUE}, values are converted to relative frequencies. Defaults to \code{FALSE}.}
+\item{normalize}{Logical; if \code{TRUE}, values are converted to relative
+frequencies. Defaults to \code{FALSE}.}
 
-\item{rownames_to_column}{A character string specifying the name of the new column that will hold the former row names in \code{data}.}
+\item{rownames_to_column}{A character string specifying the name of the new
+column that will hold the former row names in \code{data}.}
 
-\item{names_to}{A character string specifying the name of the new column that will hold the former column names in \code{data}.}
+\item{names_to}{A character string specifying the name of the new column
+that will hold the former column names in \code{data}.}
 
-\item{values_to}{A character string specifying the name of the new column that will hold the corresponding values from the pivoted columns in \code{data}.}
+\item{values_to}{A character string specifying the name of the new column
+that will hold the corresponding values from the pivoted columns in
+\code{data}.}
 }
 \value{
 A tibble of the input \code{data}
 }
 \description{
-This function converts a \code{matrix} or \code{data.frame} into a tidy, long-format \code{tibble}. Optionally normalizes the values.
+This function converts a \code{matrix} or \code{data.frame} into a tidy,
+long-format \code{tibble}. Optionally normalizes the values.
 }
 \examples{
 data(default_tTEscanR_tRNA_data)
-tRNA_long_format <- TransformFormat(data = default_tTEscanR_tRNA_data, normalize = FALSE,
-                                    rownames_to_column = "tRNA_genes",
-                                    names_to = "condition", values_to = "abundance")
-tTEobj <- Create_tTEscanR_Object(counts = default_tTEscanR_tRNA_data, assay = "tRNA")
+tRNA_long_format <- TransformFormat(
+    data = default_tTEscanR_tRNA_data,
+    normalize = FALSE,
+    rownames_to_column = "tRNA_genes",
+    names_to = "condition",
+    values_to = "abundance"
+)
+tTEobj <- CreateObject(
+    counts = default_tTEscanR_tRNA_data,
+    assay = "tRNA"
+)
 tTEobj <- ComputeAnticodonUsage(object = tTEobj)
-anticodon_long_format <- TransformFormat(data = tTEobj@assays$AnticodonUsage,
-                                         normalize = TRUE, rownames_to_column = "anticodons",
-                                         names_to = "condition", values_to = "usage")
+anticodon_long_format <- TransformFormat(
+    data = getAssay(tTEobj, "AnticodonUsage"),
+    normalize = TRUE,
+    rownames_to_column = "anticodons",
+    names_to = "condition", values_to = "usage"
+)
 }

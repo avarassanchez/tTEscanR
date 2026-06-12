@@ -7,16 +7,23 @@
 ObtainSignificance(dist, value, padj_threshold = 0.05, verbose = TRUE)
 }
 \arguments{
-\item{dist}{A table with the codons and their frequencies after completing a permutation test. Output from \code{\link{GetPermutationDist}}.}
+\item{dist}{A table with the codons and their frequencies after completing a
+permutation test. Output from \code{\link{GetPermutationDist}}.}
 
-\item{value}{A \code{list} of \code{data.frame} of the codon exonic background of a mRNA gene expression matrix. The codon exonic background can be computed in \code{\link{ComputeCodonUsage}}.}
+\item{value}{A \code{list} of \code{data.frame} of the codon exonic
+background of a mRNA gene expression matrix. The codon exonic background can
+be computed in \code{\link{ComputeCodonUsage}} using the additional_metrics
+parameter or directly running \code{\link{ComputeExonicBackground}}.}
 
-\item{padj_threshold}{Numeric; p-value threshold used for highlighting significant features in the volcano plot. Defaults to 0.05.}
+\item{padj_threshold}{Numeric; p-value threshold used for highlighting
+significant features in the volcano plot. Defaults to 0.05.}
 
-\item{verbose}{Logical; if \code{TRUE}, displays information messages. Defaults to \code{TRUE}.}
+\item{verbose}{Logical; if \code{TRUE}, displays information messages.
+Defaults to \code{TRUE}.}
 }
 \value{
-A table with the codon exonic background and their significance level before (p-value) and after the correction (p-adjusted value).
+A table with the codon exonic background and their significance
+level before (p-value) and after the correction (p-adjusted value).
 }
 \description{
 Assess Significance (P-value) & Corrects for Multiple Hypothesis Testing
@@ -24,19 +31,31 @@ Assess Significance (P-value) & Corrects for Multiple Hypothesis Testing
 \examples{
 data(default_tTEscanR_mRNA_data, default_tTEscanR_metadata)
 selected_genes <- default_tTEscanR_mRNA_data[1:20, ]
-permutation_test <- GetPermutationDist(n_permut = 100, target_data = selected_genes,
-                                       species = "hg38")
-tTEscanR_obj <- Create_tTEscanR_Object(counts = default_tTEscanR_mRNA_data, assay = "mRNA",
-                                       meta.data = list(default_tTEscanR_metadata, "tissue"),
-                                       meta.data.ids = list("ConditionsLabels", "CorrectionFactor"))
-tTEscanR_obj <- ComputeCodonUsage(object = tTEscanR_obj, species = "hg38",
-                                  additional_metrics = FALSE, reduce = 1000)
+permutation_test <- GetPermutationDist(
+    n_permut = 100, target_data = selected_genes, species = "hg38"
+)
+tTEscanR_obj <- CreateObject(
+    counts = default_tTEscanR_mRNA_data,
+    assay = "mRNA",
+    meta.data = list(default_tTEscanR_metadata, "tissue"),
+    meta.data.ids = list("ConditionsLabels", "CorrectionFactor")
+)
+tTEscanR_obj <- ComputeCodonUsage(
+    object = tTEscanR_obj, species = "hg38",
+    additional_metrics = FALSE, reduce = 1000
+)
 
-codon_usage <- tTEscanR_obj@assays$CodonUsage
+codon_usage <- getAssay(tTEscanR_obj, "CodonUsage")
 codon_background <- rowSums(codon_usage) / sum(rowSums(codon_usage))
-codons_to_AA <- FeaturesToAA(data_to_translate = names(codon_background),
-                             notation_from = "codon", notation_to = "aa")
-codon_background <- data.frame(group = codons_to_AA, codon = names(codon_background),
-                               freq = as.numeric(codon_background), row.names = NULL)
-significance <- ObtainSignificance(dist = permutation_test, value = codon_background)
+codons_to_AA <- FeaturesToAA(
+    data = names(codon_background),
+    notation_from = "codon", notation_to = "aa"
+)
+codon_background <- data.frame(
+    group = codons_to_AA, codon = names(codon_background),
+    freq = as.numeric(codon_background), row.names = NULL
+)
+significance <- ObtainSignificance(
+    dist = permutation_test, value = codon_background
+)
 }

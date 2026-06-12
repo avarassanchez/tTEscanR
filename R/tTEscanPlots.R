@@ -1,533 +1,1097 @@
-# All the functions in this file are called by the user
-
 #' Distribution Plot of Codon/Anticodon Usage or Amino Acid Demand/Supply
 #' @description
-#' This function generates a visualization of codon-anticodon usage or amino acid demand-supply distributions across conditions.
-#' The input data (\code{data}) is expected to be in long format and contain a minimum information regarding the features, the conditions they belong to and their usage counts.
-#' Based on the selected \code{plot} parameter the user can select the most convenient layout to display the data.
-#' It is crucial to ensure consistency between the name of the columns in \code{data} and the parameters \code{x_axis_col}, \code{y_axis_col} and \code{condition_col}.
+#' This function generates a visualization of codon-anticodon usage or amino
+#' acid demand-supply distributions across conditions. The input data
+#' (\code{data}) is expected to be in long format and contain a minimum
+#' information regarding the features, the conditions they belong to and their
+#' usage counts. Based on the selected \code{plot} parameter the user can
+#' select the most convenient layout to display the data. It is crucial to
+#' ensure consistency between the name of the columns in \code{data} and the
+#' parameters \code{x_axis_col}, \code{y_axis_col} and \code{condition_col}.
 #'
-#' @param data A long format table. This format can be obtained using \code{\link{TransformFormat}}.
-#' @param plot Either \code{"jitter"} (default), \code{"barplot"}, \code{"boxplot"} or \code{"dot"} to indicate the type of plot to generate.
-#' @param bar_position Either \code{"dodge"} (default), \code{"stack"} or \code{"fill"} to indicate the display of the plot if \code{plot} is \code{"barplot"}.
+#' @param data A long format table. This format can be obtained using
+#' \code{\link{TransformFormat}}.
+#' @param plot Either \code{"jitter"} (default), \code{"barplot"},
+#' \code{"boxplot"} or \code{"dot"} to indicate the type of plot to generate.
+#' @param bar_position Either \code{"dodge"} (default), \code{"stack"} or
+#' \code{"fill"} to indicate the display of the plot if \code{plot} is
+#' \code{"barplot"}.
 #' @param x_axis_col Name of the categorical variable to reflect in the plot.
 #' @param y_axis_col Name of the numerical variable to reflect in the plot.
-#' @param condition_col Name of the categorical variable to group the data points.
-#' @param color_palette Optional; a vector of color codes to customize plot appearance.
-#' @param targeted_arg Optional; a vector defining key feature clusters to highlight or label.
+#' @param condition_col Name of the categorical variable to group the data
+#' points.
+#' @param color_palette Optional; a vector of color codes to customize plot
+#' appearance.
+#' @param targeted_arg Optional; a vector defining key feature clusters to
+#' highlight or label.
 #' @param ncols Numeric; number of columns for arranging panels. Defaults to 1.
-#' @param facet_col Optional; name of the categorical variable to divide the plot into different panels. Required if \code{ncols} bigger than 1.
-#' @param add_stats Logical; if \code{TRUE}, performs a statistical analysis based on the available parameters. Defaults to \code{FALSE}.
-#' @param save_format Optional; either \code{"png"} or \code{"pdf"} to specify the format to save the plot.
-#' @param out_name Optional; name for the saved plot (if \code{save_format} specified).
-#' @param out_directory Optional; path to the directory where the plot will be saved (if \code{save_format} specified).
-#' @param show_legend Either \code{"none"} (default), \code{"top"}, \code{"bottom"}, \code{"right"} or \code{"left"} to specify the position of the legend.
-#' @param add_titles Logical; if \code{TRUE}, includes titles in the plot. Defaults to \code{TRUE}.
+#' @param facet_col Optional; name of the categorical variable to divide the
+#' plot into different panels. Required if \code{ncols} bigger than 1.
+#' @param add_stats Logical; if \code{TRUE}, performs a statistical analysis
+#' based on the available parameters. Defaults to \code{FALSE}.
+#' @param save_format Optional; either \code{"png"} or \code{"pdf"} to specify
+#' the format to save the plot.
+#' @param out_name Optional; name for the saved plot (if \code{save_format}
+#' specified).
+#' @param out_directory Optional; path to the directory where the plot will
+#' be saved (if \code{save_format} specified).
+#' @param show_legend Either \code{"none"} (default), \code{"top"},
+#' \code{"bottom"}, \code{"right"} or \code{"left"} to specify the position of
+#' the legend.
+#' @param add_titles Logical; if \code{TRUE}, includes titles in the plot.
+#' Defaults to \code{TRUE}.
+#' @param verbose Logical; if \code{TRUE}, displays information messages.
+#' Defaults to \code{TRUE}.
 #'
-#' @return A \code{ggplot} object representing the requested distribution plot. If \code{save_format} is provided, the plot will also be saved to the specified location.
+#' @return A \code{ggplot} object representing the requested distribution plot.
+#' If \code{save_format} is provided, the plot will also be saved to the
+#' specified location.
 #' @export
-
-tTE_DistributionPlot <- function(data, plot = "jitter", bar_position = "dodge", x_axis_col, y_axis_col, condition_col, ncols = 1, facet_col = NULL, add_stats = FALSE,
-                                 color_palette = NULL, targeted_arg = NULL, save_format = NULL, out_name = NULL, out_directory = NULL, show_legend = "none", add_titles = TRUE) {
-
-  ###
-  # DESCRIPTION: This function takes a long format data expressing the usage of different features across a set of conditions.
-  ###
-
-  # Checking the input parameters
-  CheckDataInLongFormat(data) # Data in long format.
-  CheckValueInData(param = "plot", observed = plot, expected = c("jitter", "boxplot", "barplot", "dot")) # Valid plot layout
-  CheckValueInData(param = "_col", observed = c(x_axis_col, y_axis_col, condition_col), expected = colnames(data)) # All columns present in data
-
-  if (!is.null(facet_col)){
-    CheckValueInData(param = "_col", observed = c(facet_col), expected = colnames(data))
-    if (is.numeric(data[[facet_col]])) stop(paste("Error in 'data': Column", facet_col, "is not categorical."))
-  }
-
-  if (!show_legend %in% c("none", "top", "bottom", "right", "left")) stop("Please specify a suitable 'show_legend' parameter.\nSupported formats: none, top, bottom, right or left.")
-  if (!(is.numeric(data[[y_axis_col]]))) stop(paste("Error in 'data': Column", y_axis_col, "is not numeric."))
-  if (is.numeric(data[[x_axis_col]])) stop(paste("Error in 'data': Column", x_axis_col, "is not categorical."))
-  if (is.numeric(data[[condition_col]])) stop(paste("Error in 'data': Column", condition_col, "is not categorical."))
-  if (!bar_position %in% c("stack", "dodge", "fill")) stop("Please specify a suitable 'bar_position' parameter.\nSupported formats: stack, dodge or fill.")
-
-  target_col_name <- condition_col
-
-  # TARGETED APPROACH - compare specific conditions against the rest
-  if (!(is.null(targeted_arg))){
-    data$target <- "other" # Initialize all the values of the target column as other
-
-    for (arg in targeted_arg){ # Iterate over the values in targeted_arg
-      index <- which(data[[condition_col]] == arg) # Check which entry match the value in targeted_arg
-      if (length(index) == 0) stop(paste("The argument", arg, "has not been found in the categories defined in the data."))
-      data$target_group[index] <- arg # Update the value of the target column
+#'
+#' @examples
+#' data(default_tTEscanR_mRNA_data, default_tTEscanR_metadata)
+#'
+#' # Define the object and compute the codon usage
+#' tTEscanR_obj <- CreateObject(
+#'     counts = default_tTEscanR_mRNA_data,
+#'     assay = "mRNA",
+#'     meta.data = list(default_tTEscanR_metadata, "tissue"),
+#'     meta.data.ids = list("ConditionsLabels", "CorrectionFactor")
+#' )
+#' tTEscanR_obj <- ComputeCodonUsage(
+#'     object = tTEscanR_obj, species = "hg38",
+#'     additional_metrics = FALSE, reduce = 1000
+#' )
+#'
+#' # Transform the data
+#' long_cu <- TransformFormat(
+#'     data = getAssay(tTEscanR_obj, "CodonUsage"), normalize = TRUE,
+#'     rownames_to_column = "codon", names_to = "condition", values_to = "usage"
+#' )
+#' long_cu <- long_cu |>
+#'     tidyr::separate(condition, into = c("tissue", "cell_type"), sep = "-")
+#'
+#' # Generate the plot
+#' codon_usage_plot <- PlotDistribution(
+#'     data = long_cu, plot = "jitter", x_axis_col = "codon",
+#'     y_axis_col = "usage", condition_col = "tissue", show_legend = "right",
+#'     add_titles = FALSE
+#' )
+PlotDistribution <- function(
+    data, plot = "jitter", bar_position = "dodge", x_axis_col, y_axis_col,
+    condition_col, color_palette = NULL, ncols = 1, facet_col = NULL,
+    add_stats = FALSE, targeted_arg = NULL, save_format = NULL, out_name = NULL,
+    out_directory = NULL, show_legend = "none", add_titles = TRUE,
+    verbose = TRUE
+) {
+    GeneralChecksDistPlot( # Checking the input parameters
+        data = data, x_axis_col = x_axis_col, y_axis_col = y_axis_col,
+        condition_col = condition_col, facet_col = facet_col,
+        bar_position = bar_position, plot = plot, show_legend = show_legend
+    )
+    if (!(is.null(targeted_arg))) { # TARGETED - specific condition vs the rest
+        data$target <- "other" # Initialize all the values of the target column
+        for (arg in targeted_arg) { # Iterate and check match with targeted_arg
+            index <- which(data[[condition_col]] == arg)
+            if (length(index) == 0) {
+                stop("The argument ", arg, " has not been found in the data.")
+            }
+            data$target_group[index] <- arg # Update value of the target column
+        }
+        condition_col <- "target_group"
+        CheckDataFrame(data = data) # Ensure the data is suitable
     }
-    target_col_name <- "target_group"
-    CheckDataFrame(data = data) # Ensure that the update data is suitable for the downstream analysis
-  }
-
-  # Adjust the colors of the plot
-  if (is.list(color_palette)) {
-    warning("The input 'color_palette' needs to be a vector.\n",
-            "The default 'color_palette' will be used instead.")
-    color_palette <- NULL
-  }
-
-  num_target_categories <- length(unique(data[[target_col_name]]))
-
-  if (!(is.null(color_palette)) && (length(color_palette) < num_target_categories)){
-    stop("The number of colors in 'color_palette' does not correspond to the number of categories needed.\n",
-         "Note: if the 'targeted_arg' is given, an extra color is required.\n",
-         paste("Number of colors given:", length(color_palette), "\n"), paste("Number of colors needed:", num_target_categories))
-  }
-
-  # Customization
-  plot <- GenerateDistPlot(level = plot, target = target_col_name, data = data, x_axis_col = x_axis_col, y_axis_col = y_axis_col, color_palette = color_palette,
-                           add_titles = add_titles, show_legend = show_legend, ncols = ncols, facet_col = facet_col, bar_position = bar_position, add_stats = add_stats)
-  if (!(is.null(save_format))) SavePlot(plot = plot$plot, save_format = save_format, out_name = out_name, out_directory = out_directory)
-
-  return(plot) # Returns the generated plot and exports a file if enabled.
+    if (is.list(color_palette)) color_palette <- unlist(color_palette)
+    num_target <- length(unique(data[[condition_col]]))
+    if (!(is.null(color_palette)) && (length(color_palette) < num_target)) {
+        stop(
+            "The number of colors in 'color_palette' does not correspond to ",
+            "the number of categories needed.\n", "Note: if 'targeted_arg' is ",
+            "given, an extra color is required.\n", "Number of colors given: ",
+            length(color_palette), "\n", "Number of colors needed: ", num_target
+        )
+    }
+    plot <- GenerateDistPlot( # Customization
+        level = plot, add_titles = add_titles, facet = facet_col, data = data,
+        add_stats = add_stats, x_axis = x_axis_col, y_axis = y_axis_col,
+        color = color_palette, target = condition_col, ncols = ncols,
+        show_legend = show_legend, bar = bar_position
+    )
+    if (!(is.null(save_format))) {
+        SavePlot(
+            plot = plot$plot, save_format = save_format, out_name = out_name,
+            out_directory = out_directory, verbose = verbose
+        )
+    }
+    return(plot$plot) # Returns the generated plot & exports a file if enabled
 }
 
-#' Distribution Plot of Codon/Anticodon Usage or Amino Acid Demand/Supply Compared to a Target
+GeneralChecksDistPlot <- function(
+    data, plot, x_axis_col, y_axis_col, condition_col, facet_col, bar_position,
+    show_legend
+) {
+    CheckDataInLongFormat(data) # Data in long format.
+
+    # Valid plot layout
+    CheckValueInData(
+        param = "plot", observed = plot,
+        expected = c("jitter", "boxplot", "barplot", "dot")
+    )
+
+    CheckValueInData(
+        param = "_col", observed = c(x_axis_col, y_axis_col, condition_col),
+        expected = colnames(data)
+    ) # All columns present in data
+
+    if (!is.null(facet_col)) {
+        CheckValueInData(
+            param = "_col", observed = c(facet_col), expected = colnames(data)
+        )
+        if (is.numeric(data[[facet_col]])) {
+            stop("The 'data' column ", facet_col, " is not categorical.")
+        }
+    }
+
+    if (!show_legend %in% c("none", "top", "bottom", "right", "left")) {
+        stop(
+            "Specify a suitable 'show_legend' parameter.\n",
+            "Supported formats: none, top, bottom, right or left."
+        )
+    }
+    if (!(is.numeric(data[[y_axis_col]]))) {
+        stop("The 'data' column ", y_axis_col, " is not numeric.")
+    }
+    if (is.numeric(data[[x_axis_col]])) {
+        stop("The 'data' column ", x_axis_col, " is not categorical.")
+    }
+    if (is.numeric(data[[condition_col]])) {
+        stop("The 'data' column ", condition_col, " is not categorical.")
+    }
+    if (!bar_position %in% c("stack", "dodge", "fill")) {
+        stop(
+            "Specify a suitable 'bar_position' parameter.\n",
+            "Supported formats: stack, dodge or fill."
+        )
+    }
+
+    return(invisible(NULL))
+}
+
+#' Distribution Plot of Codon/Anticodon Usage or Amino Acid Demand/Supply
+#' Compared to a Target
 #' @description
-#' This function generates a distribution plot to compare distribution usages between a targeted set of conditions against the rest.
-#' A common application of this plot is to compare mean usages across conditions.
-#' Both input data sources (\code{target_data} and \code{overall_data}) are expected to be in long format and contain a minimum information regarding the features, the conditions they belong to and their usage counts.
-#' It is crucial to ensure consistency between the name of the columns in \code{target_data} and \code{overall_data}, together with the parameters \code{x_axis_col} and \code{y_axis_col}.
+#' This function generates a distribution plot to compare distribution usages
+#' between a targeted set of conditions against the rest. A common application
+#' of this plot is to compare mean usages across conditions. Both input data
+#' sources (\code{target_data} and \code{overall_data}) are expected to be in
+#' long format and contain a minimum information regarding the features, the
+#' conditions they belong to and their usage counts. It is crucial to ensure
+#' consistency between the name of the columns in \code{target_data} and
+#' \code{overall_data}, together with the parameters \code{x_axis_col} and
+#' \code{y_axis_col}.
 #'
-#' @param target_data A long format table of a condition of interest. This format can be obtained using \code{\link{TransformFormat}}.
-#' @param overall_data A long format table of the whole set of conditions (with or without the data in \code{target_data}. This format can be obtained using \code{\link{TransformFormat}}.
+#' @param target_data A long format table of a condition of interest. This
+#' format can be obtained using \code{\link{TransformFormat}}.
+#' @param overall_data A long format table of the whole set of conditions
+#' (with or without the data in \code{target_data}. This format can be obtained
+#' using \code{\link{TransformFormat}}.
 #' @param x_axis_col Name of the categorical variable to reflect in the plot.
 #' @param y_axis_col Name of the numerical variable to reflect in the plot.
-#' @param show_difference Logical; if \code{TRUE}, displays the difference between \code{overall_data} and \code{target_data}.
-#' @param color_palette Optional; a vector of color codes (min. 2 codes and max. 3 codes) to customize plot appearance. Colors for (i) data, (ii) target value, and (iii) difference bar.
-#' @param save_format Optional; either \code{"png"} or \code{"pdf"} to specify the format to save the plot.
-#' @param out_name Optional; name for the saved plot (if \code{save_format} specified).
-#' @param out_directory Optional; path to the directory where the plot will be saved (if \code{save_format} specified).
-#' @param show_legend Either \code{"none"} (default), \code{"top"}, \code{"bottom"}, \code{"right"} or \code{"left"} to specify the position of the legend.
-#' @param add_titles Logical; if \code{TRUE}, includes titles in the plot. Defaults to \code{TRUE}.
+#' @param show_difference Logical; if \code{TRUE}, displays the difference
+#' between \code{overall_data} and \code{target_data}.
+#' @param color_palette Optional; a vector of color codes (min. 2 codes and max.
+#' 3 codes) to customize plot appearance. Colors for (i) data, (ii) target
+#' value, and (iii) difference bar.
+#' @param save_format Optional; either \code{"png"} or \code{"pdf"} to specify
+#' the format to save the plot.
+#' @param out_name Optional; name for the saved plot (if \code{save_format}
+#' specified).
+#' @param out_directory Optional; path to the directory where the plot will
+#' be saved (if \code{save_format} specified).
+#' @param show_legend Either \code{"none"} (default), \code{"top"},
+#' \code{"bottom"}, \code{"right"} or \code{"left"} to specify the position of
+#' the legend.
+#' @param add_titles Logical; if \code{TRUE}, includes titles in the plot.
+#' Defaults to \code{TRUE}.
+#' @param verbose Logical; if \code{TRUE}, displays information messages.
+#' Defaults to \code{TRUE}.
 #'
-#' @return A \code{ggplot} object representing the requested distribution plot. If \code{save_format} is provided, the plot will also be saved to the specified location.
+#' @return A \code{ggplot} object representing the requested distribution plot.
+#' If \code{save_format} is provided, the plot will also be saved to the
+#' specified location.
 #' @export
+PlotTargetComparison <- function(
+    target_data, overall_data, x_axis_col, y_axis_col, show_difference = TRUE,
+    color_palette = NULL, save_format = NULL, out_name = NULL,
+    add_titles = TRUE, out_directory = NULL, show_legend = "none",
+    verbose = TRUE
+) {
+    GeneralChecksPlotTargetComp( # Check names correspond to column names
+        x_axis = x_axis_col, y_axis = y_axis_col,
+        target = target_data, data = overall_data
+    )
+    target_subset <- target_data[, c(x_axis_col, y_axis_col), drop = FALSE]
+    colnames(target_subset)[2] <- "target_value"
+    plot_data <- merge(overall_data, target_subset,
+        by = x_axis_col, all.x = TRUE
+    )
 
-tTE_PlotTargetComparison <- function(target_data, overall_data, x_axis_col, y_axis_col, show_difference = TRUE, color_palette = NULL,
-                                     save_format = NULL, out_name = NULL, out_directory = NULL, show_legend = "none", add_titles = TRUE){
+    color_palette <- SelectColorPalette(
+        palette = color_palette, diff = show_difference
+    )
+    plot <- ggplot2::ggplot(data = plot_data, mapping = ggplot2::aes(
+        x = .data[[x_axis_col]], y = .data[[y_axis_col]]
+    )) +
+        ggplot2::geom_col(fill = color_palette[1]) + ggplot2::theme_bw()
 
-  ###
-  # DESCRIPTION: This function takes two long format data and expressing the usage of different features across a set of conditions and compares them.
-  ###
+    if (isTRUE(show_difference)) { # Add diff. bars: targeted point-data
+        plot <- plot + ggplot2::geom_segment(mapping = ggplot2::aes(
+                xend = .data[[x_axis_col]], yend = .data$target_value
+            ),
+            color = color_palette[3]
+        )
+    }
 
-  # Check that the names given correspond to column names.
-  CheckValueInData(param = "x_axis_col", observed = x_axis_col, expected = colnames(overall_data)) # features
-  CheckValueInData(param = "y_axis_col", observed = y_axis_col, expected = colnames(overall_data)) # values
-  CheckValueInData(param = "x_axis_col", observed = x_axis_col, expected = colnames(target_data))
-  CheckValueInData(param = "y_axis_col", observed = y_axis_col, expected = colnames(target_data))
+    plot <- plot + ggplot2::geom_point(mapping = ggplot2::aes(
+        y = .data$target_value
+    ), color = color_palette[2], size = 2) + ggplot2::theme(
+        ggplot2::labs(x = x_axis_col, y = y_axis_col),
+        axis.text.x = ggplot2::element_text(angle = 90),
+        legend.position = show_legend
+    ) # Arrange elements in the plot
 
-  if (!(is.numeric(overall_data[[y_axis_col]]))) stop(paste("Error in 'overall_data': Column", y_axis_col, "is not numeric."))
-  if (!(is.numeric(target_data[[y_axis_col]]))) stop(paste("Error in 'target_data': Column", y_axis_col, "is not numeric."))
-  if (is.numeric(overall_data[[x_axis_col]])) stop(paste("Error in 'overall_data': Column", x_axis_col, "is not categorical."))
-  if (is.numeric(target_data[[x_axis_col]])) stop(paste("Error in 'target_data': Column", x_axis_col, "is not categorical."))
+    if (!(is.null(save_format))) {
+        SavePlot(
+            plot = plot, save_format = save_format, out_name = out_name,
+            out_directory = out_directory, verbose = verbose
+        )
+    } # Save the ggplot
+    return(plot) # Returns the generated plot and exports a file if enabled.
+}
 
-  target_subset <- target_data[, c(x_axis_col, y_axis_col), drop = FALSE]
-  colnames(target_subset)[2] <- "target_value"
+SelectColorPalette <- function(palette, diff) {
+    # The color palette is a list - vector like required
+    if (is.list(palette)) palette <- unlist(palette)
 
-  plot_data <- merge(overall_data, target_subset, by = x_axis_col, all.x = TRUE)
+    # Use default color_palette
+    if (is.null(palette)) palette <- c("#bababa", "#b2182b", "#fddbc7")
 
-  # Adjust the colors of the plot
-  if (is.list(color_palette)) {
-    warning("The input 'color_palette' needs to be a vector.\n",
-            "The default 'color_palette' will be used instead.")
-    color_palette <- NULL
-  }
+    # Validate lenght of the oclor palette
+    colors_needed <- ifelse(isTRUE(diff), 3, 2)
 
-  if (!is.null(color_palette) && ((isFALSE(show_difference) && length(color_palette) < 2) || (isTRUE(show_difference) && length(color_palette) < 3))) {
-    colors_needed <- ifelse(isTRUE(show_difference), 3, 2)
+    if (length(palette) < colors_needed) {
+        stop(
+            "The number of colors in 'color_palette' does not correspond to ",
+            "the number of graphical elements.\n", "Note: If 'show_difference'",
+            " is TRUE, an extra color is required for the segments.\n",
+            "Number of colors given: ", length(palette), "\n",
+            "Number of colors needed: ", colors_needed
+        )
+    }
 
-    stop("The number of colors in 'color_palette' does not correspond to the number of graphical elements.\n",
-         "Note: If 'show_difference' is TRUE, an extra color is required for the segments.\n",
-         "Number of colors given: ", length(color_palette), "\n",
-         "Number of colors needed: ", colors_needed)
-  } else {
-    color_palette <- c("#bababa", "#b2182b", "#fddbc7") # Use default color_palette
-  }
+    return(palette)
+}
 
-  # Generate plot
-  plot <- ggplot2::ggplot(data = plot_data, mapping = ggplot2::aes(x = .data[[x_axis_col]], y = .data[[y_axis_col]])) +
-    ggplot2::geom_col(fill = color_palette[1]) +
-    ggplot2::theme_bw()
+GeneralChecksPlotTargetComp <- function(x_axis, y_axis, target, data) {
+    CheckValueInData(
+        param = "x_axis_col", observed = x_axis, expected = colnames(data)
+    ) # features
+    CheckValueInData(
+        param = "y_axis_col", observed = y_axis, expected = colnames(data)
+    ) # values
+    CheckValueInData(
+        param = "x_axis_col", observed = x_axis, expected = colnames(target)
+    )
+    CheckValueInData(
+        param = "y_axis_col", observed = y_axis, expected = colnames(target)
+    )
 
-  if (isTRUE(show_difference)){
-    plot <- plot + ggplot2::geom_segment(mapping = ggplot2::aes(xend = .data[[x_axis_col]], yend = .data$target_value), color = color_palette[3]) # Include difference bars between the targeted point and the rest of the data
-  }
+    if (!(is.numeric(data[[y_axis]]))) {
+        stop("The 'overall_data' column ", y_axis, " is not numeric.")
+    }
 
-  plot <- plot + ggplot2::geom_point(mapping = ggplot2::aes(y = .data$target_value), color = color_palette[2], size = 2) +
-    ggplot2::theme(ggplot2::labs(x = x_axis_col, y = y_axis_col), axis.text.x = ggplot2::element_text(angle = 90), legend.position = show_legend) # Arrange elements in the plot
-  if (!(is.null(save_format))) SavePlot(plot = plot, save_format = save_format, out_name = out_name, out_directory = out_directory) # Save the ggplot
+    if (!(is.numeric(target[[y_axis]]))) {
+        stop("The 'target_data' column ", y_axis, " is not numeric.")
+    }
 
-  return(plot) # Returns the generated plot and exports a file if enabled.
+    if (is.numeric(data[[x_axis]])) {
+        stop("The 'overall_data' column ", x_axis, " is not categorical.")
+    }
+
+    if (is.numeric(target[[x_axis]])) {
+        stop("The 'target_data' column ", x_axis, " is not categorical.")
+    }
+
+    return(invisible(NULL))
 }
 
 #' Proportion Plot of Codon/Anticodon Usage or Amino Acid Demand/Supply
 #' @description
-#' This function generates a proportion plot to compare codon-anticodon usage or amino acid demand-supply frequencies across conditions.
-#' The input data (\code{data}) is expected to be in long format and contain a minimum information regarding the features, the conditions they belong to and their usage counts.
-#' Based on the selected \code{plot} parameter the user can select the most convenient layout to display the data.
-#' It is crucial to ensure consistency between the name of the columns in \code{data} and the parameters \code{var_numerical}, \code{var_categorical} and \code{var_color}.
+#' This function generates a proportion plot to compare codon-anticodon usage
+#' or amino acid demand-supply frequencies across conditions. The input data
+#' (\code{data}) is expected to be in long format and contain a minimum
+#' information regarding the features, the conditions they belong to and their
+#' usage counts. Based on the selected \code{plot} parameter the user can
+#' select the most convenient layout to display the data. It is crucial to
+#' ensure consistency between the name of the columns in \code{data} and the
+#' parameters \code{var_numerical}, \code{var_categorical} and \code{var_color}.
 #'
-#' @param data A long format table. This format can be obtained using \code{\link{TransformFormat}}.
-#' @param plot Either \code{"bar"} (default), \code{"donut"} or \code{"radar"} to indicate the type of plot to generate.
+#' @param data A long format table. This format can be obtained using
+#' \code{\link{TransformFormat}}.
+#' @param plot Either \code{"bar"} (default), \code{"donut"} or \code{"radar"}
+#' to indicate the type of plot to generate.
 #' @param var_numerical Name of the numerical variable to reflect in the plot.
-#' @param var_categorical Name of the categorical variable to reflect in the plot.
-#' @param var_color Optional; name of the categorical variable to group the data points when coloring. Required if \code{plot} is \code{"bar"}.
-#' @param facet_col Optional; name of the categorical variable to divide the plot into different panels.
-#' @param color_palette Optional; a vector of color codes to customize plot appearance.
-#' @param num_limits Optional; a vector with the upper and lower ranges of the values in \code{var_numerical}.
-#' @param num_rings Optional; a number specifying the amount of rings to display if \code{plot} is \code{"radar"}. Defaults to 5.
-#' @param order Optional; a vector of the levels to organize the data, based on the \code{var_categorical}.
-#' @param normalize Logical; if \code{TRUE}, normalizes the data in order to display the relative contribution of the \code{var_categorical}.  Defaults to \code{TRUE}.
-#' @param zoom Logical; if \code{TRUE}, centers the plot display to the values in \code{data}.Defaults to \code{TRUE}.
-#' @param save_format Optional; either \code{"png"} or \code{"pdf"} to specify the format to save the plot.
-#' @param out_name Optional; name for the saved plot (if \code{save_format} specified).
-#' @param out_directory Optional; path to the directory where the plot will be saved (if \code{save_format} specified).
-#' @param show_legend Either \code{"none"} (default), \code{"top"}, \code{"bottom"}, \code{"right"} or \code{"left"} to specify the position of the legend.
-#' @param add_titles Logical; if \code{TRUE}, includes titles in the plot. Defaults to \code{TRUE}.
+#' @param var_categorical Name of the categorical variable to reflect in the
+#' plot.
+#' @param var_color Optional; name of the categorical variable to group the
+#' data points when coloring. Required if \code{plot} is \code{"bar"}.
+#' @param facet_col Optional; name of the categorical variable to divide the
+#' plot into different panels.
+#' @param color_palette Optional; a vector of color codes to customize plot
+#' appearance.
+#' @param num_limits Optional; a vector with the upper and lower ranges of the
+#' values in \code{var_numerical}.
+#' @param num_rings Optional; a number specifying the amount of rings to
+#' display if \code{plot} is \code{"radar"}. Defaults to 5.
+#' @param order Optional; a vector of the levels to organize the data, based
+#' on the \code{var_categorical}.
+#' @param normalize Logical; if \code{TRUE}, normalizes the data in order to
+#' display the relative contribution of the \code{var_categorical}.
+#' Defaults to \code{TRUE}.
+#' @param zoom Logical; if \code{TRUE}, centers the plot display to the values
+#' in \code{data}.Defaults to \code{TRUE}.
+#' @param save_format Optional; either \code{"png"} or \code{"pdf"} to specify
+#' the format to save the plot.
+#' @param out_name Optional; name for the saved plot (if \code{save_format}
+#' specified).
+#' @param out_directory Optional; path to the directory where the plot will be
+#' saved (if \code{save_format} specified).
+#' @param show_legend Either \code{"none"} (default), \code{"top"},
+#' \code{"bottom"}, \code{"right"} or \code{"left"} to specify the position of
+#' the legend.
+#' @param add_titles Logical; if \code{TRUE}, includes titles in the plot.
+#' Defaults to \code{TRUE}.
+#' @param verbose Logical; if \code{TRUE}, displays information messages.
+#' Defaults to \code{TRUE}.
 #'
-#' @return A \code{ggplot} object representing the requested proportion plot. If \code{save_format} is provided, the plot will also be saved to the specified location.
+#' @return A \code{ggplot} object representing the requested proportion plot.
+#' If \code{save_format} is provided, the plot will also be saved to the
+#' specified location.
 #' @export
+#'
+#' @examples
+#' data(default_tTEscanR_mRNA_data, default_tTEscanR_metadata)
+#'
+#' # Define the object and compute the codon usage
+#' tTEscanR_obj <- CreateObject(
+#'     counts = default_tTEscanR_mRNA_data, assay = "mRNA",
+#'     meta.data = list(default_tTEscanR_metadata, "tissue"),
+#'     meta.data.ids = list("ConditionsLabels", "CorrectionFactor")
+#' )
+#' tTEscanR_obj <- ComputeCodonUsage(
+#'     object = tTEscanR_obj, species = "hg38",
+#'     additional_metrics = TRUE, reduce = 1000
+#' )
+#'
+#' # Compute and extract the mean codon usage
+#' additional_metrics <- getMetadata(
+#'     tTEscanR_obj, "CodonUsage_AdditionalMetrics"
+#' )
+#' mean_codon_usage <- additional_metrics$MeanCodonUsage
+#' mean_codon_usage$codon <- mean_codon_usage$feature
+#'
+#' # Translate the codons to amino acids
+#' mean_codon_usage <- FeaturesToAA(
+#'     data = mean_codon_usage, position = "feature",
+#'     notation_from = "codon", notation_to = "aa", verbose = FALSE
+#' )
+#'
+#' # Generate the plot
+#' PlotProportion(
+#'     data = mean_codon_usage, plot = "bar",
+#'     var_numerical = "mean_usage_across_conditions",
+#'     var_categorical = "codon", var_color = "feature", show_legend = "none"
+#' )
+PlotProportion <- function(
+    data, plot = "bar", var_numerical, var_categorical, var_color = NULL,
+    facet_col = NULL, color_palette = NULL, num_limits = NULL, num_rings = 5,
+    save_format = NULL, out_name = NULL, out_directory = NULL, zoom = FALSE,
+    show_legend = "none", add_titles = TRUE, order = NULL, normalize = TRUE,
+    verbose = TRUE
+) {
+    # Checking the type of plot and the input variables
+    GeneralChecksProportionPlot(
+        plot = plot, data = data, var_color = var_color, facet_col = facet_col,
+        var_categorical = var_categorical, var_numerical = var_numerical
+    )
 
-tTE_ProportionPlot <- function(data, plot = "bar", var_numerical, var_categorical, var_color = NULL, facet_col = NULL, color_palette = NULL, num_limits = NULL, num_rings = 5,
-                               save_format = NULL,  out_name = NULL, out_directory = NULL, show_legend = "none", add_titles = TRUE, order = NULL, normalize = TRUE, zoom = FALSE){
+    # Generate plot
+    plot <- GenerateProportionPlot(
+        data = data, level = plot, var_numerical = var_numerical,
+        var_categorical = var_categorical, var_color = var_color,
+        color_palette = color_palette, show_legend = show_legend, order = order,
+        x_limits = num_limits, facet_col = facet_col, normalize = normalize,
+        zoom = zoom, add_titles = add_titles, n_rings = num_rings
+    )
 
-  ###
-  # DESCRIPTION: This function takes long format table to compare proportions of each condition with respect to the total values of the data.
-  ###
+    # Save the ggplot
+    if (!is.null(save_format)) {
+        SavePlot(
+            plot = plot$plot, save_format = save_format, out_name = out_name,
+            out_directory = out_directory, verbose = verbose
+        )
+    }
 
-  # Checking the type of plot and the input variables
-  CheckValueInData(param = "plot", observed = plot, expected = c("donut", "radar", "bar"))
-  if (is.null(var_color)) var_color <- var_categorical
+    return(plot) # Returns the generated plot and exports a file if enabled.
+}
 
-  CheckValueInData(param = "var_", observed = c(var_categorical, var_numerical, var_color), expected = colnames(data))
-  if (!is.null(facet_col)) CheckValueInData(param = "_col", observed = c(facet_col), expected = colnames(data))
+GeneralChecksProportionPlot <- function(
+    plot, data, var_color, var_categorical, var_numerical, facet_col
+) {
+    CheckValueInData(
+        param = "plot", observed = plot, expected = c("donut", "radar", "bar")
+    )
 
-  if (!(is.numeric(data[[var_numerical]]))) stop(paste("Error in 'data': Column", var_numerical, "is not numeric."))
-  if (is.numeric(data[[var_categorical]])) stop(paste("Error in 'data': Column", var_categorical, "is not categorical."))
-  if (is.numeric(data[[var_color]])) stop(paste("Error in 'data': Column", var_color, "is not categorical."))
-  if (!is.null(facet_col) && is.numeric(data[[facet_col]])) stop(paste("Error in 'data': Column", facet_col, "is not categorical."))
+    if (is.null(var_color)) var_color <- var_categorical
 
-  # Generate plot
-  plot <- GenerateProportionPlot(data = data, level = plot, var_numerical = var_numerical, var_categorical = var_categorical, var_color = var_color,
-                                 color_palette = color_palette, show_legend = show_legend, order = order, x_limits = num_limits, facet_col = facet_col,
-                                 normalize = normalize, zoom = zoom, add_titles = add_titles, n_rings = num_rings)
+    CheckValueInData(
+        param = "var_",
+        observed = c(var_categorical, var_numerical, var_color),
+        expected = colnames(data)
+    )
 
-  # Save the ggplot
-  if(!is.null(save_format)) SavePlot(plot = plot$plot, save_format = save_format, out_name = out_name, out_directory = out_directory)
-  return(plot) # Returns the generated plot and exports a file if enabled.
+    if (!is.null(facet_col)) {
+        CheckValueInData(
+            param = "_col", observed = c(facet_col), expected = colnames(data)
+        )
+    }
+
+    if (!(is.numeric(data[[var_numerical]]))) {
+        stop("The 'data' column ", var_numerical, " is not numeric.")
+    }
+
+    if (is.numeric(data[[var_categorical]])) {
+        stop("The 'data' column ", var_categorical, " is not categorical.")
+    }
+
+    if (is.numeric(data[[var_color]])) {
+        stop("The 'data' column ", var_color, " is not categorical.")
+    }
+
+    if (!is.null(facet_col) && is.numeric(data[[facet_col]])) {
+        stop("The 'data' column ", facet_col, " is not categorical.")
+    }
+
+    return(invisible(NULL))
 }
 
 #' Violin Plot Displaying tTE Scores
 #' @description
-#' This function generates a violin plot to visualize the distribution of tTE scores across different condition. The tTE scores should be obtained using \code{\link{Compute_tTE}}.
-#' The plot allows the user to easily compare the tTE distribution between different conditions, with the option to highlight specific feature clusters based on the provided \code{targets}.
+#' This function generates a violin plot to visualize the distribution of tTE
+#' scores across different condition. The tTE scores should be obtained using
+#' \code{\link{Compute_tTE}}. The plot allows the user to easily compare the
+#' tTE distribution between different conditions, with the option to highlight
+#' specific feature clusters based on the provided \code{targets}.
 #'
 #' @param data A tTE results table obtained from \code{\link{Compute_tTE}}.
-#' @param metadata A table with additional information regarding the conditions in \code{data}.
-#' @param index_col Name of the categorical variable that links the conditions in \code{data} with the \code{metadata}.
+#' @param metadata A table with additional information regarding the conditions
+#' in \code{data}.
+#' @param index_col Name of the categorical variable that links the conditions
+#' in \code{data} with the \code{metadata}.
 #' @param class_col Name of the categorical variable to reflect in the plot.
-#' @param add_stats Logical; if \code{TRUE}, performs a statistical analysis based on the available parameters. Defaults to \code{TRUE}.
-#' @param target_col Optional; name of the categorical variable to perform the statistical comparison (the most specific level). Used if \code{add_stats} is \code{TRUE}.
-#' @param facet_col Optional; name of the categorical variable separate the plot into different panels.
-#' @param color_palette Optional; a vector of color codes to customize plot appearance.
-#' @param save_format Optional; either \code{"png"} or \code{"pdf"} to specify the format to save the plot.
-#' @param out_name Optional; name for the saved plot (if \code{save_format} specified).
-#' @param out_directory Optional; path to the directory where the plot will be saved (if \code{save_format} specified).
-#' @param show_legend Either \code{"none"} (default), \code{"top"}, \code{"bottom"}, \code{"right"} or \code{"left"} to specify the position of the legend in the plot.
-#' @param show_outliers Logical; if \code{TRUE}, labels the outlier data points based on \code{index_col}.
-#' @param add_titles Logical; if \code{TRUE}, includes titles in the plot. Defaults to \code{TRUE}.
+#' @param add_stats Logical; if \code{TRUE}, performs a statistical analysis
+#' based on the available parameters. Defaults to \code{TRUE}.
+#' @param target_col Optional; name of the categorical variable to perform the
+#' statistical comparison (the most specific level). Used if \code{add_stats}
+#' is \code{TRUE}.
+#' @param facet_col Optional; name of the categorical variable separate the
+#' plot into different panels.
+#' @param color_palette Optional; a vector of color codes to customize plot
+#' appearance.
+#' @param save_format Optional; either \code{"png"} or \code{"pdf"} to specify
+#' the format to save the plot.
+#' @param out_name Optional; name for the saved plot (if \code{save_format}
+#' specified).
+#' @param out_directory Optional; path to the directory where the plot will be
+#' saved (if \code{save_format} specified).
+#' @param show_legend Either \code{"none"} (default), \code{"top"},
+#' \code{"bottom"}, \code{"right"} or \code{"left"} to specify the position of
+#' the legend in the plot.
+#' @param show_outliers Logical; if \code{TRUE}, labels the outlier data points
+#' based on \code{index_col}.
+#' @param add_titles Logical; if \code{TRUE}, includes titles in the plot.
+#' Defaults to \code{TRUE}.
+#' @param verbose Logical; if \code{TRUE}, displays information messages.
+#' Defaults to \code{TRUE}.
 #'
-#' @return A \code{ggplot} object representing the tTE scores. If \code{save_format} is provided, the plot will also be saved to the specified location. If \code{add_stats} reports a table with the statitical measures summarized.
+#' @return A \code{ggplot} object representing the tTE scores. If
+#' \code{save_format} is provided, the plot will also be saved to the specified
+#' location. If \code{add_stats} reports a table with the statitical measures
+#' summarized.
 #' @export
+#'
+#' @examples
+#' data(
+#'     default_tTEscanR_mRNA_data, default_tTEscanR_tRNA_data,
+#'     default_tTEscanR_metadata
+#' )
+#'
+#' # Define the tTEscanR object
+#' tTEscanR_obj <- CreateObject(
+#'     counts = list(
+#'         mRNA = default_tTEscanR_mRNA_data, tRNA = default_tTEscanR_tRNA_data
+#'     ),
+#'     meta.data = list(default_tTEscanR_metadata, "tissue"),
+#'     meta.data.ids = list("ConditionsLabels", "CorrectionFactor")
+#' )
+#'
+#' # Compute the codon and anticodon usage
+#' tTEscanR_obj <- ComputeCodonUsage(
+#'     object = tTEscanR_obj, species = "hg38",
+#'     additional_metrics = FALSE, reduce = 10000
+#' )
+#' tTEscanR_obj <- ComputeAnticodonUsage(object = tTEscanR_obj)
+#'
+#' # Compute the theoretical translation efficiency (tTE scores)
+#' tTEscanR_obj <- Compute_tTE(
+#'     object = tTEscanR_obj, level = "codon", compute_significance = TRUE
+#' )
+#' tTEresults_codon <- getMetadata(tTEscanR_obj, "tTEresults_codon")
+#' conditions_metadata <- getMetadata(tTEscanR_obj, "ConditionsLabels")
+#'
+#' # Visualize the tTE scores
+#' PlotTEscore(
+#'     data = tTEresults_codon, metadata = conditions_metadata,
+#'     index_col = "conditions", class_col = "tissue", add_stats = TRUE
+#' )
+PlotTEscore <- function(
+    data, metadata, class_col, index_col, target_col = NULL, facet_col = NULL,
+    color_palette = NULL, save_format = NULL, out_name = NULL, add_stats = TRUE,
+    out_directory = NULL, show_legend = "none", add_titles = TRUE,
+    show_outliers = FALSE, verbose = TRUE
+) {
+    GeneralChecksScoresPlot(
+        data = data, meta = metadata, stats = add_stats, facet = facet_col,
+        class = class_col, target = target_col, index = index_col
+    )
+    merged <- DefineMergedData(
+        data = data, meta = metadata, index = index_col, facet = facet_col,
+        class = class_col, target = target_col, show_outliers = show_outliers
+    )
+    fill_label <- if (!is.null(target_col)) target_col else "Group"
+    plot <- ggplot2::ggplot(merged, ggplot2::aes(
+        x = .data$class, y = .data$tTE, fill = .data$target
+    )) + ggplot2::geom_violin(
+            trim = FALSE, scale = "width", width = 0.7,
+            position = ggplot2::position_dodge(width = 0.7), alpha = 0.7
+        ) + ggplot2::geom_point(position = ggplot2::position_jitterdodge(
+            dodge.width = 0.7, jitter.width = 0.03
+        ), size = 0.8, alpha = 0.5) +
+        ggplot2::scale_x_discrete(expand = ggplot2::expansion(add = 0.4)) +
+        ggplot2::theme_bw() +
+        ggplot2::labs(x = class_col, y = "tTE", fill = fill_label)
 
-tTE_ScoresPlot <- function(data, metadata, class_col, index_col, target_col = NULL, facet_col = NULL, color_palette = NULL, save_format = NULL,
-                           out_name = NULL, out_directory = NULL, show_legend = "none", add_titles = TRUE, add_stats = TRUE, show_outliers = FALSE) {
+    plot <- AdditionalCustomization(
+        plot = plot, merged = merged, facet = facet_col, colors = color_palette,
+        add_titles = add_titles, class = class_col, target = target_col,
+        legend = show_legend, outliers = show_outliers
+    )
+    sig_table <- NULL
+    if (isTRUE(add_stats)) {
+        results_stat <- AddStats(
+            plot = plot, add_stats = add_stats, target_col = target_col,
+            class_col = class_col, facet_col = facet_col, merged = merged
+        )
+        plot <- results_stat$plot
+        sig_table <- results_stat$sig_table
+    }
+    if (!is.null(save_format)) {
+        SavePlot(
+            plot = plot, save_format = save_format, out_name = out_name,
+            out_directory = out_directory, verbose = verbose
+        )
+    }
+    return(list(plot = plot, stats = sig_table))
+}
 
-  required_cols <- c("condition", "tTE", "p_value", "neg_log10_tTE_p_value") # Extracted when computing the tTE through tTEscanR
-  CheckValueInData("data columns", colnames(data), required_cols) # Modified CheckValueInData handles this!
-  CheckValueInData("index_col", index_col, colnames(metadata))
-  CheckValueInData("class_col", class_col, colnames(metadata))
+AdditionalCustomization <- function(
+    plot, merged, outliers, facet, colors, add_titles, class, target, legend
+) {
+    if (isTRUE(outliers)) { # Label outliers
+        plot <- plot + ggrepel::geom_text_repel(
+            data = dplyr::filter(merged, .data$is_extreme),
+            ggplot2::aes(x = .data$class, y = .data$tTE, label = .data$label),
+            position = ggplot2::position_jitterdodge(
+                dodge.width = 0.8, jitter.width = 0.15
+            ), size = 3, max.overlaps = 15, show.legend = FALSE
+        )
+    }
 
-  if (isFALSE(add_stats) && !is.null(target_col)){
-    warning("The 'target_col' will be ignored as 'add_stats' is not enabled.\n Check the documentation of the function for more details.")
-    add_stats <- NULL
-  }
-  if (!is.null(target_col)) CheckValueInData("target_col", target_col, colnames(metadata))
-  if (!is.null(facet_col)) CheckValueInData("facet_col", facet_col, colnames(metadata))
+    if (length(unique(merged$class)) > 5) {
+        plot <- plot + ggplot2::theme(axis.text.x = ggplot2::element_text(
+            angle = 90, hjust = 1, vjust = 0.5
+            )
+        )
+    }
 
-  merged <- dplyr::left_join(data, metadata, by = stats::setNames(index_col, "condition"))
-  if (nrow(merged) == 0) stop("Error: Merged data has 0 rows. Check if 'index_col' matches 'data$condition'.")
+    if (!is.null(facet)) {
+        plot <- plot + ggplot2::facet_wrap(
+            ggplot2::vars(.data[[facet]]), scales = "free_x"
+        )
+    }
 
-  merged$class <- merged[[class_col]]
-  na_classes <- sum(is.na(merged$class))
-  if (na_classes > 0) warning(paste(na_classes, "rows in data could not be matched to a group in metadata!"))
+    n_colors <- length(unique(merged$target))
+    plot <- plot + GetSafeColorScale(
+        n_colors = n_colors, aes_type = "fill", color_palette = colors
+    )
 
-  group_counts <- table(merged$class)
-  if (any(group_counts < 2)) warning("One or more groups have fewer than 2 samples. Statistics (p-values) will return NA.")
+    if (add_titles) {
+        title <- paste("tTE scores by", class)
+        if (!is.null(target)) {
+            title <- paste(title, "highlighting", target)
+        }
+        if (!is.null(facet)) title <- paste(title, "faceted by", facet)
+        plot <- plot + ggplot2::labs(title = title)
+    }
 
-  merged$label <- merged[["condition"]]
-  merged$target <- if (!is.null(target_col)) merged[[target_col]] else merged$class
+    plot <- plot + ggplot2::theme(legend.position = legend)
+    return(plot)
+}
 
-  if (isTRUE(show_outliers)){ # Label outliers
-    group_vars <- c("class", "target")
-    if (!is.null(facet_col)) group_vars <- c(group_vars, facet_col)
+GeneralChecksScoresPlot <- function(
+    data, meta, stats, target, facet, index, class
+) {
+    # Extracted when computing the tTE through tTEscanR
+    required_cols <- c("condition", "tTE", "p_value", "neg_log10_tTE_p_value")
 
-    merged <- merged %>%
-      dplyr::group_by(dplyr::across(dplyr::all_of(group_vars))) %>%
-      dplyr::mutate(q1 = stats::quantile(.data$tTE, 0.25, na.rm = TRUE),
-                    q3 = stats::quantile(.data$tTE, 0.75, na.rm = TRUE),
-                    iqr = .data$q3 - .data$q1,
-                    is_extreme = .data$tTE < (.data$q1 - 1.5 * .data$iqr) | .data$tTE > (.data$q3 + 1.5 * .data$iqr)) %>%
-      dplyr::ungroup()
-  }
+    CheckValueInData("data columns", colnames(data), required_cols)
+    CheckValueInData("index_col", index, colnames(meta))
+    CheckValueInData("class_col", class, colnames(meta))
 
-  fill_label <- if (!is.null(target_col)) target_col else "Group"
+    if (isFALSE(stats) && !is.null(target)) {
+        warning(
+            "The 'target_col' will be ignored as 'add_stats' is not ",
+            "enabled. \n Check the documentation of the function for more",
+            " details."
+        )
+    }
 
-  # plot <- ggplot2::ggplot(merged, ggplot2::aes(x = .data$class, y = .data$tTE, fill = .data$target)) +
-  #   ggplot2::geom_violin(trim = FALSE, scale = "width", width = 0.6, position = ggplot2::position_dodge(width = 0.9), alpha = 0.7) +
-  #   ggplot2::geom_point(position = ggplot2::position_jitterdodge(jitter.width = 0.08, dodge.width = 0.7), size = 0.8, alpha = 0.5) +
-  #   ggplot2::theme_bw() +
-  #   ggplot2::scale_x_discrete(expand = c(0.02, 0)) +
-  #   ggplot2::labs(x = class_col, y = "tTE", fill = fill_label)
+    if (!is.null(target)) {
+        CheckValueInData("target_col", target, colnames(meta))
+    }
 
-  plot <- ggplot2::ggplot(merged,
-    ggplot2::aes(x = .data$class, y = .data$tTE, fill = .data$target)) +
-    ggplot2::geom_violin(trim = FALSE, scale = "width", width = 0.7, position = ggplot2::position_dodge(width = 0.7) , alpha = 0.7) +
-    ggplot2::geom_point(position = ggplot2::position_jitterdodge(dodge.width = 0.7, jitter.width = 0.03), size = 0.8, alpha = 0.5) +
-    ggplot2::scale_x_discrete(expand = ggplot2::expansion(add = 0.4)) +
-    ggplot2::theme_bw() +
-    ggplot2::labs(x = class_col, y = "tTE", fill = fill_label)
+    if (!is.null(facet)) {
+        CheckValueInData("facet_col", facet, colnames(meta))
+    }
 
-  if (isTRUE(show_outliers)){ # Label outliers
-    plot <- plot + ggrepel::geom_text_repel(data = dplyr::filter(merged, .data$is_extreme), ggplot2::aes(x = .data$class, y = .data$tTE, label = .data$label),
-                                            position = ggplot2::position_jitterdodge(dodge.width = 0.8, jitter.width = 0.15),
-                                            size = 3, max.overlaps = 15, show.legend = FALSE)
-  }
+    return(invisible(NULL))
+}
 
-  if (length(unique(merged$class)) > 5) plot <- plot + ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, hjust = 1, vjust = 0.5))
-  if (!is.null(facet_col)) plot <- plot + ggplot2::facet_wrap(ggplot2::vars(.data[[facet_col]]), scales = "free_x")
+DefineMergedData <- function(
+    data, meta, index, class, target, show_outliers, facet
+) {
+    merged <- dplyr::left_join(data, meta,
+        by = stats::setNames(index, "condition")
+    )
+    if (nrow(merged) == 0) {
+        stop(
+            "The merged data ('data' and 'metadata') has 0 rows. ",
+            "Check if 'index_col' matches 'data$condition'."
+        )
+    }
+    merged$class <- merged[[class]]
+    na_classes <- sum(is.na(merged$class))
+    if (na_classes > 0) {
+        warning(
+            na_classes, " rows in data could not be matched to a group ",
+            "in metadata!"
+        )
+    }
+    group_counts <- table(merged$class)
+    if (any(group_counts < 2)) {
+        warning(
+            "One or more groups have fewer than 2 samples. Statistics ",
+            "(p-values) will return NA."
+        )
+    }
+    merged$label <- merged[["condition"]]
+    if (!is.null(target)) {
+        merged$target <- merged[[target]]
+    } else {
+        merged$target <- merged$class
+    }
+    if (isTRUE(show_outliers)) { # Label outliers
+        group_vars <- c("class", "target")
+        if (!is.null(facet)) group_vars <- c(group_vars, facet)
+        merged <- merged %>%
+            dplyr::group_by(dplyr::across(dplyr::all_of(group_vars))) %>%
+            dplyr::mutate(
+                q1 = stats::quantile(.data$tTE, 0.25, na.rm = TRUE),
+                q3 = stats::quantile(.data$tTE, 0.75, na.rm = TRUE),
+                iqr = .data$q3 - .data$q1,
+                is_extreme = .data$tTE < (.data$q1 - 1.5 * .data$iqr) |
+                    .data$tTE > (.data$q3 + 1.5 * .data$iqr)
+            ) %>%
+            dplyr::ungroup()
+    }
+    return(merged)
+}
 
-  n_colors <- length(unique(merged$target))
-  plot <- plot + GetSafeColorScale(n_colors = n_colors, color_palette = color_palette, aes_type = "fill")
-
-  if (add_titles) {
-    title_text <- paste("tTE scores by", class_col)
-    if (!is.null(target_col)) title_text <- paste(title_text, "highlighting", target_col)
-    if (!is.null(facet_col)) title_text <- paste(title_text, "faceted by", facet_col)
-    plot <- plot + ggplot2::labs(title = title_text)
-  }
-
-  plot <- plot + ggplot2::theme(legend.position = show_legend)
-
-  sig_table <- NULL
-  if (isTRUE(add_stats)){
+AddStats <- function(
+    plot, add_stats, target_col, class_col, facet_col, merged
+) {
     if (!is.null(target_col)) {
-      stat_target <- target_col
-      if (stat_target != class_col) {
-        actual_group_col <- unique(c("class", facet_col))
-        actual_x_col <- "dummy_x"
-      } else {
-        actual_group_col <- facet_col
-        actual_x_col <- "class"
-      }
+        stat_target <- target_col
+        if (stat_target != class_col) {
+            group_col <- unique(c("class", facet_col))
+            x_col <- "dummy_x"
+        } else {
+            group_col <- facet_col
+            x_col <- "class"
+        }
     } else {
-      stat_target <- class_col
-      actual_group_col <- facet_col
-      actual_x_col <- "class"
+        stat_target <- class_col
+        group_col <- facet_col
+        x_col <- "class"
     }
-
-    variances <- tapply(merged$tTE, merged[[stat_target]], stats::var, na.rm = TRUE)
-    if (any(variances == 0, na.rm = TRUE) || any(is.na(variances))) warning("One or more groups have zero variance (all values are identical). Stats will return NA.")
-
-    sig_table <- Compute_tTE_Significance(merged, x_col = actual_x_col, target_col = stat_target, group_col = actual_group_col)
-
+    var <- tapply(merged$tTE, merged[[stat_target]], stats::var, na.rm = TRUE)
+    if (any(var == 0, na.rm = TRUE) || any(is.na(var))) {
+        warning(
+            "One or more groups have zero variance (all values are ",
+            "identical). Stats will return NA."
+        )
+    }
+    sig_table <- ComputeTEsignificance(
+        merged,
+        x_col = x_col, target_col = stat_target, group_col = group_col
+    )
     if (!is.null(sig_table) && nrow(sig_table) > 0) {
-      y_max <- max(merged$tTE, na.rm = TRUE) * 1.15  # stars above violins
+        y_max <- max(merged$tTE, na.rm = TRUE) * 1.15 # stars above violins
 
-      if (stat_target != class_col) {
-        plot <- plot + ggpubr::stat_pvalue_manual(
-          sig_table, x = "class", y.position = y_max, label = "p_signif", size = 7, hide.ns = TRUE, step.increase = 0.12)
-      } else {
-        plot <- plot + ggpubr::stat_pvalue_manual(
-          sig_table, y.position = y_max, label = "p_signif", size = 7, hide.ns = TRUE, step.increase = 0.12)
-      }
+        if (stat_target != class_col) {
+            plot <- plot + ggpubr::stat_pvalue_manual(
+                sig_table, x = "class", y.position = y_max, label = "p_signif",
+                size = 7, hide.ns = TRUE, step.increase = 0.12
+            )
+        } else {
+            plot <- plot + ggpubr::stat_pvalue_manual(
+                sig_table, y.position = y_max, label = "p_signif", size = 7,
+                hide.ns = TRUE, step.increase = 0.12
+            )
+        }
     } else {
-      message("The statistics could not be computed, check the selected comparisons.")
+        warning("The statistics could not be computed, check the comparisons.")
     }
-  }
-
-  if (!is.null(save_format)) SavePlot(plot = plot, save_format = save_format, out_name = out_name, out_directory = out_directory)
-  return(list(plot = plot, stats = sig_table))
+    return(list(plot = plot, sig_table = sig_table))
 }
 
 #' Correlation Plot: Exonic Codon Background - Mean Codon Usage
 #' @description
-#' This function generates a visualization to correlate different parmaeters of the \code{data}.
-#' The input data (\code{data}) is expected to be in long format and contain a minimum information regarding the features, the conditions they belong to and their usage counts.
-#' A common usage of this kind of plot is to represent the codon frequencies correlations of the exonic background and the mean codon usage across conditions.
-#' Based on the selected \code{plot} parameter the user can select the most convenient layout to display the data.
-#' It is crucial to ensure consistency between the name of the columns in \code{data} and the parameters \code{x_axis_col}, \code{y_axis_col} and \code{condition_col}.
+#' This function generates a visualization to correlate different parameters of
+#' the \code{data}. The input data (\code{data}) is expected to be in long
+#' format and contain a minimum information regarding the features, the
+#' conditions they belong to and their usage counts. A common usage of this
+#' kind of plot is to represent the codon frequencies correlations of the
+#' exonic background and the mean codon usage across conditions. Based on the
+#' selected \code{plot} parameter the user can select the most convenient layout
+#' to display the data. It is crucial to ensure consistency between the name of
+#' the columns in \code{data} and the parameters \code{x_axis_col},
+#' \code{y_axis_col} and \code{condition_col}.
 #'
-#' @param data A long format table. This format can be obtained using \code{\link{TransformFormat}}.
-#' @param plot Either \code{"MeanCodonUsage"} (default) or \code{"PoolDiversity"} to indicate the \code{data} source.
+#' @param data A long format table. This format can be obtained using
+#' \code{\link{TransformFormat}}.
+#' @param plot Either \code{"MeanCodonUsage"} (default) or
+#' \code{"PoolDiversity"} to indicate the \code{data} source.
 #' @param x_axis_col Name of the categorical variable to reflect in the plot.
 #' @param y_axis_col Name of the numerical variable to reflect in the plot.
-#' @param condition_col Name of the categorical variable to group the data points.
+#' @param condition_col Name of the categorical variable to group the data
+#' points.
 #' @param label_col Name of the categorical variable to label the data points.
-#' @param extra_val Optional; variable with additional information to include in the plot (e.g. correlation value).
-#' @param color_palette Optional; a vector of color codes to customize plot appearance.
-#' @param targeted_arg Optional; a vector defining key feature clusters to highlight or label.
-#' @param save_format Optional; either \code{"png"} or \code{"pdf"} to specify the format to save the plot.
-#' @param out_name Optional; name for the saved plot (if \code{save_format} specified).
-#' @param out_directory Optional; path to the directory where the plot will be saved (if \code{save_format} specified).
-#' @param show_legend Either \code{"none"} (default), \code{"top"}, \code{"bottom"}, \code{"right"} or \code{"left"} to specify the position of the legend.
-#' @param add_titles Logical; if \code{TRUE}, includes titles in the plot. Defaults to \code{TRUE}.
+#' @param extra_val Optional; variable with additional information to include
+#' in the plot (e.g. correlation value).
+#' @param color_palette Optional; a vector of color codes to customize plot
+#' appearance.
+#' @param targeted_arg Optional; a vector defining key feature clusters to
+#' highlight or label.
+#' @param save_format Optional; either \code{"png"} or \code{"pdf"} to specify
+#' the format to save the plot.
+#' @param out_name Optional; name for the saved plot (if \code{save_format}
+#' specified).
+#' @param out_directory Optional; path to the directory where the plot will
+#' be saved (if \code{save_format} specified).
+#' @param show_legend Either \code{"none"} (default), \code{"top"},
+#' \code{"bottom"}, \code{"right"} or \code{"left"} to specify the position of
+#' the legend.
+#' @param add_titles Logical; if \code{TRUE}, includes titles in the plot.
+#' Defaults to \code{TRUE}.
+#' @param verbose Logical; if \code{TRUE}, displays information messages.
+#' Defaults to \code{TRUE}.
 #'
-#' @return A \code{ggplot} object representing the correlation. If \code{save_format} is provided, the plot will also be saved to the specified location.
+#' @return A \code{ggplot} object representing the correlation. If
+#' \code{save_format} is provided, the plot will also be saved to the specified
+#' location.
 #' @export
-
-tTE_CorrelationPlot <- function(data, plot = "MeanCodonUsage", x_axis_col, y_axis_col, condition_col, label_col = NULL, extra_val = NULL, color_palette = NULL,
-                                targeted_arg = NULL, save_format = NULL, out_name = NULL, out_directory = NULL, show_legend = "none", add_titles = TRUE) {
-
-  ###
-  # DESCRIPTION: This function takes a long format data with two parameters to correlate.
-  # It is possible to perform a more targeted approach to compare specific conditions against the rest
-  ###
-
-  plot_type <- plot
-
-  # Checking the input parameters
-  if (!(plot_type %in% c("MeanCodonUsage", "PoolDiversity"))) stop("Please use MeanCodonUsage or PoolDiversity as 'plot'.") # Suitable plot
-  CheckDataInLongFormat(data) # Data in long format.
-
-  expected_cols <- c(x_axis_col, y_axis_col, condition_col, label_col)
-  CheckValueInData("data columns", expected_cols, colnames(data))
-
-  # if (is.null(label_col)){
-  #   CheckValueInData(param = "_col", expected = colnames(data), observed = c(x_axis_col, y_axis_col, condition_col)) # Columns present in data
-  # } else {
-  #   CheckValueInData(param = "_col", expected = colnames(data), observed = c(x_axis_col, y_axis_col, condition_col, label_col)) # Columns present in data
-  #   if (is.numeric(data[[label_col]])) stop(paste("Error in `data`: Column", label_col, "is not categorical."))
-  # }
-
-  if (!(is.numeric(data[[y_axis_col]]))) stop(paste("Error in 'data': Column", y_axis_col, "is not numeric."))
-  if (!(is.numeric(data[[x_axis_col]]))) stop(paste("Error in 'data': Column", x_axis_col, "is not numeric"))
-  if (!is.character(data[[condition_col]]) && !is.factor(data[[condition_col]])) stop(paste("Error in 'data': Column", condition_col, "is not categorical."))
-  if (!is.null(label_col) && is.numeric(data[[label_col]])) stop(paste("Error in 'data': Column", label_col, "is not categorical."))
-
-  plot_color_col <- condition_col
-
-  # TARGETED APPROACH
-  if (!is.null(targeted_arg)){
-    data$target <- "other" # Initialize all the values of the target column as other
-
-    missing_targets <- targeted_arg[!targeted_arg %in% data[[condition_col]]]
-    if (length(missing_targets) > 0) stop("The following arguments in 'targeted_arg' were not found in the data: ", paste(missing_targets, collapse = ", "))
-
-    data$.__target__ <- ifelse(data[[condition_col]] %in% targeted_arg, as.character(data[[condition_col]]), "other")
-    plot_color_col <- ".__target__" # Update the pointer to use our new column
-
-    # for (i in 1:length(targeted_arg)){ # Iterate over the values in targeted_arg
-    #   index <- which(data[[condition_col]] == targeted_arg[i]) # Check which entry match the value in targeted_arg
-    #   if (length(index) == 0) stop(paste("The argument", targeted_arg[i], "has not been found in the categories defined in the data."))
-    #  data$target[index] <- targeted_arg[i] # Update the value of the target column
-    # }
-  }
-
-  # Generate the plot
-  plot <- ggplot2::ggplot(data, ggplot2::aes(x = .data[[x_axis_col]], y = .data[[y_axis_col]], color = .data[[plot_color_col]])) +
-    ggplot2::geom_point(size = 3) +
-    ggplot2::theme_bw()
-
-  # Adjust the colors of the plot
-  n_colors <- length(unique(data[[plot_color_col]]))
-  plot <- plot + GetSafeColorScale(n_colors = n_colors, color_palette = color_palette, aes_type = "color")
-
-  # if (is.null(label_col)){
-  #   plot <- ggplot2::ggplot(data = data, mapping = ggplot2::aes(x = .data[[x_axis_col]], y = .data[[y_axis_col]], color = .data[[target]]))
-  # } else {
-  #   plot <- ggplot2::ggplot(data = data, mapping = ggplot2::aes(x = .data[[x_axis_col]], y = .data[[y_axis_col]], label = .data[[label_col]], color = .data[[target]]))
-  # }
-
-  if (plot_type == "MeanCodonUsage") {
-    plot <- plot + ggplot2::geom_abline(slope = 1, intercept = 0)
-    if (isTRUE(add_titles)) {
-      plot <- plot + ggplot2::labs(title = "Codon frequencies of exonic background \n vs. mean codon usage across conditions",
-                                   x = "Mean codon usage across conditions", y = "Codon usage of exonic background")
+#'
+#' @examples
+#' data(default_tTEscanR_mRNA_data, default_tTEscanR_metadata)
+#'
+#' # Define the object and compute the codon usage
+#' tTEscanR_obj <- CreateObject(
+#'     counts = default_tTEscanR_mRNA_data, assay = "mRNA",
+#'     meta.data = list(default_tTEscanR_metadata, "tissue"),
+#'     meta.data.ids = list("ConditionsLabels", "CorrectionFactor")
+#' )
+#' tTEscanR_obj <- ComputeCodonUsage(
+#'     object = tTEscanR_obj, species = "hg38",
+#'     additional_metrics = TRUE, reduce = 1000
+#' )
+#'
+#' # Compute and extract the mean codon usage
+#' additional_metrics <- getMetadata(
+#'     tTEscanR_obj,
+#'     "CodonUsage_AdditionalMetrics"
+#' )
+#' mean_codon_usage <- additional_metrics$MeanCodonUsage
+#' exonic_background <- additional_metrics$CodonExonicBackground
+#' exonic_background <- as.data.frame(exonic_background)
+#' correlation_mean_background <- cbind(mean_codon_usage, exonic_background)
+#'
+#' PlotCorrelation(
+#'     data = correlation_mean_background, plot = "MeanCodonUsage",
+#'     x_axis_col = "mean_usage_across_conditions",
+#'     y_axis_col = "exonic_background", condition_col = "feature",
+#'     extra_val = additional_metrics$MeanCodonCorr, add_titles = TRUE,
+#'     show_legend = "none"
+#' )
+PlotCorrelation <- function(
+    data, plot = "MeanCodonUsage", x_axis_col, y_axis_col, condition_col,
+    extra_val = NULL, label_col = NULL, color_palette = NULL, out_name = NULL,
+    show_legend = "none", targeted_arg = NULL, save_format = NULL,
+    out_directory = NULL, add_titles = TRUE, verbose = TRUE
+) {
+    GeneralChecksCorrelationPlot( # Checking the input parameters
+        plot = plot, x_axis_col = x_axis_col, y_axis_col = y_axis_col,
+        label_col = label_col, data = data, condition_col = condition_col
+    )
+    if (!is.null(targeted_arg)) { # TARGETED APPROACH
+        targeted_res <- TargetedCorrelation(
+            data = data, target = targeted_arg, cond = condition_col
+        )
+        data <- targeted_res$data
+        condition_col <- targeted_res$condition_col
     }
-  } else if (plot_type == "PoolDiversity" && isTRUE(add_titles)) {
-    plot <- plot + ggplot2::labs(title = "Conditions' correlation to mean codon usage vs. \n codon pool diversity",
-                                 x = "Codon pool diversity", y = "Correlation")
-  }
+    p <- ggplot2::ggplot(data, ggplot2::aes( # Generate the plot
+        x = .data[[x_axis_col]], y = .data[[y_axis_col]],
+        color = .data[[condition_col]]
+    )) + ggplot2::geom_point(size = 3) + ggplot2::theme_bw()
+    n_colors <- length(unique(data[[condition_col]]))
+    p <- p + GetSafeColorScale( # Adjust the colors of the plot
+        n_colors = n_colors, color_palette = color_palette, aes_type = "color"
+    )
+    p <- AddTitleCorrelation(p = p, plot = plot, add_titles = add_titles)
+    if (!is.null(label_col)) {
+        p <- p + ggrepel::geom_text_repel(ggplot2::aes(
+            label = .data[[label_col]]), max.overlaps = 10
+        )
+    }
+    if (!(is.null(extra_val))) {
+        p <- p + ggplot2::annotate(
+            "text", x = Inf, y = -Inf, hjust = 1.2, vjust = -0.2,
+            label = sprintf("rho == %.3f", extra_val), parse = TRUE
+        )
+    }
+    p <- p + ggplot2::theme(legend.position = show_legend)
+    if (!is.null(save_format)) {
+        SavePlot( # Save the ggplot
+            plot = p, save_format = save_format, out_name = out_name,
+            out_directory = out_directory, verbose = verbose
+        )
+    }
+    return(p) # Returns the generated plot and exports a file if enabled
+}
 
-  if (!is.null(label_col)) plot <- plot + ggrepel::geom_text_repel(ggplot2::aes(label = .data[[label_col]]), max.overlaps = 10)
+TargetedCorrelation <- function(data, target, cond) {
+    data$target <- "other" # Initialize all values of the target column
+    missing <- target[!target %in% data[[cond]]]
 
-  if (!(is.null(extra_val))){
-    plot <- plot + ggplot2::annotate("text", x = Inf, y = -Inf, label = sprintf("rho == %.3f", extra_val),
-                                     parse = TRUE, hjust = 1.2, vjust = -0.2)
-  }
+    if (length(missing) > 0) {
+        stop(
+            "Arguments in 'targeted_arg' not in 'data': ",
+            paste(missing, collapse = ", ")
+        )
+    }
 
-  plot <- plot + ggplot2::theme(legend.position = show_legend)
+    data$.__target__ <- ifelse(
+        data[[cond]] %in% target, as.character(data[[cond]]), "other"
+    )
 
-  # Save the ggplot
-  if(!is.null(save_format)) SavePlot(plot = plot, save_format = save_format, out_name = out_name, out_directory = out_directory)
-  return(plot) # Returns the generated plot and exports a file if enabled
+    cond <- ".__target__" # Update pointer to use new column
+
+    return(list(data = data, condition_col = cond))
+}
+
+AddTitleCorrelation <- function(p, plot, add_titles) {
+    if (plot == "MeanCodonUsage") {
+        p <- p + ggplot2::geom_abline(slope = 1, intercept = 0)
+        if (isTRUE(add_titles)) {
+            p <- p + ggplot2::labs(
+                title = "Codon frequencies of exonic background \n vs.
+                mean codon usage across conditions",
+                x = "Mean codon usage across conditions",
+                y = "Codon usage of exonic background"
+            )
+        }
+    } else if (plot == "PoolDiversity" && isTRUE(add_titles)) {
+        p <- p + ggplot2::labs(
+            title = "Correlation mean codon usage vs. \n codon pool diversity",
+            x = "Codon pool diversity", y = "Correlation"
+        )
+    }
+
+    return(p)
+}
+
+GeneralChecksCorrelationPlot <- function(
+    plot, data, x_axis_col, y_axis_col, condition_col, label_col
+) {
+    # Suitable plot
+    if (!(plot %in% c("MeanCodonUsage", "PoolDiversity"))) {
+        stop("Please use MeanCodonUsage or PoolDiversity as 'plot'.")
+    }
+
+    CheckDataInLongFormat(data) # Data in long format.
+
+    expected_cols <- c(x_axis_col, y_axis_col, condition_col, label_col)
+    CheckValueInData("data columns", expected_cols, colnames(data))
+
+    if (!(is.numeric(data[[y_axis_col]]))) {
+        stop("The 'data' column ", y_axis_col, " is not numeric.")
+    }
+
+    if (!(is.numeric(data[[x_axis_col]]))) {
+        stop("The 'data' column ", x_axis_col, " is not numeric")
+    }
+
+    if (!is.character(data[[condition_col]]) &&
+        !is.factor(data[[condition_col]])) {
+        stop("The 'data' column ", condition_col, " is not categorical.")
+    }
+
+    if (!is.null(label_col) && is.numeric(data[[label_col]])) {
+        stop("The 'data' column ", label_col, " is not categorical.")
+    }
+
+    return(invisible(NULL))
 }
 
 #' Permutation Plot
 #' @description
-#' This function generates a plot to compare the baseline codon exonic background against the current codon usage.
-#' For a better interpretation, the codons are colored by amino acid.
+#' This function generates a plot to compare the baseline codon exonic
+#' background against the current codon usage. For a better interpretation, the
+#' codons are colored by amino acid.
 #'
-#' @param permut_data A table with the codons and their frequencies after computing all the permutations. Output from \code{\link{GetPermutationDist}}.
-#' @param sig_data A table with the codon exonic background and their significance level before (p-value) and after the correction (p-adjusted value). Output from \code{\link{ObtainSignificance}}
-#' @param color_palette Optional; a vector of color codes to customize plot appearance.
-#' @param save_format Optional; either \code{"png"} or \code{"pdf"} to specify the format to save the plot.
-#' @param out_name Optional; name for the saved plot (if \code{save_format} specified).
-#' @param out_directory Optional; path to the directory where the plot will be saved (if \code{save_format} specified).
-#' @param show_legend Either \code{"none"} (default), \code{"top"}, \code{"bottom"}, \code{"right"} or \code{"left"} to specify the position of the legend in the plot.
-#' @param add_titles Logical; if \code{TRUE}, includes titles in the plot. Defaults to \code{TRUE}.
+#' @param permut_data A table with the codons and their frequencies after
+#' computing all the permutations. Output from \code{\link{GetPermutationDist}}.
+#' @param sig_data A table with the codon exonic background and their
+#' significance level before (p-value) and after the correction (p-adjusted
+#' value). Output from \code{\link{ObtainSignificance}}
+#' @param color_palette Optional; a vector of color codes to customize plot
+#' appearance.
+#' @param save_format Optional; either \code{"png"} or \code{"pdf"} to specify
+#' the format to save the plot.
+#' @param out_name Optional; name for the saved plot (if \code{save_format}
+#' specified).
+#' @param out_directory Optional; path to the directory where the plot will be
+#' saved (if \code{save_format} specified).
+#' @param show_legend Either \code{"none"} (default), \code{"top"},
+#' \code{"bottom"}, \code{"right"} or \code{"left"} to specify the position of
+#' the legend in the plot.
+#' @param add_titles Logical; if \code{TRUE}, includes titles in the plot.
+#' Defaults to \code{TRUE}.
+#' @param verbose Logical; if \code{TRUE}, displays information messages.
+#' Defaults to \code{TRUE}.
 #'
 #' @return Permutation plot.
 #' @export
+#'
+#' @examples
+#' data(default_tTEscanR_mRNA_data, default_tTEscanR_metadata)
+#' selected_genes <- default_tTEscanR_mRNA_data[1:20, ]
+#' permutation_test <- GetPermutationDist(
+#'     n_permut = 100, target_data = selected_genes, species = "hg38"
+#' ) # Generate table with codon and freq
+#' tTEscanR_obj <- CreateObject(
+#'     counts = default_tTEscanR_mRNA_data, assay = "mRNA",
+#'     meta.data = list(default_tTEscanR_metadata, "tissue"),
+#'     meta.data.ids = list("ConditionsLabels", "CorrectionFactor")
+#' )
+#' tTEscanR_obj <- ComputeCodonUsage(
+#'     object = tTEscanR_obj, species = "hg38",
+#'     additional_metrics = FALSE, reduce = 1000
+#' )
+#'
+#' codon_usage <- getAssay(tTEscanR_obj, "CodonUsage")
+#' codon_background <- rowSums(codon_usage) / sum(rowSums(codon_usage))
+#' codons_to_AA <- FeaturesToAA(
+#'     data = names(codon_background),
+#'     notation_from = "codon", notation_to = "aa"
+#' )
+#' codon_background <- data.frame(
+#'     group = codons_to_AA, codon = names(codon_background),
+#'     freq = as.numeric(codon_background), row.names = NULL
+#' )
+#' significance <- ObtainSignificance(
+#'     dist = permutation_test, value = codon_background
+#' )
+#'
+#' PlotPermutation(permut_data = permutation_test, sig_data = significance)
+PlotPermutation <- function(
+    permut_data, sig_data, color_palette = NULL, save_format = NULL,
+    out_name = NULL, out_directory = NULL, show_legend = "none",
+    add_titles = TRUE, verbose = TRUE
+) {
+    annot_results <- GetAnnotData(permut_data, sig_data)
+    observed_data <- annot_results$sig_data
+    label_data <- annot_results$annot_data_labels
+    # Defining the size of the bars in the histogram based on the data
+    val_range <- range(permut_data$freq, na.rm = TRUE)
+    bin_width <- (val_range[2] - val_range[1]) / 25
+    if (is.infinite(bin_width) || bin_width == 0) bin_width <- 0.001
 
-tTE_PermutationPlot <- function(permut_data, sig_data, color_palette = NULL, save_format = NULL, out_name = NULL, out_directory = NULL, show_legend = "none", add_titles = TRUE){
+    plot <- ggplot2::ggplot() +
+        # Defining the background of the histogram (permut_data)
+        ggplot2::geom_histogram(
+            data = permut_data, ggplot2::aes(x = .data$freq),
+            binwidth = bin_width, fill = "lightgrey", color = "black"
+        ) +
+        # The observed values (observed_data / sig_data)
+        ggplot2::geom_vline(
+            data = observed_data,
+            ggplot2::aes(xintercept = .data$freq, color = .data$group),
+            linetype = "dashed", linewidth = 0.8
+        ) +
+        ggplot2::geom_text(
+            data = label_data,
+            ggplot2::aes(x = -Inf, y = Inf, label = .data$combined_label),
+            hjust = -0.1, vjust = 1.2, size = 3
+        ) +
+        # Facet by codon
+        ggplot2::facet_wrap(ggplot2::vars(.data$codon), scales = "free_y") +
+        ggplot2::theme_bw() +
+        ggplot2::theme(legend.position = show_legend)
 
-  ###
-  # DESCRIPTION: This function takes the output tables of GetPermutationDist() and ObtainSignificance().
-  # Generates a histogram per each codon and displays the background (expected) and the observed signal colored by groups and amino acids.
-  ###
-
-  # Processing the annot_data parameter
-  annot_data_results <- GetAnnotData(permut_data = permut_data, sig_data = sig_data)
-  annot_data <- annot_data_results[[1]]
-  annot_data_labels <- annot_data_results[[2]]
-
-  # Defining the size of the bars in the histogram based on the data
-  bin_width <- (max(annot_data$freq) - min(annot_data$freq)) / 25
-  if (is.null(bin_width)) stop("The bind width could not be calculated.\n", "Revise the `freq` column in the data.")
-
-  # Defining the plot background
-  plot <- ggplot2::ggplot(permut_data, ggplot2::aes(x = .data$freq, fill = .data$aa)) +
-    ggplot2::geom_histogram(binwidth = bin_width, color = "black") +
-    ggplot2::geom_vline(data = annot_data, ggplot2::aes(xintercept = .data$freq, color = .data$group), linetype = "dashed") +
-    ggplot2::geom_text(data = annot_data_labels, ggplot2::aes(x = -Inf, y = Inf, label = .data$combined_label), hjust = -0.1, vjust = 1.1, size = 3, inherit.aes = FALSE) +
-    ggplot2::facet_wrap(ggplot2::vars(permut_data$codon), scales = "fixed")
-
-  n_aa <- length(unique(permut_data$aa))
-  if (is.null(color_palette) && exists("aa_colors")) color_palette <- aa_colors
-  plot <- plot + GetSafeColorScale(n_colors = n_aa, color_palette = color_palette, aes_type = "fill")
-
-  plot <- plot + ggplot2::theme_bw() + ggplot2::theme(legend.position = show_legend) # Including the legend
-  if (isTRUE(add_titles)) plot <- plot + ggplot2::labs(title = "Histogram of Codon Frequencies in Genes of Interest", x = "Frequency", y = "Count") # Adding standard titles to the plot
-  if (!is.null(save_format)) SavePlot(plot = plot, save_format = save_format, out_name = out_name, out_directory = out_directory) # Save the ggplot
-
-  return(plot)
+    if (isTRUE(add_titles)) { # Adding standard titles to the plot
+        plot <- plot + ggplot2::labs(
+            title = "Codon Frequency Permutation Test",
+            subtitle = "Grey bars = Null Distribution; Dashed lines = Observed",
+            x = "Frequency", y = "Count"
+        )
+    }
+    if (!is.null(save_format)) { # Save the ggplot
+        SavePlot(
+            plot = plot, save_format = save_format, out_name = out_name,
+            out_directory = out_directory, verbose = verbose
+        )
+    }
+    return(plot)
 }

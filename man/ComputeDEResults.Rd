@@ -5,32 +5,44 @@
 \title{Compute the DESeq2 Analysis}
 \usage{
 ComputeDEResults(
-  list_data,
-  metadata,
-  condition = NULL,
-  batch = NULL,
-  reference = NULL,
-  reduce = 100,
-  padj_threshold = 0.05,
-  verbose = TRUE
+    list_data,
+    metadata,
+    condition = NULL,
+    batch = NULL,
+    reference = NULL,
+    reduce = 100,
+    padj_threshold = 0.05,
+    verbose = TRUE
 )
 }
 \arguments{
-\item{list_data}{A \code{list} of matrices with features (i.e. genes, codons, anticodons or amino acids) as rows and samples or conditions as columns. The list can be named or unnamed.}
+\item{list_data}{A \code{list} of matrices with features (i.e. genes, codons,
+anticodons or amino acids) as rows and samples or conditions as columns. The
+list can be named or unnamed.}
 
-\item{metadata}{A \code{data.frame} with the data associated to the conditions in the matrices of \code{list_data}. There has to be one column with the same labels as the column names.}
+\item{metadata}{A \code{data.frame} with the data associated to the
+conditions in the matrices of \code{list_data}. There has to be one column
+with the same labels as the column names.}
 
-\item{condition}{Optional; a factor based on \code{metadata} columns to define the comparisons to perform in a targeted analysis. Defaults to \code{NULL}.}
+\item{condition}{Optional; a factor based on \code{metadata} columns to
+define the comparisons to perform in a targeted analysis. Defaults to
+\code{NULL}.}
 
-\item{batch}{Optional; name of the categorical variable in \code{metadata} to correct the data. Required if \code{dim_reduct} specified.}
+\item{batch}{Optional; name of the categorical variable in \code{metadata}
+to correct the data. Required if \code{dim_reduct} specified.}
 
-\item{reference}{Optional; factor from the \code{batch} variable to use as reference for the corrections. If not specified, the 1st factor that appears will be used instead.}
+\item{reference}{Optional; factor from the \code{batch} variable to use as
+reference for the corrections. If not specified, the 1st factor that appears
+will be used instead.}
 
-\item{reduce}{Numeric; a scaling factor used to normalize large expression values that exceed R's handling capacity. Defaults to 100.}
+\item{reduce}{Numeric; a scaling factor used to normalize large expression
+values that exceed R's handling capacity. Defaults to 100.}
 
-\item{padj_threshold}{Numeric; p-value threshold used for highlighting significant features in the volcano plot. Defaults to 0.05.}
+\item{padj_threshold}{Numeric; p-value threshold used for highlighting
+significant features in the volcano plot. Defaults to 0.05.}
 
-\item{verbose}{Logical; if \code{TRUE}, displays information messages. Defaults to \code{TRUE}.}
+\item{verbose}{Logical; if \code{TRUE}, displays information messages.
+Defaults to \code{TRUE}.}
 }
 \value{
 A DESeq2 object with the normalized and vst counts.
@@ -40,6 +52,8 @@ Compute the DESeq2 Analysis
 }
 \examples{
 data(default_tTEscanR_tRNA_data, default_tTEscanR_metadata)
-DE_analysis <- ComputeDEResults(list_data = list(tRNA = default_tTEscanR_tRNA_data),
-                                metadata = default_tTEscanR_metadata, batch = "tissue")
+DE_analysis <- ComputeDEResults(
+    list_data = list(tRNA = default_tTEscanR_tRNA_data),
+    metadata = default_tTEscanR_metadata, batch = "tissue"
+)
 }

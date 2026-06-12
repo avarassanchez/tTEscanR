@@ -9,20 +9,29 @@ ComputeAnticodonUsage(object, overwrite = FALSE, verbose = TRUE)
 \arguments{
 \item{object}{A \code{tTEscanR_Object} containing a tRNA assay.}
 
-\item{overwrite}{Logical; if \code{TRUE}, overwrites any existing assay and metadata in the \code{object}. Defaults to \code{FALSE}.}
+\item{overwrite}{Logical; if \code{TRUE}, overwrites any existing assay and
+metadata in the \code{object}. Defaults to \code{FALSE}.}
 
-\item{verbose}{Logical; if \code{TRUE}, displays information messages. Defaults to \code{TRUE}.}
+\item{verbose}{Logical; if \code{TRUE}, displays information messages.
+Defaults to \code{TRUE}.}
 }
 \value{
-An updated \code{tTEscanR_Object} containing a new layer of information \code{"AnticodonUsage"} in the \code{assays} slot representing the anticodon usage.
+An updated \code{tTEscanR_Object} containing a new layer of
+information \code{"AnticodonUsage"} in the \code{assays} slot representing
+the anticodon usage.
 }
 \description{
-This function calculates \strong{anticodon usage profiles} from tRNA gene expression data stored in a \code{tTEscanR_Object}.
-It summarizes the expression of tRNAs by their anticodon identity, which can be used to estimate the tRNA supply landscape.
-The tRNA gene names need to be properly annotated for proper recognition. Expected format: tRNA-Asn-GTT-5-1.
+This function calculates \strong{anticodon usage profiles} from tRNA gene
+expression data stored in a \code{tTEscanR_Object}. It summarizes the
+expression of tRNAs by their anticodon identity, which can be used to
+estimate the tRNA supply landscape. The tRNA gene names need to be properly
+annotated for proper recognition. Expected format: tRNA-Asn-GTT-5-1.
 }
 \examples{
 data(default_tTEscanR_tRNA_data)
-tTEscanR_obj <- Create_tTEscanR_Object(counts = default_tTEscanR_tRNA_data, assay = "tRNA")
+tTEscanR_obj <- CreateObject(
+    counts = default_tTEscanR_tRNA_data,
+    assay = "tRNA"
+)
 tTEscanR_obj <- ComputeAnticodonUsage(object = tTEscanR_obj)
 }

@@ -3,12 +3,16 @@
 \docType{data}
 \name{default_tTEscanR_mRNA_data}
 \alias{default_tTEscanR_mRNA_data}
-\title{mRNA Expression Data Subset
-This dataset contains an example of mRNA gene expression data with protein-coding genes as rows and cell types as columns.}
+\title{mRNA Expression Data Subset}
+\format{
+A matrix where rows represent genes and columns represent individual
+samples or cell types.
+}
 \usage{
 data(default_tTEscanR_mRNA_data)
 }
 \description{
-mRNA Expression Data Subset
-This dataset contains an example of mRNA gene expression data with protein-coding genes as rows and cell types as columns.
+This dataset contains an example of mRNA gene expression data with
+protein-coding genes as rows and cell types as columns.
 }
+\keyword{datasets}

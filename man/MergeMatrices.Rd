@@ -10,13 +10,20 @@ MergeMatrices(...)
 \item{...}{A variable number of \code{matrix}.}
 }
 \value{
-A single sparse matrix with as a combination of all the input matrices.
+A single sparse matrix with as a combination of all the input
+matrices.
 }
 \description{
 This function efficiently combines individual matrices.
 }
 \examples{
-df1 <- matrix(c(1, 0, 0, 2), nrow = 2, dimnames = list(c("geneA", "geneB"), c("s1", "s2")))
-df2 <- matrix(c(3, 0, 0, 4), nrow = 2, dimnames = list(c("geneB", "geneC"), c("s2", "s3")))
+df1 <- matrix(c(1, 0, 0, 2), nrow = 2, dimnames = list(
+    c("geneA", "geneB"),
+    c("s1", "s2")
+))
+df2 <- matrix(c(3, 0, 0, 4), nrow = 2, dimnames = list(
+    c("geneB", "geneC"),
+    c("s2", "s3")
+))
 merged_matrix <- MergeMatrices(df1, df2)
 }

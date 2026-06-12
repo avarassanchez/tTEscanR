@@ -9,18 +9,22 @@ GroupConditions(data, group_labels)
 \arguments{
 \item{data}{A \code{matrix} with the features to group for as columns.}
 
-\item{group_labels}{A \code{vector} with the metadata features to group the columns in \code{data}}
+\item{group_labels}{A \code{vector} with the metadata features to group
+the columns in \code{data}}
 }
 \value{
 A \code{matrix} with the conditions merged based on the metadata.
 }
 \description{
-This function calculates the row sums of a given matrix to combine columns that share the same group.
+This function calculates the row sums of a given matrix to combine columns
+that share the same group.
 }
 \examples{
-data <- data.frame(sample_1 = c(10, 5, 20), sample_2 = c(15, 8, 25),
-                   sample_3 = c(12, 6, 22), sample_4 = c(1, 2, 3),
-                   sample_5 = c(4, 5, 6), sample_6 = c(7, 8, 9))
+data <- data.frame(
+    sample_1 = c(10, 5, 20), sample_2 = c(15, 8, 25),
+    sample_3 = c(12, 6, 22), sample_4 = c(1, 2, 3),
+    sample_5 = c(4, 5, 6), sample_6 = c(7, 8, 9)
+)
 rownames(data) <- c("gene_1", "gene_2", "gene_3")
 groups <- c("cond_A", "cond_A", "cond_A", "cond_B", "cond_B", "cond_B")
 data_combined <- GroupConditions(data = data, group_labels = groups)

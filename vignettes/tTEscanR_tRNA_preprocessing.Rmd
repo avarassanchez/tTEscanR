@@ -1,0 +1,177 @@
+---
+title: "<img src='tTEscanR_logo.png' style='height:60px; 
+vertical-align:middle;'> tTEscanR tRNA-Specific Preprocessing Module"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+  rmarkdown::html_document:
+    toc: true
+    toc_float: true
+    theme: default
+    css: style.css
+vignette: >
+  %\VignetteIndexEntry{tTEscanR tRNA-Specific Preprocessing Module}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+bibliography: references.bib
+---
+
+```{r file_settings, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+```{r notes_format, echo = FALSE, results = 'asis'}
+cat("
+<style>
+.note {
+    background-color: #f6e8c3;
+    border-left: 5px solid #dfc27d;
+    padding: 1em;
+    margin: 1em 0;
+    border-radius: 4px;
+}
+.warning {
+    background-color: #fff3cd;
+    border-left: 5px solid #ff9800;
+    padding: 1em;
+    margin: 1em 0;
+    border-radius: 4px;
+}
+</style>
+")
+```
+
+<hr>
+
+# 1. Overview
+
+**tTEscanR** includes a dedicated **preprocessing module** that provides 
+multiple functions for generating ready-to-use data count matrices. The primary 
+goal of this module is to facilitate the transformation from (sc)ATAC-seq count
+matrices to tRNA abundance count matrices where tRNA genes are the rows and the 
+conditions the columns. Additionally, it helps annotating the tRNA genes.
+
+```{r setup, message = FALSE, warning = FALSE}
+# install.packages("/avarassanchez/tTEscanR")
+devtools::load_all()
+library(tTEscanR)
+```
+
+To illustrate the functionality of the tRNA speciic preprocessing module we 
+generated a toy example dataset representing a peak count matrix where the 
+fragment regions are placed as rows and the samples as columns. We have also
+defined the corresponding metadata.
+
+```{r set_peak_matrix, message = TRUE, warning = FALSE}
+library(Matrix)
+
+# Parameters
+num_peaks <- 100
+num_cells <- 20  # Increased to pass min.cells = 10
+set.seed(42)
+
+# Create peak names with "-" separator as required by your code
+chroms <- sample(paste0("chr", 1:3), num_peaks, replace = TRUE)
+starts <- seq(1000, by = 5000, length.out = num_peaks)
+ends <- starts + 300
+peak_names <- paste(chroms, starts, ends, sep = "-")
+
+# Create a sparse matrix (more memory efficient for Seurat/Signac)
+counts <- Matrix(
+    rpois(num_peaks * num_cells, lambda = 5), 
+    nrow = num_peaks, 
+    ncol = num_cells, 
+    sparse = TRUE
+)
+
+rownames(counts) <- peak_names
+colnames(counts) <- paste0("Cell_", seq_len(num_cells))
+
+saveRDS(counts, "foo.RDS")
+```
+
+```{r set_fragmets_file, message = TRUE, warning = FALSE}
+library(dplyr)
+library(Rsamtools)
+
+# Generate fragments based on our counts matrix
+fragment_list <- list()
+for (i in 1:ncol(counts)) {
+    cell_name <- colnames(counts)[i]
+    for (j in 1:nrow(counts)) {
+        cnt <- counts[j, i]
+        if (cnt > 0) {
+            parts <- strsplit(rownames(counts)[j], "-")[[1]]
+            for (k in 1:cnt) {
+                fragment_list[[length(fragment_list) + 1]] <- data.frame(
+                    chr = parts[1],
+                    start = as.numeric(parts[2]) + k,
+                    end = as.numeric(parts[3]) - k,
+                    cell = cell_name,
+                    count = 1
+                )
+            }
+        }
+    }
+}
+
+fragments_df <- bind_rows(fragment_list) %>%
+    arrange(chr, start) # Sorting is mandatory for indexing
+
+# Write to a temporary text file
+temp_txt <- "foo.fragments.txt"
+write.table(
+    fragments_df, temp_txt, sep = "\t", 
+    row.names = FALSE, col.names = FALSE, quote = FALSE
+)
+
+# Bgzip compress and index (Requires Rsamtools)
+# This creates foo.fragments.txt.gz and foo.fragments.txt.gz.tbi
+bgzip(temp_txt, dest = "foo.fragments.txt.gz", overwrite = TRUE)
+indexTabix("foo.fragments.txt.gz", format = "bed")
+
+# Clean up the uncompressed temp file
+file.remove(temp_txt)
+```
+
+```{r set_seurat_obj, message = TRUE, warning = FALSE}
+library(Signac)
+library(Seurat)
+
+# Now your provided code should work:
+counts_loaded <- readRDS("foo.RDS")
+fragment_file <- "foo.fragments.txt.gz"
+
+chrom_assay <- CreateChromatinAssay(
+    counts = counts_loaded,
+    sep = c("-", "-"),
+    fragments = fragment_file,
+    min.cells = 10,
+    min.features = 0
+)
+
+chrom_obj <- CreateSeuratObject(
+    counts = chrom_assay,
+    assay = "peaks"
+)
+
+print(chrom_obj)
+```
+
+# 2. Obtaining the tRNA matrix
+
+The first step is to generate the tRNA matrix and translate the peak fragments
+into tRNA gene names.
+
+```{r getMatrix, message = TRUE, warning = FALSE}
+tRNA_matrix <- tRNAGetMatrix(
+    data = chrom_obj, assay = "peaks", confidence_set = NULL, species = "hg38" 
+)
+```
+
+
+# 3. Identifying the optimal tRNA cutoff
+
+```{r session-info, echo=FALSE}
+sessionInfo()
+```

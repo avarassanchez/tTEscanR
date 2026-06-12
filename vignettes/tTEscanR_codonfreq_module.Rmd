@@ -1,5 +1,6 @@
 ---
-title: "<img src='tTEscanR_logo.png' style='height:60px; vertical-align:middle;'> tTEscanR Codon Frequency-per-Gene Matrix"
+title: "<img src='tTEscanR_logo.png' style='height:60px; 
+vertical-align:middle;'> tTEscanR Codon Frequency-per-Gene Matrix"
 output: 
   rmarkdown::html_vignette:
     toc: true
@@ -15,39 +16,40 @@ vignette: >
 bibliography: references.bib
 ---
 
-```{r, include = FALSE}
+```{r file_settings, include = FALSE}
 knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>"
+    collapse = TRUE,
+    comment = "#>"
 )
 ```
 
-```{r, echo = FALSE, results = 'asis'}
-cat('
+```{r notes_format, echo = FALSE, results = 'asis'}
+cat("
 <style>
 .note {
-  background-color: #f6e8c3;
-  border-left: 5px solid #dfc27d;
-  padding: 1em;
-  margin: 1em 0;
-  border-radius: 4px;
+    background-color: #f6e8c3;
+    border-left: 5px solid #dfc27d;
+    padding: 1em;
+    margin: 1em 0;
+    border-radius: 4px;
 }
 .warning {
-  background-color: #fff3cd;
-  border-left: 5px solid #ff9800;
-  padding: 1em;
-  margin: 1em 0;
-  border-radius: 4px;
+    background-color: #fff3cd;
+    border-left: 5px solid #ff9800;
+    padding: 1em;
+    margin: 1em 0;
+    border-radius: 4px;
 }
 </style>
-')
+")
 ```
 
 <hr>
 
 # Overview
 
-In this document, we present all the funcitonalities that the codon frequency-per-gene module incorporates.
+In this document, we present all the funcitonalities that the codon 
+frequency-per-gene module incorporates.
 
 ```{r setup, message = FALSE, warning = FALSE}
 # install.packages("/avarassanchez/tTEscanR")
@@ -56,22 +58,34 @@ library(tTEscanR)
 ```
 
 ::: {.note}
-The reference **codon frequency-per-gene** matrix represents the codon distribution of each protein-coding gene in a reference genome.
+The reference **codon frequency-per-gene** matrix represents the codon 
+distribution of each protein-coding gene in a reference genome.
 :::
 
-The **`GetCodonFreq()`** function computes the reference codon frequency-per-gene matrix. It retrieves the codon composition table for any organism supported by **Ensembl**. The function returns a list containing: (i) a codon frequency-per-gene-matrix, and (ii) a gene translator table mapping between Ensembl IDs and gene names. This output can be used directly in downstream codon usage analyses.
+The **`GetCodonFreq()`** function computes the reference codon 
+frequency-per-gene matrix. It retrieves the codon composition table for any 
+organism supported by **Ensembl**. The function returns a list containing: 
+(i) a codon frequency-per-gene-matrix, and (ii) a gene translator table mapping 
+between Ensembl IDs and gene names. This output can be used directly in 
+downstream codon usage analyses.
 
-```{r, message = FALSE, warning = FALSE}
+```{r load_biomart, message = FALSE, warning = FALSE}
 library(biomaRt)
 ```
 
 ```{r datasets_ensembl, message = TRUE, warning = FALSE, eval = FALSE}
-datasets <- biomaRt::listDatasets(useEnsembl(biomart = "ensembl")) 
+datasets <- biomaRt::listDatasets(useEnsembl(biomart = "ensembl"))
 ```
 
-One of the main advantages of the **`GetCodonFreq()`** function is that it can be applied to any organism available at Ensembl. As a reference we can use `hsapiens_gene_ensembl` for hg38 human genome and `mmusculus_gene_ensembl` for mm39 mouse genome. Other organism names can be extracted using `datasets$dataset.
+One of the main advantages of the **`GetCodonFreq()`** function is that it can 
+be applied to any organism available at Ensembl. As a reference we can use 
+`hsapiens_gene_ensembl` for hg38 human genome and `mmusculus_gene_ensembl` for 
+mm39 mouse genome. Other organism names can be extracted using 
+`datasets$dataset`.
 
-In the example below, we will use both human and mouse reference dataset and the canonical and length filters to show the potential of the **`GetCodonFreq()`** function. 
+In the example below, we will use both human and mouse reference dataset and 
+the canonical and length filters to show the potential of the 
+**`GetCodonFreq()`** function. 
 
 **Example 1:** 
 <li>Reference hg38 dataset</li>
@@ -79,13 +93,16 @@ In the example below, we will use both human and mouse reference dataset and the
 <li>Removing mitochondrial genes</li>
 <li>External gene name as output</li>
 
-```{r canonical_codon_freq_per_gene, message = TRUE, warning = FALSE, eval = FALSE}
-codon_freq_results_canonical <- GetCodonFreq(dataset_name = "hsapiens_gene_ensembl", filter = "canonical", retain_geneversion = TRUE,
-                                             retain_mitochondrial = FALSE, out_format = "external_gene_name") 
+```{r canonical_codon_freq, message = TRUE, warning = FALSE, eval = FALSE}
+codon_freq_results_canonical <- GetCodonFreq(
+    dataset_name = "hsapiens_gene_ensembl", filter = "canonical",
+    retain_geneversion = TRUE,
+    retain_mitochondrial = FALSE, out_format = "external_gene_name"
+)
 ```
 
-```{r canonical_codon_freq_per_gene_results, message = TRUE, warning = FALSE, eval = FALSE}
-hg38_codon_freq_table_canonical <- codon_freq_results_canonical[[2]] 
+```{r canonical_results, message = TRUE, warning = FALSE, eval = FALSE}
+hg38_codon_freq_table_canonical <- codon_freq_results_canonical[[2]]
 hg38_gene_translator_table_canonical <- codon_freq_results_canonical[[1]]
 ```
 
@@ -95,13 +112,15 @@ hg38_gene_translator_table_canonical <- codon_freq_results_canonical[[1]]
 <li>Keeping mitochondrial genes</li>
 <li>Ensembl gene id as output</li>
 
-```{r length_codon_freq_per_gene, message = TRUE, warning = FALSE, eval = FALSE}
-codon_freq_results_length <- GetCodonFreq(dataset_name = "mmusculus_gene_ensembl", filter = "length",
-                                          retain_mitochondrial = TRUE, out_format = "ensembl_gene_id")
+```{r length_codon_freq, message = TRUE, warning = FALSE, eval = FALSE}
+codon_freq_results_length <- GetCodonFreq(
+    dataset_name = "mmusculus_gene_ensembl", filter = "length",
+    retain_mitochondrial = TRUE, out_format = "ensembl_gene_id"
+)
 ```
 
-```{r length_codon_freq_per_gene_results, message = TRUE, warning = FALSE, eval = FALSE}
-mm39_codon_freq_table_length <- codon_freq_results_length[[2]] 
+```{r length_results, message = TRUE, warning = FALSE, eval = FALSE}
+mm39_codon_freq_table_length <- codon_freq_results_length[[2]]
 mm39_gene_translator_table_length <- codon_freq_results_length[[1]]
 ```
 
@@ -111,12 +130,18 @@ mm39_gene_translator_table_length <- codon_freq_results_length[[1]]
 <li>Removing mitochondrial genes</li>
 <li>Ensembl transcript id as output</li>
 
-```{r transcript_codon_freq_per_gene, message = TRUE, warning = FALSE, eval = FALSE}
-codon_freq_results_transcript <- GetCodonFreq(dataset_name = "drerio_gene_ensembl", filter = "length",
-                                              retain_mitochondrial = TRUE, out_format = "ensembl_transcript_id")
+```{r transcript_codon_freq, message = TRUE, warning = FALSE, eval = FALSE}
+codon_freq_results_transcript <- GetCodonFreq(
+    dataset_name = "drerio_gene_ensembl", filter = "length",
+    retain_mitochondrial = TRUE, out_format = "ensembl_transcript_id"
+)
 ```
 
-```{r transcript_codon_freq_per_gene_results, message = TRUE, warning = FALSE, eval = FALSE}
-drerio_codon_freq_table_length <- codon_freq_results_transcript[[2]] 
+```{r transcript_results, message = TRUE, warning = FALSE, eval = FALSE}
+drerio_codon_freq_table_length <- codon_freq_results_transcript[[2]]
 drerio_gene_translator_table_length <- codon_freq_results_transcript[[1]]
+```
+
+```{r session-info, echo=FALSE}
+sessionInfo()
 ```

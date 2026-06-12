@@ -2,24 +2,36 @@
 % Please edit documentation in R/tTE_HelperFunctions_CodonUsage.R
 \name{ComputeExonicBackground}
 \alias{ComputeExonicBackground}
-\title{Compute the Exonic Background of the Codon Usage}
+\title{Compute the Exonic Background of the Codon/Anticodon Usage}
 \usage{
 ComputeExonicBackground(data)
 }
 \arguments{
-\item{data}{A codon usage matrix with codons as rows and conditions or samples as columns.}
+\item{data}{A codon usage matrix with codons as rows and conditions or
+samples as columns.}
 }
 \value{
-A \code{matrix} with the codon exonic background.
+A \code{matrix} with the codon/anticodon background.
 }
 \description{
-This function calculates the \strong{codon/anticodon usage background} based solely on exonic sequence composition, independent of expression levels.
-It provides a reference distribution of codon/anticodon frequencies across conditions, used to normalize/compare against observed usage patterns derived from expression data.
+This function calculates the \strong{codon/anticodon usage background} based
+solely on exonic sequence composition, independent of expression levels.
+It provides a reference distribution of codon/anticodon frequencies across
+conditions, used to normalize/compare against observed usage patterns derived
+from expression data.
 }
 \examples{
 data(default_tTEscanR_mRNA_data)
-tTEscanR_obj <- Create_tTEscanR_Object(counts = default_tTEscanR_mRNA_data, assay = "mRNA")
-tTEscanR_obj <- ComputeCodonUsage(object = tTEscanR_obj, species = "hg38",
-                                  additional_metrics = FALSE, reduce = 1000)
-exonic_background <- ComputeExonicBackground(data = tTEscanR_obj@assays$CodonUsage)
+tTEscanR_obj <- CreateObject(
+    counts = default_tTEscanR_mRNA_data,
+    assay = "mRNA"
+)
+tTEscanR_obj <- ComputeCodonUsage(
+    object = tTEscanR_obj, species = "hg38",
+    additional_metrics = FALSE, reduce = 1000
+)
+exonic_background <- ComputeExonicBackground(data = getAssay(
+    tTEscanR_obj,
+    "CodonUsage"
+))
 }

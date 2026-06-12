@@ -5,44 +5,64 @@
 \title{Examine the Codon Pool Contribution}
 \usage{
 ShowPoolContribution(
-  object,
-  codon_freq = NULL,
-  species = NULL,
-  N = 10,
-  corr_method = "spearman",
-  overwrite = FALSE,
-  verbose = TRUE
+    object,
+    codon_freq = NULL,
+    species = NULL,
+    N = 10,
+    corr_method = "spearman",
+    overwrite = FALSE,
+    verbose = TRUE
 )
 }
 \arguments{
-\item{object}{A \code{tTEscanR_Object} containing a mRNA and CodonUsage assay.}
+\item{object}{A \code{tTEscanR_Object} containing a mRNA and CodonUsage
+assay.}
 
-\item{codon_freq}{Optional; a user-provided codon frequency per gene table. If necessary, it can be computed using \code{\link{GetCodonFreq}}.}
+\item{codon_freq}{Optional; a user-provided codon frequency per gene table.
+If necessary, it can be computed using \code{\link{GetCodonFreq}}.}
 
-\item{species}{A character string specifying the species reference genome version (used if \code{codon_freq} is not provided or \code{translate} is \code{TRUE}). Supported values include \code{"hg38"} (human) and \code{"mm39"} (mouse).}
+\item{species}{A character string specifying the species reference genome
+version (used if \code{codon_freq} is not provided or \code{translate} is
+\code{TRUE}). Supported values include \code{"hg38"} (human) and
+\code{"mm39"} (mouse).}
 
-\item{N}{Numeric; number of top genes to consider in the codon pool contribution. Defaults to 10.}
+\item{N}{Numeric; number of top genes to consider in the codon pool
+contribution. Defaults to 10.}
 
-\item{corr_method}{A correlation method accepted by \code{\link{cor}}. Defaults to \code{"spearman"}.}
+\item{corr_method}{A correlation method accepted by \code{\link{cor}}.
+Defaults to \code{"spearman"}.}
 
-\item{overwrite}{Logical; if \code{TRUE}, overwrites any existing anticodon usage assay and metadata in the \code{tTEscanR_Object}. Defaults to \code{FALSE}.}
+\item{overwrite}{Logical; if \code{TRUE}, overwrites any existing anticodon
+usage assay and metadata in the \code{tTEscanR_Object}. Defaults to
+\code{FALSE}.}
 
-\item{verbose}{Logical; if \code{TRUE}, displays information messages. Defaults to \code{TRUE}.}
+\item{verbose}{Logical; if \code{TRUE}, displays information messages.
+Defaults to \code{TRUE}.}
 }
 \value{
-An updated \code{tTEscanR_Object} containing new layers of information in the \code{meta.data} slot, representing the codon pool contribution.
+An updated \code{tTEscanR_Object} containing new layers of
+information in the \code{meta.data} slot, representing the codon pool
+contribution.
 }
 \description{
-This function analyzes the contribution of the most highly expressed genes to the overall codon pool across conditions.
-It is particularly useful for evaluating codon bias in highly expressed genes and how it varies across conditions.
-If needed, gene annotations can be translated for consistency, and internal species-specific for human (\code{"hg38"}) and mouse (\code{"mm39"}) are supported.
+This function analyzes the contribution of the most highly expressed genes to
+the overall codon pool across conditions. It is particularly useful for
+evaluating codon bias in highly expressed genes and how it varies across
+conditions. If needed, gene annotations can be translated for consistency,
+and internal species-specific for human (\code{"hg38"}) and mouse
+(\code{"mm39"}) are supported.
 }
 \examples{
 data(default_tTEscanR_mRNA_data, default_tTEscanR_metadata)
-tTEscanR_obj <- Create_tTEscanR_Object(counts = list(mRNA = default_tTEscanR_mRNA_data),
-                                       meta.data = list(default_tTEscanR_metadata, "tissue"),
-                                       meta.data.ids = list("ConditionsLabels", "CorrectionFactor"))
-tTEscanR_obj <- ComputeCodonUsage(object = tTEscanR_obj, species = "hg38",
-                                  additional_metrics = FALSE)
-tTEscanR_obj <-  ShowPoolContribution(object = tTEscanR_obj, species = "hg38")
+tTEscanR_obj <- CreateObject(
+    counts = list(mRNA = default_tTEscanR_mRNA_data),
+    meta.data = list(default_tTEscanR_metadata, "tissue"),
+    meta.data.ids = list("ConditionsLabels", "CorrectionFactor")
+)
+tTEscanR_obj <- ComputeCodonUsage(
+    object = tTEscanR_obj, species = "hg38", additional_metrics = FALSE
+)
+tTEscanR_obj <- ShowPoolContribution(
+    object = tTEscanR_obj, species = "hg38"
+)
 }

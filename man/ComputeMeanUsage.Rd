@@ -5,45 +5,72 @@
 \title{Compute Usage Across Conditions (Mean Usage)}
 \usage{
 ComputeMeanUsage(
-  data,
-  assay = NULL,
-  mode = c("raw", "size-corrected", "long_format"),
-  metadata = NULL,
-  id_col = NULL,
-  batch = NULL,
-  verbose = TRUE
+    data,
+    assay = NULL,
+    metadata = NULL,
+    id_col = NULL,
+    batch = NULL,
+    mode = c("raw", "size-corrected", "long_format"),
+    verbose = TRUE
 )
 }
 \arguments{
-\item{data}{A \code{tTEscanR_Object} or expression count \code{matrix} (with codons, anticodons or amino acids as features).}
+\item{data}{A \code{tTEscanR_Object} or expression count \code{matrix}
+(with codons, anticodons or amino acids as features).}
 
-\item{assay}{Optional; a character string specifying the name of the assay to retrieve from the \code{tTEscanR_Object}.}
+\item{assay}{Optional; a character string specifying the name of the assay
+to retrieve from the \code{tTEscanR_Object}.}
 
-\item{mode}{Either \code{"raw"}, \code{"size-corrected"} or \code{"long-format"} to specify the format the input data belongs to. Defaults to \code{"raw"}.}
+\item{metadata}{Optional; a \code{data.frame} with the meta-information
+related with the conditions in \code{data}. There has to be one column with
+the same labels as the column names.}
 
-\item{metadata}{Optional; a \code{data.frame} with the meta-information related with the conditions in \code{data}. There has to be one column with the same labels as the column names.}
+\item{id_col}{Optional; a factor based on \code{metadata} columns to define
+the variable to use to link it with the \code{data}. If \code{NULL} the
+column with the highest agreement will be automatically selected.}
 
-\item{id_col}{Optional; a factor based on \code{metadata} columns to define the variable to use to link it with the \code{data}. If \code{NULL} the column with the highest agreement will be automatically selected.}
+\item{batch}{Optional; a factor based on \code{metadata} columns to define
+the variable to correct for. Required if \code{mode} is \code{"raw"} and
+\code{data} is not a \code{tTEscanR_Object}.}
 
-\item{batch}{Optional; a factor based on \code{metadata} columns to define the variable to correct for. Required if \code{mode} is \code{"raw"} and \code{data} is not a \code{tTEscanR_Object}.}
+\item{mode}{Either \code{"raw"}, \code{"size-corrected"} or
+\code{"long-format"} to specify the format that the input data belongs to.
+Defaults to \code{"raw"}.}
 
-\item{verbose}{Logical; if \code{TRUE}, displays information messages. Defaults to \code{TRUE}.}
+\item{verbose}{Logical; if \code{TRUE}, displays information messages.
+Defaults to \code{TRUE}.}
 }
 \value{
-An updated \code{tTEscanR_Object} if \code{data} is a \code{tTEscanR_Object}. A \code{data.frame} containing a new layer of information representing the mean codon usage if \code{data} is an expression count matrix.
+An updated \code{tTEscanR_Object} if \code{data} is a
+\code{tTEscanR_Object}. A \code{data.frame} containing a new layer of
+information representing the mean codon usage if \code{data} is an expression
+count matrix.
 }
 \description{
-This function computes the \strong{average usage} of codon, anticodons, or amino acids across conditions, useful for summarizing feature usage trends across sample groups.
-It supports direct input of a count matrix and extraction from a \code{tTEscanR_Object}.
-When the input \code{data} is a \code{tTEscanR_Object} the parameters \code{metadata} and \code{batch} will be extracted from the object, and ignored if specified as input parameters.
-Therefore, variables \code{assay} and \code{metadata} need to be coherent with the rules described in \code{\link{Create_tTEscanR_Object}}.
+This function computes the \strong{average usage} of codons, anticodons, or
+amino acids across conditions, useful for summarizing feature usage trends
+across sample groups. It supports direct input of a count matrix and extraction
+from a \code{tTEscanR_Object}. When the input \code{data} is a
+\code{tTEscanR_Object} the parameters \code{metadata} and \code{batch} will
+be extracted from the object, and ignored if specified as input parameters.
+Therefore, variables \code{assay} and \code{metadata} need to be coherent
+with the rules described in \code{\link{CreateObject}}.
 }
 \examples{
 data(default_tTEscanR_tRNA_data, default_tTEscanR_metadata)
-tTEscanR_obj <- Create_tTEscanR_Object(counts = default_tTEscanR_tRNA_data, assay = "tRNA",
-                                       meta.data = list(default_tTEscanR_metadata, "tissue"),
-                                       meta.data.ids = list("ConditionsLabels", "CorrectionFactor"))
+tTEscanR_obj <- CreateObject(
+    counts = default_tTEscanR_tRNA_data,
+    assay = "tRNA",
+    meta.data = list(default_tTEscanR_metadata, "tissue"),
+    meta.data.ids = list(
+        "ConditionsLabels",
+        "CorrectionFactor"
+    )
+)
 # Input: tTEscanR object containing metadata and batch parameters
 tTEscanR_obj <- ComputeAnticodonUsage(object = tTEscanR_obj)
-anticodon_mean_usage <- ComputeMeanUsage(data = tTEscanR_obj, assay = "AnticodonUsage")
+anticodon_mean_usage <- ComputeMeanUsage(
+    data = tTEscanR_obj,
+    assay = "AnticodonUsage"
+)
 }
