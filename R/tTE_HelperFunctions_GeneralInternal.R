@@ -7,7 +7,7 @@
 
 # (i) Checking functions
 
-CheckCodonFreqTable <- function(data, species, verbose = TRUE) {
+checkCodonFreqTable <- function(data, species, verbose = TRUE) {
     if (is.null(data)) { # No user-defined codon frequency table has been given
         if (is.null(species)) {
             stop(
@@ -17,18 +17,18 @@ CheckCodonFreqTable <- function(data, species, verbose = TRUE) {
         }
 
         # Extract from the tTEscanR memory the default codon frequency table
-        return(SelectDefaultData(species = species, verbose = verbose))
+        return(selectDefaultData(species = species, verbose = verbose))
     }
 
     # A user-defined codon-frequency table has been given
     # Check that the format of the table is suitable
-    CheckDataFrame(data = data, required_names = TRUE)
+    checkDataFrame(data = data, required_names = TRUE)
     actual_codons <- rownames(data)
 
     return(data) # Returns the codon frequency per gene table
 }
 
-CheckDataFrame <- function(data, required_names = TRUE) {
+checkDataFrame <- function(data, required_names = TRUE) {
     # Control - in case the data object is empty
     if (is.null(data)) stop("The dataset is empty or could not be found.")
     dims <- dim(data)
@@ -65,14 +65,14 @@ CheckDataFrame <- function(data, required_names = TRUE) {
     return(invisible(NULL))
 }
 
-CheckGeneAnnotation <- function(vector1, vector2, verbose = TRUE) {
+checkGeneAnnotation <- function(vector1, vector2, verbose = TRUE) {
     # Check in which format each vector of genes is
     if (verbose) message("- Vector 1: codon frequency per gene table.")
-    format1 <- IsEnsemblID(gene_vector = vector1, verbose = verbose)
+    format1 <- isEnsemblID(gene_vector = vector1, verbose = verbose)
     if (verbose) message("- Vector 1 was properly loaded\n")
 
     if (verbose) message("- Vector 2: mRNA gene expression data.")
-    format2 <- IsEnsemblID(gene_vector = vector2, verbose = verbose)
+    format2 <- isEnsemblID(gene_vector = vector2, verbose = verbose)
     if (verbose) message("- Vector 2 was properly loaded")
 
     if (format1 != format2) {
@@ -87,11 +87,11 @@ CheckGeneAnnotation <- function(vector1, vector2, verbose = TRUE) {
     if (verbose) message("Both vectors are in the same format: ", format1, ".")
 }
 
-CheckIntegerLength <- function(data, reduce, verbose) {
+checkIntegerLength <- function(data, reduce, verbose) {
     if (any(data > .Machine$integer.max)) { # R limit in the integer length
 
         data <- round(data / reduce)
-        CheckDataFrame(data = data)
+        checkDataFrame(data = data)
 
         if (verbose) {
             message(
@@ -106,7 +106,7 @@ CheckIntegerLength <- function(data, reduce, verbose) {
 
 # (ii) Input data control
 
-SelectDefaultData <- function(species, action = "codon_freq", verbose = TRUE) {
+selectDefaultData <- function(species, action = "codon_freq", verbose = TRUE) {
     valid_species <- c("hg38", "mm39")
     if (!(species %in% valid_species)) {
         stop(
@@ -141,7 +141,7 @@ SelectDefaultData <- function(species, action = "codon_freq", verbose = TRUE) {
     return(data) # Return the retrieved data
 }
 
-IdentifyInputFormat <- function(data, mode = c("fix", "flexible")) {
+identifyInputFormat <- function(data, mode = c("fix", "flexible")) {
     mode <- match.arg(mode) # Validate the string arguments
 
     is_table_like <- function(x) {
@@ -184,7 +184,7 @@ IdentifyInputFormat <- function(data, mode = c("fix", "flexible")) {
     }
 }
 
-FilterByMetadata <- function(data, metadata, id_col = NULL, verbose = TRUE) {
+filterByMetadata <- function(data, metadata, id_col = NULL, verbose = TRUE) {
     conditions <- colnames(data)
 
     if (is.null(id_col)) {
@@ -193,7 +193,7 @@ FilterByMetadata <- function(data, metadata, id_col = NULL, verbose = TRUE) {
         )
         matching_col <- names(which.max(matching_counts))
         if (matching_counts[matching_col] == 0) {
-            stop("No matching Sample IDs found between 'data' and 'metadata.'")
+            stop("No matching Sample IDs found between 'data' and 'metadata'.")
         }
         if (verbose) {
             message(sprintf("- Detected metadata column: '%s'", matching_col))
@@ -217,7 +217,7 @@ FilterByMetadata <- function(data, metadata, id_col = NULL, verbose = TRUE) {
     if (length(shared_unique) == 0) {
         stop(
             "No unique, non-duplicated matching IDs found between 'data' ",
-            "and 'metadata.'"
+            "and 'metadata'."
         )
     }
 
@@ -237,16 +237,17 @@ FilterByMetadata <- function(data, metadata, id_col = NULL, verbose = TRUE) {
 
 # (iii) Translation functions
 
-PerformTranslation <- function(
-    data, notation_from, notation_to, genetic_code, verbose
-) {
+performTranslation <- function(data, notation_from, notation_to,
+    genetic_code, verbose) {
     data <- gsub("U", "T", data)
 
-    col_from <- switch(
-        notation_from, "codon" = "Codon", "anticodon" = "Anticodon"
+    col_from <- switch(notation_from,
+        "codon" = "Codon",
+        "anticodon" = "Anticodon"
     )
-    col_to <- switch(
-        notation_to, "codon" = "Codon", "anticodon" = "Anticodon",
+    col_to <- switch(notation_to,
+        "codon" = "Codon",
+        "anticodon" = "Anticodon",
         "aa" = genetic_code
     )
     if (notation_to == "aa" &&
@@ -283,10 +284,8 @@ PerformTranslation <- function(
     return(translated_features)
 }
 
-RetrieveTranslation <- function(
-    format_input, position, translated_features, data_to_translate,
-    notation_to, notation_from
-) {
+retrieveTranslation <- function(format_input, position, translated_features,
+    data_to_translate, notation_to, notation_from) {
     new_values <- translated_features[[notation_to]]
     has_translation <- !is.na(new_values) # Update names with valid translation
 
@@ -307,7 +306,7 @@ RetrieveTranslation <- function(
         }
     } else { # Working with a vector
         data_to_translate <- ifelse(is.na(new_values), data_to_translate,
-                                    new_values
+            new_values
         )
     }
 
@@ -320,54 +319,50 @@ RetrieveTranslation <- function(
 #' amino acids based on the genetic code.
 #'
 #' @param data A \code{character} vector or \code{data.frame}
-#' containing gene names or features to be translated.
+#'     containing gene names or features to be translated.
 #' @param position Optional; either \code{"row"}, \code{"column"} or
-#' \code{<column_name>} to specify the location of the genes or features in
-#' \code{data}. Required if \code{data_to_transalte} is a
-#' \code{data.frame}.
+#'     \code{<column_name>} to specify the location of the genes or features in
+#'     \code{data}. Required if \code{data_to_transalte} is a
+#'     \code{data.frame}.
 #' @param genetic_code A \code{character} string to specify the genetic code to
-#' be used. Defaults to \code{"Standard"}.
+#'     be used. Defaults to \code{"Standard"}.
 #' @param notation_to Either \code{"codon"}, \code{"anticodon"} or \code{"aa"}
-#' to select the output format of the features in \code{data}.
+#'     to select the output format of the features in \code{data}.
 #' @param notation_from Either \code{"codon"} or \code{"anticodon"} to select
-#' the input format of the features in \code{data_to_translate}.
+#'     the input format of the features in \code{data_to_translate}.
 #' @param verbose Logical; if \code{TRUE}, displays information messages.
-#' Defaults to \code{TRUE}.
+#'     Defaults to \code{TRUE}.
 #'
 #' @return Translated features (codons, anticodons or amino acids) from
-#' \code{data_to_translate}.
+#'     \code{data_to_translate}.
 #' @export
 #'
 #' @examples
 #' data(default_tTEscanR_mRNA_data, default_tTEscanR_metadata)
-#' tTEscanR_obj <- CreateObject(
+#' tTEscanR_obj <- createObject(
 #'     counts = default_tTEscanR_mRNA_data,
 #'     assay = "mRNA",
 #'     meta.data = list(default_tTEscanR_metadata, "tissue"),
 #'     meta.data.ids = list("ConditionsLabels", "CorrectionFactor")
 #' )
-#' tTEscanR_obj <- ComputeCodonUsage(
+#' tTEscanR_obj <- computeCodonUsage(
 #'     object = tTEscanR_obj, codon_freq = NULL,
 #'     species = "hg38", additional_metrics = FALSE
 #' )
 #' codons <- rownames(getAssay(tTEscanR_obj, "CodonUsage"))
-#' codons_to_AA <- FeaturesToAA(
+#' codons_to_AA <- featuresToAA(
 #'     data = codons, notation_from = "codon", notation_to = "aa"
 #' )
-#' codons_to_anticodons <- FeaturesToAA(
+#' codons_to_anticodons <- featuresToAA(
 #'     data = codons,
 #'     notation_from = "codon", notation_to = "anticodon"
 #' )
-FeaturesToAA <- function(
-    data, position = NULL, genetic_code = "Standard", verbose = TRUE,
-    notation_from = c("codon", "anticodon"),
-    notation_to = c("aa", "anticodon", "codon")
-) {
+featuresToAA <- function(data, position = NULL, genetic_code = "Standard",
+    verbose = TRUE, notation_from = c("codon", "anticodon"),
+    notation_to = c("aa", "anticodon", "codon")) {
     if (verbose) {
-        message(
-            "--- Translating the input features ---",
-            "\n1 . Checking the format of the input data."
-        )
+        message("--- Translating the input features ---")
+        message("1 . Checking the format of the input data.")
     }
     notation_from <- match.arg(notation_from)
     notation_to <- match.arg(notation_to)
@@ -386,38 +381,37 @@ FeaturesToAA <- function(
                 "Supported formats: 'row', 'column', or a valid column name."
             )
         }
-        features <- switch(position, "row" = rownames(data),
-            "column" = colnames(data), data[[position]]
+        features <- switch(position,
+            "row" = rownames(data),
+            "column" = colnames(data),
+            data[[position]]
         )
-    } else features <- data
+    } else {
+        features <- data
+    }
     if (verbose) message("2 . COMPLETED\n", "3 . Translating the features.")
-    translated_features <- PerformTranslation(
+    translated_features <- performTranslation(
         data = features, notation_from = notation_from, verbose = verbose,
         notation_to = notation_to, genetic_code = genetic_code
     )
-    data <- RetrieveTranslation(
+    data <- retrieveTranslation(
         format_input = is_table, position = position, notation_to = notation_to,
         data_to_translate = data, notation_from = notation_from,
         translated_features = translated_features
     )
     if (verbose) {
-        message(
-            "3 . COMPLETED\n",
-            "--- The features have been successfully translated ---"
-        )
+        message("3 . COMPLETED")
+        message("--- The features have been successfully translated ---")
     }
     return(data)
 }
 
-IsEnsemblID <- function(gene_vector, verbose) {
-    # Checking input parameters
-    # if (!is.character(gene_vector) || !is.vector(gene_vector)) {
-    #     stop("Input 'gene_vector' must be a character vector.")
-    #}
+isEnsemblID <- function(gene_vector, verbose) {
 
     matches <- grepl(
         "^ENS[A-Z]*[GPT][0-9]+(\\.[0-9]+)?$",
-        gene_vector, perl = TRUE
+        gene_vector,
+        perl = TRUE
     )
 
     # Evaluates if the Ensembl format contains the gene version

@@ -4,7 +4,7 @@
 \alias{tRNASetGenes}
 \title{Annotate the tRNA genes from tRNA tags}
 \usage{
-tRNASetGenes(data, tRNA_bed, flanking_region = 100)
+tRNASetGenes(data, tRNA_bed, flanking_region = 100, name_sep = c("-", "-"))
 }
 \arguments{
 \item{data}{A \code{matrix} with tRNA tags as rows.}
@@ -13,6 +13,9 @@ tRNASetGenes(data, tRNA_bed, flanking_region = 100)
 
 \item{flanking_region}{Numeric; number of bases to include expand the region
 interrogated. Defaults to 100.}
+
+\item{name_sep}{A string delimiter to format the tRNA gene names in the
+output matrix. Defaults to \code{c("-", "-")}.}
 }
 \value{
 A \code{data} with the translated tRNA gene names.

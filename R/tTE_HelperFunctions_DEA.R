@@ -1,8 +1,7 @@
-ComputeSizeCorrection <- function(
-    data, metadata, batch = NULL, reduce = 100, verbose = TRUE
-) {
-    CheckDataFrame(data = data) # Evaluate the input parameter: 'data'
-    CheckDataFrame(data = metadata) # Evaluate parameters: 'metadata' & 'batch'
+computeSizeCorrection <- function(data, metadata, batch = NULL, reduce = 100,
+    verbose = TRUE) {
+    checkDataFrame(data = data) # Evaluate the input parameter: 'data'
+    checkDataFrame(data = metadata) # Evaluate parameters: 'metadata' & 'batch'
 
     if (!(batch %in% colnames(metadata))) {
         stop("The correction factor ('batch') was not found in the 'metadata'.")
@@ -18,10 +17,10 @@ ComputeSizeCorrection <- function(
     }
 
     # Check consistency in conditions included in the data and metadata
-    filtered <- FilterByMetadata(
+    filtered <- filterByMetadata(
         data = data, metadata = metadata, verbose = verbose
     )
-    DESeq2_run <- ComputeDESeq2(
+    DESeq2_run <- computeDESeq2(
         data = filtered$data, metadata = filtered$metadata,
         batch = batch, reduce = reduce, verbose = verbose
     )
@@ -32,14 +31,13 @@ ComputeSizeCorrection <- function(
         DESeq2_run,
         normalized = TRUE
     )
-    CheckDataFrame(data = size_corrected_output_matrix)
+    checkDataFrame(data = size_corrected_output_matrix)
 
     return(size_corrected_output_matrix) # Return the size-corrected matrix
 }
 
-ComputeAllPairwiseComp <- function(
-    dds, factor_name, padj_threshold = 0.05, verbose
-) {
+computeAllPairwiseComp <- function(dds, factor_name, padj_threshold = 0.05,
+    verbose) {
     if (!factor_name %in% colnames(SummarizedExperiment::colData(dds))) {
         stop("Factor '", factor_name, "' not found in colData.")
     }
@@ -67,7 +65,8 @@ ComputeAllPairwiseComp <- function(
         contrast_name <- paste0(level1, "_vs_", level2)
 
         if (verbose) message("Extracting contrasts: ", contrast_name)
-        res <- DESeq2::results(dds,
+        res <- DESeq2::results(
+            dds,
             contrast = c(factor_name, level1, level2),
             alpha = padj_threshold
         )
@@ -76,7 +75,7 @@ ComputeAllPairwiseComp <- function(
     return(results_list)
 }
 
-GetDesignFormula <- function(batch, condition, verbose) {
+getDesignFormula <- function(batch, condition, verbose) {
     # Dynamic definition of the design formula
     if (!is.null(batch) && !is.null(condition)) {
         if (batch == condition) {
@@ -118,12 +117,10 @@ GetDesignFormula <- function(batch, condition, verbose) {
     return(design_formula)
 }
 
-ComputeDESeq2 <- function(
-    data, metadata, condition = NULL, batch = NULL, reference = NULL, reduce,
-    verbose = TRUE
-) {
+computeDESeq2 <- function(data, metadata, condition = NULL, batch = NULL,
+    reference = NULL, reduce, verbose = TRUE) {
     data <- as.matrix(data)
-    data <- CheckIntegerLength(data = data, reduce = reduce, verbose = verbose)
+    data <- checkIntegerLength(data = data, reduce = reduce, verbose = verbose)
     storage.mode(data) <- "integer" # Force data as integer
     valid <- (Matrix::colSums(data)) > 0 # Remove empty samples
     if (sum(!valid) > 0) { # Prevent DESeq2 crash
@@ -141,7 +138,7 @@ ComputeDESeq2 <- function(
         )
     }
     if (!is.null(condition)) {
-        col <- SetConditionParam(
+        col <- setConditionParam(
             cond = condition, col = col, ref = reference, verbose = verbose
         )
     }
@@ -151,7 +148,7 @@ ComputeDESeq2 <- function(
         }
         col[[batch]] <- factor(col[[batch]])
     }
-    design_formula <- GetDesignFormula(
+    design_formula <- getDesignFormula(
         batch = batch, condition = condition, verbose = verbose
     )
     dds <- DESeq2::DESeqDataSetFromMatrix(
@@ -162,7 +159,7 @@ ComputeDESeq2 <- function(
     return(dds)
 }
 
-SetConditionParam <- function(cond, col, ref, verbose) {
+setConditionParam <- function(cond, col, ref, verbose) {
     if (!cond %in% colnames(col)) {
         stop(
             "The condition factor '", cond, "' was not found in 'metadata'."
@@ -187,7 +184,7 @@ SetConditionParam <- function(cond, col, ref, verbose) {
     return(col)
 }
 
-TargetedApproach <- function(DESeq2, verbose = TRUE, fc, padj, sig, condition) {
+targetedApproach <- function(DESeq2, verbose = TRUE, fc, padj, sig, condition) {
     if (verbose) {
         message("- Executing a targeted analysis based on '", condition, "'.")
     }
@@ -217,12 +214,14 @@ TargetedApproach <- function(DESeq2, verbose = TRUE, fc, padj, sig, condition) {
             p_value = res_df$pvalue,
             neg_log10_adjusted_p_value = -log10(res_df$padj)
         ) %>%
-            dplyr::filter(!is.na(.data$log2_FC) &
-                !is.na(.data$neg_log10_adjusted_p_value))
+            dplyr::filter(
+                !is.na(.data$log2_FC) &
+                    !is.na(.data$neg_log10_adjusted_p_value)
+            )
 
         results.list[[paste0("results_", contrast_name)]] <- target_results
         if (verbose) message("- Generating volcano plot.")
-        volcano_plot <- GenerateVolcanoPlot(
+        volcano_plot <- generateVolcanoPlot(
             data = target_results, fc_threshold = fc,
             padj_threshold = padj, label_significant = sig
         ) +
@@ -232,19 +231,17 @@ TargetedApproach <- function(DESeq2, verbose = TRUE, fc, padj, sig, condition) {
     return(results.list)
 }
 
-MakeScatterPlot <- function(
-    df, x_col, y_col, color_factor, shape_factor = NULL, label_factor = NULL,
-    title = NULL, median_size = 6, color_palette = NULL, show_legend = "none",
-    highlight_median = FALSE, point_alpha = 0.5, x_axis = NULL, y_axis = NULL
-) {
+makeScatterPlot <- function(df, x_col, y_col, color_factor, shape_factor = NULL,
+    label_factor = NULL, median_size = 6, highlight_median = FALSE,
+    color_palette = NULL, show_legend = "none", point_alpha = 0.5, title = NULL,
+    x_axis = NULL, y_axis = NULL) {
     p <- ggplot2::ggplot(df, ggplot2::aes(
         x = .data[[x_col]], y = .data[[y_col]]
     ))
     if (!is.null(shape_factor)) {
-        p <- p + ggplot2::geom_point( ggplot2::aes(
-                color = .data[[color_factor]], shape = .data[[shape_factor]]
-            ), alpha = if (highlight_median) point_alpha else 1, size = 3
-        )
+        p <- p + ggplot2::geom_point(ggplot2::aes(
+            color = .data[[color_factor]], shape = .data[[shape_factor]]
+        ), alpha = if (highlight_median) point_alpha else 1, size = 3)
     } else {
         p <- p + ggplot2::geom_point(
             ggplot2::aes(color = .data[[color_factor]]),
@@ -252,37 +249,39 @@ MakeScatterPlot <- function(
         )
     }
     if (highlight_median) { # Median points and labels
-        p <- HighlightMedian(
+        p <- highlightMedian(
             df = df, color = color_factor, median = median_size,
             x_col = x_col, y_col = y_col, p = p
         )
     }
     if (!is.null(label_factor)) {
         p <- p + ggrepel::geom_text_repel(ggplot2::aes(
-            label = .data[[label_factor]]), size = 2.8, show.legend = FALSE)
+            label = .data[[label_factor]]
+        ), size = 2.8, show.legend = FALSE)
     }
     if (!is.null(color_palette)) {
         p <- p + ggplot2::scale_color_manual(values = color_palette)
-    } else {
-        p <- p + ggplot2::scale_color_viridis_d(option = "viridis")
-    }
+    } else p <- p + ggplot2::scale_color_viridis_d(option = "viridis")
     p <- p + ggplot2::guides(
         color = ggplot2::guide_legend(), shape = ggplot2::guide_legend()
     ) + ggplot2::theme_bw()
     p <- p + ggplot2::labs(
         title = title, color = color_factor, shape = shape_factor,
-        x = if (!is.null(x_axis)) sprintf("%s (%.1f%%)", x_col, x_axis) else {
+        x = if (!is.null(x_axis)) {
+            sprintf("%s (%.1f%%)", x_col, x_axis)
+        } else {
             x_col
         },
-        y = if (!is.null(y_axis)) sprintf("%s (%.1f%%)", y_col, y_axis) else {
+        y = if (!is.null(y_axis)) {
+            sprintf("%s (%.1f%%)", y_col, y_axis)
+        } else {
             y_col
         }
     )
-    p <- p + ggplot2::theme(legend.position = show_legend)
-    return(p)
+    return(p + ggplot2::theme(legend.position = show_legend))
 }
 
-HighlightMedian <- function(df, color, x_col, y_col, p, median) {
+highlightMedian <- function(df, color, x_col, y_col, p, median) {
     medians <- df %>%
         dplyr::group_by(.data[[color]]) %>%
         dplyr::summarise(
@@ -312,11 +311,9 @@ HighlightMedian <- function(df, color, x_col, y_col, p, median) {
     return(p)
 }
 
-RunDimReduct <- function(
-    vst, metadata, condition = NULL, show_legend, numPC, color = condition,
-    shape = NULL, label = NULL, dim_reduct, median, palette = NULL,
-    scale = FALSE, verbose
-) {
+runDimReduct <- function(vst, metadata, condition = NULL, show_legend, numPC,
+    color = condition, shape = NULL, label = NULL, dim_reduct, median,
+    palette = NULL, scale = FALSE, verbose) {
     plots <- list()
     M <- t(vst) # Transpose vst to samples x features
     var <- NULL
@@ -331,10 +328,12 @@ RunDimReduct <- function(
         coords <- pca$x[, seq_len(min(numPC, ncol(pca$x))), drop = FALSE]
         colnames(coords) <- paste0("PC", seq_len(ncol(coords)))
         var <- 100 * (pca$sdev^2 / sum(pca$sdev^2))
-        plots[["ElbowPlot"]] <- ProduceElbowPlot(data = pca, variance = var)
+        plots[["ElbowPlot"]] <- produceElbowPlot(data = pca, variance = var)
     } else if (dim_reduct == "UMAP") {
         coords <- tryCatch(
-            { uwot::umap(M) },
+            {
+                uwot::umap(M)
+            },
             error = function(e) {
                 warning("UMAP failed: ", e$message, "\nUsing PCA instead.")
                 pca <- stats::prcomp(M, scale. = TRUE, center = TRUE)$x
@@ -355,16 +354,15 @@ RunDimReduct <- function(
         label_factor = label, color_palette = palette,
         highlight_median = median, show_legend = show_legend
     )
-    plots <- GenerateReductPlot(
+    plots <- generateReductPlot(
         plots = plots, dim_reduct = dim_reduct, coords = coords, numPC = numPC,
         common_args = common_args, var = var
     )
     return(plots)
 }
 
-GenerateReductPlot <- function(
-    plots, dim_reduct, coords, numPC, common_args, var
-) {
+generateReductPlot <- function(plots, dim_reduct, coords, numPC,
+    common_args, var) {
     if (dim_reduct == "PCA") {
         pc_names <- colnames(coords)[seq_len(numPC)]
         pc_pairs <- utils::combn(pc_names, 2, simplify = FALSE)
@@ -379,24 +377,22 @@ GenerateReductPlot <- function(
                 y_axis = var[which(pc_names == y_pc)]
             ))
             plots[[paste0(x_pc, "_vs_", y_pc)]] <- do.call(
-                MakeScatterPlot, pca_args
+                makeScatterPlot, pca_args
             )
         }
-
     } else {
         other_args <- c(common_args, list(
             x_col = colnames(coords)[1], y_col = colnames(coords)[2],
             title = dim_reduct
         ))
-        plots[[dim_reduct]] <- do.call(MakeScatterPlot, other_args)
+        plots[[dim_reduct]] <- do.call(makeScatterPlot, other_args)
     }
 
     return(plots)
 }
 
-GenerateVolcanoPlot <- function(
-    data, fc_threshold, padj_threshold, label_significant
-) {
+generateVolcanoPlot <- function(data, fc_threshold, padj_threshold,
+    label_significant) {
     # Extract the statistical significant data
     sig_data <- data %>% dplyr::filter(
         abs(.data$log2_FC) > fc_threshold,
@@ -444,16 +440,15 @@ GenerateVolcanoPlot <- function(
     return(volcano_plot)
 }
 
-HeatmapFontSize <- function(
-    data, base_size = 10, shrink_factor = 1.5, min_size = 2
-) {
+heatmapFontSize <- function(data, base_size = 10, shrink_factor = 1.5,
+    min_size = 2) {
     fontsize_row <- max(min_size, base_size - shrink_factor * log10(nrow(data)))
     fontsize_col <- max(min_size, base_size - shrink_factor * log10(ncol(data)))
 
     return(list(fontsize_row = fontsize_row, fontsize_col = fontsize_col))
 }
 
-ProduceHeatmapDiffExp <- function(data) {
+produceHeatmapDiffExp <- function(data) {
     Euc_Dists <- stats::dist(t(data)) # Compute Euclidean distances
     dist_matrix <- as.matrix(Euc_Dists)
 
@@ -461,7 +456,7 @@ ProduceHeatmapDiffExp <- function(data) {
     dend <- dendsort::dendsort(stats::as.dendrogram(stats::hclust(Euc_Dists)))
 
     # Control the size of the labels in the heatmap
-    font_size <- HeatmapFontSize(data = dist_matrix)
+    font_size <- heatmapFontSize(data = dist_matrix)
 
     # Produce heatmap that has been hierarchically clustered
     heatmap_grop <- grid::grid.grabExpr({
@@ -479,7 +474,7 @@ ProduceHeatmapDiffExp <- function(data) {
     return(heatmap_grop)
 }
 
-ProduceElbowPlot <- function(data, variance) {
+produceElbowPlot <- function(data, variance) {
     # To keep the output cleaner the number of PCs will be limited to 50
     numPC <- min(length(variance), 50)
     # Generates table with each PC and their variance

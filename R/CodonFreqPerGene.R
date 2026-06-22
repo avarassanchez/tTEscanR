@@ -8,38 +8,36 @@
 #' are given.
 #'
 #' @param dataset_name A character string specifying the Ensembl species
-#' dataset name (e.g. \code{"hsapiens_gene_ensembl"}).
+#'     dataset name (e.g. \code{"hsapiens_gene_ensembl"}).
 #' @param genes_file Optional; a path to a FASTA file.
 #' @param transcripts Optional; a character vector of transcripts or gene IDs
-#' to subset the analysis.
+#'     to subset the analysis.
 #' @param filter Either \code{"canonical"} or \code{"length"}
-#' (longest transcript) to specify which transcript to choose if several are
-#' available for the same gene.
+#'     (longest transcript) to specify which transcript to choose if several
+#'     are available for the same gene.
 #' @param retain_mitochondrial Logical; if \code{FALSE} filters out the
-#' mitochondrial genes. Defaults to \code{FALSE}.
+#'     mitochondrial genes. Defaults to \code{FALSE}.
 #' @param retain_unannotated Logical; if \code{FALSE} filters out the gene
-#' names that do not have an \code{"external_gene_name"} identifier. Defaults
-#' to \code{FALSE}.
+#'     names that do not have an \code{"external_gene_name"} identifier.
+#'     Defaults to \code{FALSE}.
 #' @param retain_geneversion Logical; if \code{FALSE} retains the gene versions
-#' from the \code{"ensembl_gene_id"} identifier. Defaults to \code{TRUE}.
+#'     from the \code{"ensembl_gene_id"} identifier. Defaults to \code{TRUE}.
 #' @param out_format Either \code{"external_gene_name"},
-#' \code{"ensembl_gene_id"} or \code{"ensembl_transcript_id"} to specify
-#' annotation to use in the output codon frequency-per-gene table.
+#'     \code{"ensembl_gene_id"} or \code{"ensembl_transcript_id"} to specify
+#'     annotation to use in the output codon frequency-per-gene table.
 #' @param verbose Logical; if \code{TRUE}, displays information messages.
-#' Defaults to \code{TRUE}.
+#'     Defaults to \code{TRUE}.
 #'
 #' @return Codon frequency-per-gene table and a translator gene annotation
-#' table (if available).
+#'     table (if available).
 #' @export
 #'
-GetCodonFreq <- function(
-    dataset_name = NULL, genes_file = NULL, verbose = TRUE, transcripts = NULL,
-    retain_mitochondrial = FALSE, filter = c("canonical", "length"),
-    retain_unannotated = FALSE, retain_geneversion = TRUE, out_format = c(
-        "external_gene_name", "ensembl_transcript_id", "ensembl_gene_id"
-    )
-) {
-    extract_data <- GetTranscripts(
+getCodonFreq <- function(dataset_name = NULL, genes_file = NULL, verbose = TRUE,
+    transcripts = NULL, retain_mitochondrial = FALSE,
+    filter = c("canonical", "length"), retain_unannotated = FALSE,
+    retain_geneversion = TRUE, out_format = c(
+        "external_gene_name", "ensembl_transcript_id", "ensembl_gene_id")) {
+    extract_data <- getTranscripts(
         dataset_name = dataset_name, transcripts = transcripts, filter = filter,
         out_format = out_format, verbose = verbose, genes_file = genes_file,
         retain_version = retain_geneversion, retain_mt = retain_mitochondrial
@@ -50,12 +48,13 @@ GetCodonFreq <- function(
     if (verbose) {
         message(as.character(count), ". Analyzing the codon composition.")
     }
-    codon_freq <- ExtractCodons(sequences = extract_data$transcript_sequences)
-    CheckDataFrame(data = codon_freq, required_names = TRUE)
+    codon_freq <- extractCodons(sequences = extract_data$transcript_sequences)
+    checkDataFrame(data = codon_freq, required_names = TRUE)
     if (verbose) message("- Protein-coding transcripts: ", ncol(codon_freq))
     if (out_format != "ensembl_transcript_id") {
         if (verbose) message("- Changing transcript ids format to ", out_format)
-        tr <- stats::setNames(translate[[out_format]],
+        tr <- stats::setNames(
+            translate[[out_format]],
             nm = translate[["ensembl_transcript_id"]]
         )
         colnames(codon_freq) <- dplyr::recode(colnames(codon_freq), !!!tr)
@@ -75,19 +74,18 @@ GetCodonFreq <- function(
             which(translate$external_gene_name %in% colnames(codon_freq)),
         ]
     }
-    CheckDataFrame(data = codon_freq, required_names = TRUE)
+    checkDataFrame(data = codon_freq, required_names = TRUE)
     if (verbose) message(as.character(count), ". COMPLETED")
     return(list(
         codon_freq_per_gene_matrix = codon_freq, translator_table = translate
     ))
 }
 
-GetTranscripts <- function(
-    dataset_name, transcripts, filter = c("canonical", "length"),
-    retain_mt, verbose, retain_version, genes_file, out_format = c(
+getTranscripts <- function(dataset_name, transcripts, retain_mt,
+    filter = c("canonical", "length"), verbose, retain_version, genes_file,
+    out_format = c(
         "external_gene_name", "ensembl_transcript_id", "ensembl_gene_id"
-    )
-) {
+    )) {
     if (verbose) message("1 . Checking the format of the input data.")
     if ((!is.null(dataset_name) && !is.null(genes_file)) ||
         (is.null(dataset_name) && is.null(genes_file))) {
@@ -100,7 +98,7 @@ GetTranscripts <- function(
     if (!is.null(dataset_name)) { # Obtain sequence of the genes/transcripts
         if (is.null(transcripts)) filter <- match.arg(filter)
         if (verbose) message("1 . COMPLETED")
-        ensembl_results <- CallingEnsembl(
+        ensembl_results <- callingEnsembl(
             dataset_name = dataset_name, transcripts = transcripts,
             filter = filter, retain_mitochondrial = retain_mt,
             verbose = verbose, retain_geneversion = retain_version
@@ -115,9 +113,9 @@ GetTranscripts <- function(
         }
         count <- 4
     } else { # The input is a FASTA file with the transcript sequences
-        CheckFASTAFormat(genes_file) # Assessing the format of the input file
+        checkFASTAFormat(genes_file) # Assessing the format of the input file
         genes_data <- Biostrings::readDNAStringSet(genes_file) # Get FASTA seqs
-        FASTA_transformation <- FromFASTAtoTable(
+        FASTA_transformation <- fromFASTAtoTable(
             data = genes_data, transcripts = transcripts,
             retain_mitochondrial = retain_mt, verbose = verbose
         )
@@ -138,26 +136,27 @@ GetTranscripts <- function(
 #' count of each codon present.
 #'
 #' @param sequences A \code{list} of nucleotide sequences (character strings)
-#' from which to extract the codon composition.
+#'     from which to extract the codon composition.
 #' @param verbose Logical; if \code{TRUE}, displays information messages.
-#' Defaults to \code{TRUE}.
+#'     Defaults to \code{TRUE}.
 #'
 #' @return Codon frequency per gene table of the \code{sequences}.
 #' @export
 #'
 #' @examples
-#' codon_composition <- ExtractCodons(sequences = list(
+#' codon_composition <- extractCodons(sequences = list(
 #'     "ATGCGTACG",
 #'     "TTAAGGCCG"
 #' ))
-ExtractCodons <- function(sequences, verbose = TRUE) {
+extractCodons <- function(sequences, verbose = TRUE) {
     if (verbose) message("- Extracting the nucleotide sequences:")
     bases <- c("A", "C", "G", "T")
     all_64_codons <- apply(
-        expand.grid(bases, bases, bases), 1, paste, collapse = ""
+        expand.grid(bases, bases, bases), 1, paste,
+        collapse = ""
     )
 
-    extract_values <- HelperExtractCodons(
+    extract_values <- helperExtractCodons(
         sequences = sequences, all_64_codons = all_64_codons
     )
     counts_list <- extract_values$counts_list
@@ -178,7 +177,7 @@ ExtractCodons <- function(sequences, verbose = TRUE) {
     return(codon_freq_per_gene_matrix)
 }
 
-HelperExtractCodons <- function(sequences, all_64_codons) {
+helperExtractCodons <- function(sequences, all_64_codons) {
     is_tabular <- is.data.frame(sequences) || is.matrix(sequences)
     n <- if (is_tabular) nrow(sequences) else length(sequences)
     transcript_names <- character(n)

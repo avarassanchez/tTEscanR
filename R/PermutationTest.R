@@ -8,38 +8,36 @@
 #' Defaults to 100. If \code{target_data} is given this parameter will take its
 #' length.
 #' @param target_data Optional; a mRNA expression count matrix with features as
-#' rows and conditions as columns.
+#'      rows and conditions as columns.
 #' @param codon_freq Optional; a user-provided codon frequency per gene table.
-#' If necessary, it can be computed using \code{\link{GetCodonFreq}}.
+#'      If necessary, it can be computed using \code{\link{getCodonFreq}}.
 #' @param species Optional, a \code{character} string specifying the species
-#' reference genome version (used if \code{codon_freq} is not provided or
-#' \code{translate} is \code{TRUE}). Supported values include \code{"hg38"}
-#' (human) and \code{"mm39"} (mouse).
+#'      reference genome version (used if \code{codon_freq} is not provided or
+#'      \code{translate} is \code{TRUE}). Supported values include \code{"hg38"}
+#'      (human) and \code{"mm39"} (mouse).
 #' @param verbose Logical; if \code{TRUE}, displays information messages.
-#' Defaults to \code{TRUE}.
+#'      Defaults to \code{TRUE}.
 #'
 #' @return A table with the codons and their frequencies after computing all
-#' the permutations.
+#'      the permutations.
 #' @export
 #'
 #' @examples
 #' data(default_tTEscanR_mRNA_data)
 #' genes <- default_tTEscanR_mRNA_data[1:20, ]
-#' permut <- GetPermutationDist(
+#' permut <- getPermutationDist(
 #'     n_permut = 100, target_data = genes,
 #'     species = "hg38"
 #' )
-GetPermutationDist <- function(
-    n_permut = 1000, n_features = 100, target_data = NULL, codon_freq = NULL,
-    species = NULL, verbose = TRUE
-) {
+getPermutationDist <- function(n_permut = 1000, n_features = 100,
+    target_data = NULL, codon_freq = NULL, species = NULL, verbose = TRUE) {
     if (n_permut < 2) stop("The parameter 'n_permut' must be at least 2.")
     message(
         "--- Computing the permutation analysis ---",
         "\n1 . Loading the codon frequency per gene table."
     )
     if (!is.null(target_data)) { # TARGETED APPROACH
-        codon_freq <- ConsistencyWithCodonFreq(
+        codon_freq <- consistencyWithCodonFreq(
             data = target_data, codon_freq = codon_freq, species = species,
             verbose = verbose
         )
@@ -54,7 +52,7 @@ GetPermutationDist <- function(
         n_features <- sum(is_target) # Isolate background, remove targets
         codon_freq <- codon_freq[, !is_target, drop = FALSE]
     } else { # CONTROL APPROACH - ONLY TAKES THE codon_freq
-        codon_freq <- CheckCodonFreqTable(
+        codon_freq <- checkCodonFreqTable(
             data = codon_freq, species = species, verbose = verbose
         )
     }
@@ -83,40 +81,41 @@ GetPermutationDist <- function(
 #' Assess Significance (P-value) & Corrects for Multiple Hypothesis Testing
 #'
 #' @param dist A table with the codons and their frequencies after completing a
-#' permutation test. Output from \code{\link{GetPermutationDist}}.
+#'      permutation test. Output from \code{\link{getPermutationDist}}.
 #' @param value A \code{list} of \code{data.frame} of the codon exonic
-#' background of a mRNA gene expression matrix. The codon exonic background can
-#' be computed in \code{\link{ComputeCodonUsage}} using the additional_metrics
-#' parameter or directly running \code{\link{ComputeExonicBackground}}.
+#'      background of a mRNA gene expression matrix. The codon exonic
+#'      background can be computed in \code{\link{computeCodonUsage}} using the
+#'      additional_metrics parameter or directly running
+#'      \code{\link{computeExonicBackground}}.
 #' @param padj_threshold Numeric; p-value threshold used for highlighting
-#' significant features in the volcano plot. Defaults to 0.05.
+#'      significant features in the volcano plot. Defaults to 0.05.
 #' @param verbose Logical; if \code{TRUE}, displays information messages.
-#' Defaults to \code{TRUE}.
+#'      Defaults to \code{TRUE}.
 #'
 #' @return A table with the codon exonic background and their significance
-#' level before (p-value) and after the correction (p-adjusted value).
+#'      level before (p-value) and after the correction (p-adjusted value).
 #' @export
 #'
 #' @examples
 #' data(default_tTEscanR_mRNA_data, default_tTEscanR_metadata)
 #' selected_genes <- default_tTEscanR_mRNA_data[1:20, ]
-#' permutation_test <- GetPermutationDist(
+#' permutation_test <- getPermutationDist(
 #'     n_permut = 100, target_data = selected_genes, species = "hg38"
 #' )
-#' tTEscanR_obj <- CreateObject(
+#' tTEscanR_obj <- createObject(
 #'     counts = default_tTEscanR_mRNA_data,
 #'     assay = "mRNA",
 #'     meta.data = list(default_tTEscanR_metadata, "tissue"),
 #'     meta.data.ids = list("ConditionsLabels", "CorrectionFactor")
 #' )
-#' tTEscanR_obj <- ComputeCodonUsage(
+#' tTEscanR_obj <- computeCodonUsage(
 #'     object = tTEscanR_obj, species = "hg38",
 #'     additional_metrics = FALSE, reduce = 1000
 #' )
 #'
 #' codon_usage <- getAssay(tTEscanR_obj, "CodonUsage")
 #' codon_background <- rowSums(codon_usage) / sum(rowSums(codon_usage))
-#' codons_to_AA <- FeaturesToAA(
+#' codons_to_AA <- featuresToAA(
 #'     data = names(codon_background),
 #'     notation_from = "codon", notation_to = "aa"
 #' )
@@ -124,15 +123,14 @@ GetPermutationDist <- function(
 #'     group = codons_to_AA, codon = names(codon_background),
 #'     freq = as.numeric(codon_background), row.names = NULL
 #' )
-#' significance <- ObtainSignificance(
+#' significance <- obtainSignificance(
 #'     dist = permutation_test, value = codon_background
 #' )
-ObtainSignificance <- function(
-    dist, value, padj_threshold = 0.05, verbose = TRUE
-) {
+obtainSignificance <- function(dist, value, padj_threshold = 0.05,
+    verbose = TRUE) {
     if (verbose) {
         message("--- Computing the statistical significance ---")
-        message("\n1 . Checking the input data.")
+        message("1 . Checking the input data.")
     }
     value <- as.data.frame(value)
     dist <- as.data.frame(dist)
@@ -154,7 +152,9 @@ ObtainSignificance <- function(
         current_codon <- value$codon[i]
         obs_freq <- as.numeric(value$freq[i])
         d_freq <- dist_list[[current_codon]]
-        if (is.null(d_freq)) return(data.frame(p_val = NA, tail = NA))
+        if (is.null(d_freq)) {
+            return(data.frame(p_val = NA, tail = NA))
+        }
         if (obs_freq < dist_medians[current_codon]) { # Get tail based on median
             p <- mean(d_freq <= obs_freq)
             t <- "left"
@@ -170,10 +170,8 @@ ObtainSignificance <- function(
     res_value$p_val_adj <- round(res_value$p_val_adj, 4)
     res_value$sig_adj <- res_value$p_val_adj < padj_threshold
     if (verbose) {
-        message(
-            "3 . COMPLETED\n", "--- The statistical significnace has been ",
-            "successfully computed ---"
-        )
+        message("3 . COMPLETED")
+        message("--- The significnace has been successfully computed ---")
     }
     return(res_value)
 }

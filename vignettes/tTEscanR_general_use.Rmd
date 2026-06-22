@@ -2,15 +2,13 @@
 title: "<img src='tTEscanR_logo.png' style='height:60px; 
 vertical-align:middle;'> tTEscanR User Guide"
 output: 
-  rmarkdown::html_vignette:
-    toc: true
-  rmarkdown::html_document:
+  BiocStyle::html_document:
     toc: true
     toc_float: true
     theme: default
     css: style.css
 vignette: >
-  %\VignetteIndexEntry{tTEscanR}
+  %\VignetteIndexEntry{1. Introduction to tTEscanR}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 bibliography: references.bib
@@ -56,8 +54,11 @@ In this document, we present a case example to demonstrate the potential of
 
 ```{r setup, message = FALSE, warning = FALSE}
 # install.packages("/avarassanchez/tTEscanR")
-devtools::load_all()
 library(tTEscanR)
+```
+
+```{r other_libraries, message = FALSE, warning = FALSE}
+library(dplyr)
 ```
 
 # Workflow
@@ -134,34 +135,34 @@ been assigned and should be respected by the user (see the documentation for
 more details).
 :::
 
-The **`CreateObject()`** function initializes a new **tTEscanR** 
+The **`createObject()`** function initializes a new **tTEscanR** 
 object to store and organize analysis data. The input can be either a 
 **single matrix** or a **list of matrices** (to support multiple datasets), and 
 may optionally include **metadata**. For proper functionality, all input 
 matrices must be appropriately named. To modify, extend, or update an existing 
 **tTEscanR** object with new data or metadata, use 
-**`UpdateObject()`**. 
+**`updateObject()`**. 
 
 ```{r metadata_definition, message = FALSE, warning = FALSE}
 data(default_tTEscanR_metadata)
 ```
 
-```{r CreateObject, message = FALSE, warning = FALSE}
+```{r createObject, message = FALSE, warning = FALSE}
 # Adding the mRNA and tRNA datasest to the object
-tTEobject <- CreateObject(
+tTEobject <- createObject(
     counts = list(default_tTEscanR_mRNA_data, filtered_tRNA_data),
     assay = list("mRNA", "tRNA"),
     meta.data = default_tTEscanR_metadata, meta.data.ids = "ConditionsLabels"
 )
 ```
 
-```{r UpdateObject, message = FALSE, warning = FALSE}
+```{r updateObject, message = FALSE, warning = FALSE}
 # Updating the object created before some metadata for reference
 matching_celltypes <- intersect(
     colnames(default_tTEscanR_mRNA_data), colnames(filtered_tRNA_data)
 )
 
-tTEobject <- UpdateObject(
+tTEobject <- updateObject(
     object = tTEobject, meta.data = matching_celltypes,
     meta.data.ids = "matching_celltypes", overwrite = TRUE
 )
@@ -182,7 +183,7 @@ efficiency.
 
 Codon usage is computed by performing a **matrix multiplication** between the 
 mRNA expression data and a **codon frequency-per-gene reference matrix**. This 
-reference matrix can be generated using **`ObtainCodonComposition()`** or 
+reference matrix can be generated using **`obtainCodonComposition()`** or 
 alternatively,  a **user-defined** codon frequency matrix can be supplied 
 directly, providing flexibility for custom analyses.
 
@@ -193,16 +194,16 @@ distribution of each protein-coding gene in a reference genome.
 For more details, please refer to the dedicated **codon frequency vignette**. 
 :::
 
-The **`ComputeCodonUsage()`** function calculates **codon usage** by 
+The **`computeCodonUsage()`** function calculates **codon usage** by 
 multiplying an mRNA expression matrix with a codon frequency-per-gene table. 
 The resulting matrix contains codons as rows and samples or conditions as 
 columns. 
 
 The codon frequency table can either be: (i) provided directly (e.g. computed 
-previously using **`ObtainCodonComposition()`**), or (ii) loaded from the 
+previously using **`obtainCodonComposition()`**), or (ii) loaded from the 
 built-in defaults available for human and mouse.
 
-In addition to generating the codon usage matrix, **`ComputeCodonUsage()`** can 
+In addition to generating the codon usage matrix, **`computeCodonUsage()`** can 
 optionally compute the following:
 
 - **Codon exonic background**: genome-wide codon composition calculated across 
@@ -216,11 +217,11 @@ in codon usage relative to the underlying genomic codon composition.
 ```{r codon_usage, message = FALSE, warning = FALSE}
 # We first need to add the correction factor to the tTEscanR object
 # It has to be stored as CorrectionFactor
-tTEobject <- UpdateObject(
+tTEobject <- updateObject(
     object = tTEobject, meta.data = "tissue", meta.data.ids = "CorrectionFactor"
 )
 
-tTEobject <- ComputeCodonUsage(
+tTEobject <- computeCodonUsage(
     object = tTEobject, codon_freq = NULL, species = "hg38",
     additional_metrics = TRUE, overwrite = TRUE
 )
@@ -234,7 +235,7 @@ exonic_background <- additional_metrics$CodonExonicBackground
 exonic_background <- as.data.frame(exonic_background)
 correlation_mean_background <- cbind(mean_codon_usage, exonic_background)
 
-PlotCorrelation(
+plotCorrelation(
     data = correlation_mean_background, plot = "MeanCodonUsage",
     x_axis_col = "mean_usage_across_conditions",
     y_axis_col = "exonic_background",
@@ -245,14 +246,14 @@ PlotCorrelation(
 ```
 
 You can further evaluate the codon usage output using 
-**`ShowPoolContribution()`**, which quantifies the contribution of the most 
+**`showPoolContribution()`**, which quantifies the contribution of the most 
 highly expressed genes to the overall codon pool across different conditions. 
 This analysis helps identify whether codon usage is dominated by a small subset 
 of highly expressed transcripts or is broadly distributed across the 
 transcriptome.
 
 ```{r codon_pool_contribution, message = FALSE, warning = FALSE}
-tTEobject <- ShowPoolContribution(
+tTEobject <- showPoolContribution(
     object = tTEobject, N = 10, species = "hg38", overwrite = TRUE
 )
 ```
@@ -270,7 +271,7 @@ codon_pool_diversity <- codon_pool_diversity %>%
         into = c("tissue", "cell_type"), sep = "-"
     )
 
-PlotCorrelation(
+plotCorrelation(
     data = codon_pool_diversity, plot = "PoolDiversity",
     x_axis_col = "original_top_contribution",
     y_axis_col = "baseline_correlation",
@@ -289,34 +290,34 @@ For more details, please refer to the dedicated **visualization vignette**.
 
 ### 3.2. Anticodon usage assessment
 
-The **`ComputeAnticodonUsage()`** function calculates **anticodon usage** by 
+The **`computeAnticodonUsage()`** function calculates **anticodon usage** by 
 aggregating tRNA expression data at the anticodon level. Analogous to 
-**`ComputeCodonUsage()`**, the resulting matrix contains anticodons as rows and 
+**`computeCodonUsage()`**, the resulting matrix contains anticodons as rows and 
 samples or conditions as columns. 
 
 ```{r anticodon_usage, message = FALSE, warning = FALSE}
-tTEobject <- ComputeAnticodonUsage(object = tTEobject)
+tTEobject <- computeAnticodonUsage(object = tTEobject)
 ```
 
 ### 3.3. Amio acid level assessment
 
-The **`ComputeAAUsage()`** function computes **amino acid demand** and 
+The **`computeAAUsage()`** function computes **amino acid demand** and 
 **supply** by integrating codon and anticodon usage data, respectively. Users 
 can choose to calculate demand and supply either separately or together.
 
 ```{r ammino_acid_demand, message = FALSE, warning = FALSE, eval = FALSE}
 # Computing AA demand
-tTEobject <- ComputeAAUsage(object = tTEobject, level = "demand")
+tTEobject <- computeAAUsage(object = tTEobject, level = "demand")
 ```
 
 ```{r ammino_acid_supply, message = FALSE, warning = FALSE, eval = FALSE}
 # Computing AA supply
-tTEobject <- ComputeAAUsage(object = tTEobject, level = "supply")
+tTEobject <- computeAAUsage(object = tTEobject, level = "supply")
 ```
 
 ```{r ammino_acid, message = FALSE, warning = FALSE}
 # Computing simultaneously AA demand and supply
-tTEobject <- ComputeAAUsage(
+tTEobject <- computeAAUsage(
     object = tTEobject, level = "both",
     overwrite = TRUE
 )
@@ -324,27 +325,29 @@ tTEobject <- ComputeAAUsage(
 
 ### 3.4. Theoretical Translation Efficiency (tTE) computation
 
-The **`Compute_tTE()`** function calculates the **Theoretical Translation**
-**Efficiency (tTE)** by measuring the correlation between: (i) codon usage and 
-anticodon availability, or (ii) amino acid demand and amino acid supply. Users 
-can compute these correlations separately or in combination. To ensure accurate 
-correlation between these data sources, it is crucial that the mRNA and tRNA 
-datasets share matching conditions (i.e. identical column names representing 
-the same samples or groups).
+The **`computeTheoreticalTE()`** function calculates the **Theoretical**
+**Translation Efficiency (tTE)** by measuring the correlation between: (i) 
+codon usage and anticodon availability, or (ii) amino acid demand and amino 
+acid supply. Users can compute these correlations separately or in combination. 
+To ensure accurate correlation between these data sources, it is crucial that 
+the mRNA and tRNA datasets share matching conditions (i.e. identical column 
+names representing the same samples or groups).
 
 ```{r tTE_score_codon, message = FALSE, warning = FALSE,eval = FALSE}
 # Computing tTE at the codon-anticodon level
-tTEobject <- Compute_tTE(object = tTEobject, level = "codon")
+tTEobject <- computeTheoreticalTE(object = tTEobject, level = "codon")
 ```
 
 ```{r tTE_score_aa, message = FALSE, warning = FALSE, eval = FALSE}
 # Computing tTE at the AA demand-supply level
-tTEobject <- Compute_tTE(object = tTEobject, level = "aa")
+tTEobject <- computeTheoreticalTE(object = tTEobject, level = "aa")
 ```
 
 ```{r tTE_score, message = FALSE, warning = FALSE}
 # Computing simultaneously tTE at codon-anticodon and AA demand-supply levels
-tTEobject <- Compute_tTE(object = tTEobject, level = "both", overwrite = TRUE)
+tTEobject <- computeTheoreticalTE(
+    object = tTEobject, level = "both", overwrite = TRUE
+)
 ```
 
 ```{r extract_metadata}
@@ -355,12 +358,12 @@ conditions_metadata <- getMetadata(tTEobject, "ConditionsLabels")
 tTEresults_codon <- getMetadata(tTEobject, "tTEresults_codon")
 tTEresults_AA <- getMetadata(tTEobject, "tTEresults_AA")
 
-PlotTEscore(
+plotTEscore(
     data = tTEresults_codon, metadata = conditions_metadata,
     index_col = "conditions", class_col = "tissue", add_stats = FALSE
 )
 
-PlotTEscore(
+plotTEscore(
     data = tTEresults_AA, metadata = conditions_metadata,
     index_col = "conditions", class_col = "tissue", add_stats = FALSE
 )
@@ -384,7 +387,7 @@ conditions_metadata$group[grep(
 
 ```{r tTE_plot_neurons, fig.width =  6, fig.height = 4, fig.align = 'center'}
 # Use tTEresults_codon to assess the codon-anticodon level
-PlotTEscore(
+plotTEscore(
     data = tTEresults_AA, metadata = conditions_metadata,
     index_col = "conditions", class_col = "group", add_stats = TRUE
 )
@@ -392,7 +395,7 @@ PlotTEscore(
 
 ## 4. Differential expression analysis 
 
-The **`RunDEAnalysis()`** function performs differential expression analysis 
+The **`runDEAnalysis()`** function performs differential expression analysis 
 with DESeq2 and generates multiple plots to display the results. When datasets 
 share the same `conditions` and `name_sep` settings, they can be processed 
 together in a single run. The input to this function must be a list of matrices.
@@ -410,14 +413,14 @@ AA_results <- list(
 )
 ```
 
-The outputs of the **`RunDEAnalysis()`** function vary depending on the 
+The outputs of the **`runDEAnalysis()`** function vary depending on the 
 parameters enabled. In this example, the results include: (i) a heatmap, (ii) 
 PCA plots (based on the selected number of principal components), and (iii) the 
 size corrected input matrix. A separate list of outputs is returned for each 
 matrix included in the input list.
 
 ```{r run_dea, message = FALSE, warning = FALSE, eval = FALSE}
-all_DESeq2_results <- RunDEAnalysis(
+all_DESeq2_results <- runDEAnalysis(
     list_data = AA_results, metadata = metadata, heatmap = TRUE,
     dim_reduct = "PCA", numPC = 2, batch = "tissue",
     color_factor = "tissue", show_legend = "right", label_factor = "cell.type"

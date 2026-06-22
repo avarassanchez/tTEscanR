@@ -44,11 +44,11 @@ The **tTEscanR** package provides a strucutred framework for analyzing codon-ant
   <tbody>
     <tr>
       <td rowspan="2"><b>tTEscanR object definition</b></td>
-      <td><code>Create_tTEscanR_Object()</code></td>
+      <td><code>CreateObject()</code></td>
       <td>Initializes a <b>tTEscanR</b> object to store analysis data.</td>
     </tr>
     <tr>
-      <td><code>Update_tTEscanR_Object()</code></td>
+      <td><code>UpdateObject()</code></td>
       <td>Modifies or extends an existing <b>tTEscanR</b> object.</td>
     </tr>
     <tr>
@@ -72,7 +72,7 @@ The **tTEscanR** package provides a strucutred framework for analyzing codon-ant
     </tr>
     <tr>
       <td><b>Single execution</b></td>
-      <td><code>Run_tTEscanR_pipeline()</code></td>
+      <td><code>RunPipeline()</code></td>
       <td>Uses all the functions listed above to compute the (i) codon-anticodon usage, (ii) amino acid supply-demand ratios, and (iii) theoretical translation efficiency.</td>
     </tr>
   </tbody>
@@ -106,19 +106,19 @@ The **tTEscanR** package includes helper functions to support specific steps of 
     </tr>
     <tr>
       <td rowspan="4"><b>tRNA preprocessing</b></td>
-      <td><code>Get_tRNAMatrix()</code></td>
+      <td><code>tRNGetAMatrix()</code></td>
       <td>Extracts and structures tRNA expression data from various sources.</td>
     </tr>
     <tr>
-      <td><code>Set_tRNAgenes()</code></td>
+      <td><code>tRNASetGenes()</code></td>
       <td>Translates the tRNA cut coordinates to their corresponding tRNA gene names.</td>
     </tr>
     <tr>
-      <td><code>Set_tRNACutoff()</code></td>
+      <td><code>tRNASetCutoff()</code></td>
       <td>Identifies a dataset-specific cutoff to select the low tRNA abundance cutoff.</td>
     </tr>
     <tr>
-      <td><code>Filter_tRNACuts()</code></td>
+      <td><code>tRNAFilterCuts()</code></td>
       <td>Filters out conditions with low tRNA abundance to ensure data quality.</td>
     </tr>
     <tr>
@@ -157,23 +157,23 @@ library(tTEscanR)
 data(mRNA_data, tRNA_data, metadata)
 
 # Adding the mRNA and tRNA datasets and the metadata to the object
-tTEscanR_obj <- Create_tTEscanR_Object(counts = list(mRNA_data, tRNA_data),
-                                       assay = list("mRNA", "tRNA"),
-                                       meta.data = list(metadata, "tissue"),
-                                       meta.data.ids = list("ConditionsLabels", "CorrectionFactor")) 
+tTEscanR_obj <- CreateObject(counts = list(mRNA_data, tRNA_data),
+                    assay = list("mRNA", "tRNA"),
+                    meta.data = list(metadata, "tissue"),
+                    meta.data.ids = list("ConditionsLabels", "CorrectionFactor")) 
 
 # Adding extra information to the object
 matching_celltypes <- intersect(colnames(mRNA_data), colnames(tRNA_data)) 
-tTEscanR_obj <- Update_tTEscanR_Object(object = tTEscanR_obj, 
-                                       meta.data = list(matching_celltypes), 
-                                       meta.data.ids = list("matching_celltypes"), 
-                                       overwrite = TRUE)
+tTEscanR_obj <- UpdateObject(object = tTEscanR_obj, 
+                    meta.data = list(matching_celltypes), 
+                    meta.data.ids = list("matching_celltypes"), 
+                    overwrite = TRUE)
 
 # Compute codon usage with default hg38 canonical codon frequency per gene table.
 tTEscanR_obj <- ComputeCodonUsage(object = tTEscanR_obj, 
-                                  codon_freq = NULL, 
-                                  species = "hg38", 
-                                  additional_metrics = TRUE)
+                    codon_freq = NULL, 
+                    species = "hg38", 
+                    additional_metrics = TRUE)
 
 tTEscanR_obj <- ComputeAnticodonUsage(object = tTEscanR_obj)
 

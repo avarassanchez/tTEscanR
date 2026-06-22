@@ -1,6 +1,5 @@
-ExtractGenes <- function(
-    ensembl, filter, retain_mitochondrial, retain_geneversion, verbose = TRUE
-) {
+extractGenes <- function(ensembl, filter, retain_mitochondrial,
+    retain_geneversion, verbose = TRUE) {
     if (verbose) {
         message(
             "- Retrieving protein coding genes & ",
@@ -8,11 +7,9 @@ ExtractGenes <- function(
         )
     }
     if (isTRUE(retain_geneversion)) {
-        id_names <- c(
-            "ensembl_gene_id_version", "ensembl_transcript_id_version"
-        )
+        ids <- c("ensembl_gene_id_version", "ensembl_transcript_id_version")
     } else {
-        id_names <- c("ensembl_gene_id", "ensembl_transcript_id")
+        ids <- c("ensembl_gene_id", "ensembl_transcript_id")
     }
     if (isFALSE(retain_mitochondrial)) { # Exclude mitochondrial genes
         filters_set <- c("biotype", "chromosome_name")
@@ -24,24 +21,27 @@ ExtractGenes <- function(
         values_set <- "protein_coding"
     }
     coding <- biomaRt::getBM(attributes = c(
-            id_names, "chromosome_name", "external_gene_name",
-            "transcript_start", "transcript_end", "transcript_is_canonical"
-        ), filters = filters_set, values = values_set, mart = ensembl
-    )
+        ids, "chromosome_name", "external_gene_name",
+        "transcript_start", "transcript_end", "transcript_is_canonical"
+    ), filters = filters_set, values = values_set, mart = ensembl)
     name <- if (filter == "length") "largest" else "canonical"
     if (verbose) {
         message(
-            "- Selecting (if many) the ", name, " transcript for each gene.")
+            "- Selecting (if many) the ", name, " transcript for each gene."
+        )
     }
     if (filter == "length") { # If many transcripts uses 'filter' to select
         if (verbose) message("- Computing the length of each transcript.")
         coding$transcript_length <- as.numeric(
             abs((coding$transcript_start + 1) - coding$transcript_end)
         )
-        coding <- coding[order(
-            coding$ensembl_gene_id, -coding$transcript_length
-        ), ]
-        coding <- coding[!duplicated(coding$ensembl_gene_id), ]
+        if (isTRUE(retain_geneversion)) {
+            id_col <- "ensembl_gene_id_version"
+        } else {
+            id_col <- "ensembl_gene_id"
+        }
+        coding <- coding[order(coding[[id_col]], -coding$transcript_length), ]
+        coding <- coding[!duplicated(coding[[id_col]]), ]
     } else {
         coding <- subset(coding, coding$transcript_is_canonical == 1)
     }
@@ -64,31 +64,34 @@ ExtractSequences <- function(transcripts, ensembl, retain_geneversion) {
     return(transcript_sequences)
 }
 
-CallingEnsembl <- function(
-    dataset_name, transcripts, filter, retain_mitochondrial,
-    retain_geneversion, verbose
-) {
+callingEnsembl <- function(dataset_name, transcripts, filter,
+    retain_mitochondrial, retain_geneversion, verbose) {
     trans <- NULL
     if (verbose) message("2 . Retrieving the Ensembl dataset.") # "ensembl"
     ensembl <- biomaRt::useEnsembl(biomart = "genes", dataset = dataset_name)
     if (is.null(transcripts)) {
         if (verbose) message("- Retrieving the protein-coding transcripts.")
-        transcripts <- ExtractGenes( # Get table with features of transcripts
+        transcripts <- extractGenes( # Get table with features of transcripts
             ensembl = ensembl, retain_geneversion = retain_geneversion,
             retain_mitochondrial = retain_mitochondrial, filter = filter
         )
+        if (isTRUE(retain_geneversion)) {
+            trans_id_col <- "ensembl_transcript_id_version"
+            gene_id_col <- "ensembl_gene_id_version"
+        } else {
+            trans_id_col <- "ensembl_transcript_id"
+            gene_id_col <- "ensembl_gene_id"
+        }
         trans <- data.frame( # Define table with the different ids
-            transcripts$ensembl_transcript_id, transcripts$ensembl_gene_id,
-            transcripts$external_gene_name
+            transcripts[[trans_id_col]], transcripts[[gene_id_col]],
+            transcripts$external_gene_name, stringsAsFactors = FALSE
         )
         colnames(trans) <- c(
             "ensembl_transcript_id", "ensembl_gene_id", "external_gene_name"
         )
-        transcripts <- transcripts$ensembl_transcript_id # Retrieve ids
+        transcripts <- transcripts[[trans_id_col]] # Retrieve ids
     }
-    if (verbose) {
-        message("2 . COMPLETED\n3 . Extracting the genomic sequences.")
-    }
+    if (verbose) message("2 . COMPLETED\n3 . Extracting the genomic sequences.")
     seq <- ExtractSequences( # Based on id, retrieve sequence
         transcripts = transcripts, ensembl = ensembl,
         retain_geneversion = retain_geneversion
@@ -100,7 +103,9 @@ CallingEnsembl <- function(
     len <- length(unavailable)
     if (len != 0) {
         if (verbose) {
-            message("- Removed", len, " transcripts with unavailable sequence.")
+            message(
+                "- Removed ", len, " transcripts with unavailable sequence."
+            )
         }
         if (len == length(seq)) {
             stop(
@@ -115,22 +120,28 @@ CallingEnsembl <- function(
     return(list(translator_table = trans, transcript_sequences = seq))
 }
 
-CheckFASTAFormat <- function(file) {
+checkFASTAFormat <- function(file) {
     # Perform a check considering a subset of the file so that not all is loaded
     lines <- readLines(file, n = 100, warn = FALSE)
+    if (length(lines) == 0) {
+        stop("Not a valid FASTA file: empty file.")
+    }
 
     header <- grepl("^>", lines)
-    if (!grepl("^>", lines[1])) {
-        stop("Not a valid FASTA file. The first line must be a header ('>').")
+    if (!header[1]) {
+        stop("Not a valid FASTA file: first line must be a header ('>').")
     }
     if (length(lines) < 2) {
-        stop("File too short or empty. Not a valid FASTA file.")
+        stop("Not a valid FASTA file: too short or empty file.")
     }
 
-    invalid_lines <- which(!header && !grepl("^[ATGCatgcnNUu]+$", lines))
+    seq_lines <- !header & (trimws(lines) != "")
+    invalid_mask <- seq_lines & !grepl("^[ATGCatgcnNUu\\-]+$", trimws(lines))
+    invalid_lines <- which(invalid_mask)
+
     if (length(invalid_lines) > 0) {
         stop(
-            "Invalid sequence characters found on lines:",
+            "Invalid sequence characters found on lines: ",
             paste(invalid_lines, collapse = ", ")
         )
     }
@@ -138,7 +149,7 @@ CheckFASTAFormat <- function(file) {
     return(invisible(TRUE))
 }
 
-FromFASTAtoTable <- function(data, transcripts, retain_mitochondrial, verbose) {
+fromFASTAtoTable <- function(data, transcripts, retain_mitochondrial, verbose) {
     if (verbose) {
         message("2. Extracting the genomic sequence of each transcript.")
         message("- Retrieving the protein-coding transcripts.")
@@ -170,16 +181,16 @@ FromFASTAtoTable <- function(data, transcripts, retain_mitochondrial, verbose) {
             ),
             gene_name = which(tran_seq$external_gene_name %in% transcripts)
         )
-        if ((lengths(targeted_indx) == 0)) {
+        if (sum(lengths(targeted_indx)) == 0) {
             stop(
                 "None of the ids given in 'transcripts' have been found.\n",
                 "Supported formats: Ensembl transcript id, Ensembl gene id ",
                 "and external gene name."
             )
-        }
-        # Select column of the ids with a higher match with the input ids list
-        targeted_indx <- targeted_indx[[which.max(lengths(targeted_indx))]]
-        tran_seq <- tran_seq[targeted_indx, ]
+        } # Select column of ids with a higher match with the input ids list
+        best_format_idx <- which.max(lengths(targeted_indx))
+        selected_rows <- targeted_indx[[best_format_idx]]
+        tran_seq <- tran_seq[selected_rows, ]
     }
     if (nrow(tran_seq) == 0) stop("There are no protein-coding transcripts.")
     if (verbose) {

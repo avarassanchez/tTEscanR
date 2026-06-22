@@ -5,14 +5,14 @@
 \title{Selection of the Optimal tRNA Cut Cutoff}
 \usage{
 tRNASetCutoff(
-    data,
-    num_iter = 1000,
-    cutoffs_limits = c(50, 10000),
-    generate_plot = TRUE,
-    slope_threshold = 0.001,
-    rho_threshold = 0.95,
-    compute_aa = FALSE,
-    verbose = TRUE
+  data,
+  num_iter = 1000,
+  cutoffs_limits = c(50, 10000),
+  generate_plot = TRUE,
+  slope_threshold = 0.001,
+  rho_threshold = 0.95,
+  compute_aa = FALSE,
+  verbose = TRUE
 )
 }
 \arguments{
@@ -41,8 +41,8 @@ otherwise only considers the anticodon usage. Defaults to \code{FALSE}.}
 Defaults to \code{TRUE}.}
 }
 \value{
-Table with the optimal cutoff at the anticodon isoacceptor and amino
-acid isotype.
+Table with the optimal cutoff at the anticodon isoacceptor and
+amino acid isotype.
 }
 \description{
 Selection of the Optimal tRNA Cut Cutoff

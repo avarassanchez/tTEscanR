@@ -2,15 +2,13 @@
 title: "<img src='tTEscanR_logo.png' style='height:60px; 
 vertical-align:middle;'> tTEscanR Visualization Module"
 output: 
-  rmarkdown::html_vignette:
-    toc: true
-  rmarkdown::html_document:
+  BiocStyle::html_document:
     toc: true
     toc_float: true
     theme: default
     css: style.css
 vignette: >
-  %\VignetteIndexEntry{tTEscanR visualization module}
+  %\VignetteIndexEntry{4. Visualization Module}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 bibliography: references.bib
@@ -55,8 +53,11 @@ and impact of the analysis.
 
 ```{r setup, message = FALSE, warning = FALSE}
 # install.packages("/avarassanchez/tTEscanR")
-devtools::load_all()
 library(tTEscanR)
+```
+
+```{r other_libraries, message = FALSE, warning = FALSE}
+library(dplyr)
 ```
 
 To illustrate the usage of each plotting function and demonstrate the 
@@ -76,7 +77,7 @@ data(
 ```
 
 ```{r execute_workflow, message = FALSE, warning = FALSE}
-tTEobject <- RunPipeline(
+tTEobject <- runPipeline(
     mRNA_data = default_tTEscanR_mRNA_data,
     tRNA_data = default_tTEscanR_tRNA_data,
     metadata = default_tTEscanR_metadata,
@@ -106,22 +107,22 @@ dataset, provided that the required data formatting and structure are met.
 
 | Function               | Purpose                                         | 
 |------------------------|-------------------------------------------------|
-| `PlotProportion()` | Shows features' frequencies differences within and 
+| `plotProportion()` | Shows features' frequencies differences within and 
 between conditions |
-| `PlotDistribution()` | Displays features' distributions across 
+| `plotDistribution()` | Displays features' distributions across 
 conditions |
-| `PlotTargetComparison()` | Variation of `PlotDistribution()` to 
+| `plotTargetComparison()` | Variation of `plotDistribution()` to 
 compare a target feature against the mean across conditions |
-| `PlotCorrelation()` | Features correlation |
-| `PlotPermutation()` | Compares the baseline codon exonic background 
+| `plotCorrelation()` | Features correlation |
+| `plotPermutation()` | Compares the baseline codon exonic background 
 against the current codon usage |
-| `PlotTEscore()` | Represents the tTE scores obtained from `Compute_tTE()` |
+| `plotTEscore()` | Represents the tTE scores obtained from `Compute_tTE()` |
 
 ## 2.1. Data transformation
 
 There are **helper functions** in **tTEscanR** designed to properly transform 
 data for downstream analysis and visualization. the data. One such function is 
-**`TransformFormat()`**, which converts a count matrix, with features as rows 
+**`transformFormat()`**, which converts a count matrix, with features as rows 
 and conditions as columns, into a **long-format table**. In this format, each 
 row-column combination from the original matrix becomes an individual row in 
 the output.
@@ -131,7 +132,7 @@ Parameters such as `rownames_to_column`, `names_to` and `values_to` allow users
 to customize the names of the columns in the resulting long-format table.
 
 ::: {.note}
-The **normalization** performed by **TransformFormat()** is done by converting 
+The **normalization** performed by **transformFormat()** is done by converting 
 the raw counts into relative abundances (i.e. dividing each column by its 
 column-wise sum).
 :::
@@ -141,7 +142,7 @@ head(getAssay(tTEobject, "CodonUsage"))
 ```
 
 ```{r codon_usage_data_transform}
-long_format_codon_usage <- TransformFormat(
+long_format_codon_usage <- transformFormat(
     data = getAssay(tTEobject, "CodonUsage"), normalize = TRUE,
     rownames_to_column = "codon", # features (row) of the CodonUsage matrix
     names_to = "condition", # conditions (col) of the CodonUsage matrix
@@ -159,7 +160,7 @@ head(long_format_codon_usage)
 ```
 
 ```{r aa_demand_data_transform}
-long_format_AA_demand <- TransformFormat(
+long_format_AA_demand <- transformFormat(
     data = getAssay(tTEobject, "AADemand"), normalize = TRUE,
     rownames_to_column = "AA", # features (row) of the AADemand matrix
     names_to = "condition", # conditions (col) of the AADemand matrix
@@ -216,7 +217,7 @@ exactly match the column names in the input data.</li>
 
 # 3. Visualization options
 
-The **`PlotDistribution()`** function generates **jitter plots**, 
+The **`plotDistribution()`** function generates **jitter plots**, 
 **barplots** or **boxplots** to visualize data distributions (e.g. raw or 
 normalize codon usage) across features (e.g. codons). This function provides
 an intuitive representation of how usage patterns vary across conditions. The 
@@ -232,7 +233,7 @@ identify patterns across groups.
 
 ```{r general_dist_plot, fig.width =  7, fig.height = 4, fig.align = 'center'}
 # Codon usage distribution plot (jitter)
-PlotDistribution(
+plotDistribution(
     data = long_format_codon_usage, plot = "jitter", x_axis_col = "codon",
     y_axis_col = "usage", condition_col = "tissue", show_legend = "right",
     add_titles = FALSE
@@ -259,7 +260,7 @@ long_format_codon_usage_subset <- long_format_cu_spleen[cells_indexes, ]
 ```
 
 To facilitate visualization, we enable the `panels` parameter in 
-**`PlotDistribution`**, which arranges each condition in a separate facet. 
+**`plotDistribution`**, which arranges each condition in a separate facet. 
 This separation allows for easier comparison across groups. Additionally, the 
 `ncols` parameter controls the **number of columns** used in the facet layout, 
 helping optimize the plot's readability, especially when working with multiple 
@@ -267,7 +268,7 @@ conditions.
 
 ```{r dist_barplot, fig.width =  7, fig.height = 4, fig.align = 'center'}
 # Codon usage distribution plot (barplot)
-PlotDistribution(
+plotDistribution(
     data = long_format_codon_usage_subset, plot = "barplot", ncols = 1,
     facet_col = "cell_type",
     x_axis_col = "codon", y_axis_col = "usage", condition_col = "cell_type",
@@ -306,7 +307,7 @@ assign specific colors to each of the tissues being analyzed.
 
 ```{r distribution_plot, fig.width =  6, fig.height = 4, fig.align = 'center'}
 # Codon usage distribution plot (barplot)
-PlotDistribution(
+plotDistribution(
     data = long_format_cu_tissues, plot = "boxplot",
     x_axis_col = "codon", y_axis_col = "usage", add_stats = FALSE,
     condition_col = "tissue",
@@ -317,8 +318,8 @@ PlotDistribution(
 
 <hr>
 
-The **`PlotTargetComparison()`** function extends the functionality of 
-**`PlotDistribution()`** by allowing direct comparison between a target 
+The **`plotTargetComparison()`** function extends the functionality of 
+**`plotDistribution()`** by allowing direct comparison between a target 
 confition and the overall mean. This visualization helps identify how codon, 
 anticodon, or amino acid usage in the selected condition deviates from the 
 average profile.  
@@ -333,8 +334,8 @@ mean and the targeted values.</li>
 In the following example, we focus on cells from the cerebellum. To enable a 
 proper comparison, we first subset the dataset to include only 
 cerebellum-specific data and then compute the mean codon usage using 
-**`ComputeMeanUsage()`**. The overall mean codon usage was previously obtained 
-during the initial execution of **`RunPipeline()`**.
+**`computeMeanUsage()`**. The overall mean codon usage was previously obtained 
+during the initial execution of **`runPipeline()`**.
 
 ```{r cerebellum_mean}
 # Data subset: mean codon usage across cerebellum cell types
@@ -354,7 +355,7 @@ metadata_brain <- tidyr::separate(
 )
 metadata_brain$conditions <- colnames(brain_codon_usage)
 
-mean_brain_codon_usage <- ComputeMeanUsage(
+mean_brain_codon_usage <- computeMeanUsage(
     data = brain_codon_usage, metadata = metadata_brain,
     batch = "tissue", verbose = FALSE
 )
@@ -367,7 +368,7 @@ as **blue lines**.
 
 ```{r compare_to_mean_plot, fig.width = 7, fig.height = 4, fig.align = 'center'}
 additional_metrics <- getMetadata(tTEobject, "CodonUsage_AdditionalMetrics")
-PlotTargetComparison(
+plotTargetComparison(
     target_data = data.frame(mean_brain_codon_usage),
     overall_data = data.frame(additional_metrics$MeanCodonUsage),
     x_axis_col = "feature", y_axis_col = "mean_usage_across_conditions",
@@ -377,7 +378,7 @@ PlotTargetComparison(
 
 <hr>
 
-The **`PlotProportion()`** function provides a summary visualization of a 
+The **`plotProportion()`** function provides a summary visualization of a 
 specific metric's distribution across features or conditions. It supports 
 multiple display modes, including *bar*, *radar* or *donut* plots, allowing 
 users to choose the most effective format for their data.
@@ -393,14 +394,14 @@ addressed.
 mean_codon_usage <- additional_metrics$MeanCodonUsage
 mean_codon_usage$codon <- mean_codon_usage$feature
 
-mean_codon_usage <- FeaturesToAA(
+mean_codon_usage <- featuresToAA(
     data = mean_codon_usage, position = "feature",
     notation_from = "codon", notation_to = "aa", verbose = FALSE
 )
 ```
 
 ```{r prop_plot_mean, fig.width = 7, fig.height = 5, fig.align = 'center'}
-PlotProportion(
+plotProportion(
     data = mean_codon_usage, plot = "bar",
     var_numerical = "mean_usage_across_conditions",
     var_categorical = "codon", var_color = "feature", show_legend = "none"
@@ -415,14 +416,14 @@ cerebrum_indexes_AA <- grep("Cerebrum", colnames(aa_demand))
 brain_indexes_AA <- c(cerebellum_indexes_AA, cerebrum_indexes_AA)
 brain_AAdemand <- aa_demand[, brain_indexes_AA]
 
-mean_brain_AAdemand <- ComputeMeanUsage(
+mean_brain_AAdemand <- computeMeanUsage(
     data = brain_AAdemand, metadata = metadata_brain,
     batch = "tissue", verbose = FALSE
 )
 ```
 
 ```{r prop_plot_brain, fig.width = 6, fig.height = 4, fig.align = 'center'}
-PlotProportion(
+plotProportion(
     data = mean_brain_AAdemand, plot = "donut",
     var_numerical = "mean_usage_across_conditions",
     var_categorical = "feature", show_legend = "none"
@@ -431,17 +432,17 @@ PlotProportion(
 
 <hr>
 
-The **`PlotTEscore()`** function generates a **violin plot** to compare the 
+The **`plotTEscore()`** function generates a **violin plot** to compare the 
 **tTE scores** between a specified target condition and all other conditions in 
 the dataset.  This visualization helps assess how distinct the translation 
 efficiency profile of the target group is relative to the rest. 
 
 ::: {.note}
-As **PlotTEscore()** uses violin plots, it is important to ensure that each 
+As **plotTEscore()** uses violin plots, it is important to ensure that each 
 group, especially the targeted condition, has a **sufficient number of data** 
 **points**. Violin plots may not provide a reliable representation of the 
 distribution if the sample size is too small. Alternatively, 
-**PlotDistribution** and **PlotProportion()** could be used.
+**plotDistribution** and **plotProportion()** could be used.
 :::
 
 ```{r extract_metadata}
@@ -451,7 +452,7 @@ tTEresults_AA <- getMetadata(tTEobject, "tTEresults_AA")
 ```
 
 ```{r tTE_scores_plot}
-PlotTEscore(
+plotTEscore(
     data = tTEresults_codon, metadata = conditions_metadata,
     index_col = "conditions", class_col = "tissue", add_stats = FALSE
 )
@@ -471,7 +472,7 @@ conditions_metadata$group[
 ```{r score_plot_immune, fig.width = 6, fig.height = 4, fig.align = 'center'}
 # input data has 4 columns: condition, tTE, p_value, neg_log10_tTE_p_value
 # Codon-anticodon tTE score
-PlotTEscore(
+plotTEscore(
     data = tTEresults_codon, metadata = conditions_metadata,
     index_col = "conditions", class_col = "group",
     color_palette = c(
@@ -481,7 +482,7 @@ PlotTEscore(
 )
 
 # AA demand-supply tTE score
-PlotTEscore(
+plotTEscore(
     data = tTEresults_AA, metadata = conditions_metadata,
     index_col = "conditions", class_col = "group",
     color_palette = c(
@@ -514,7 +515,7 @@ conditions_metadata$group[grep(
 
 ```{r score_plot_neurons, fig.width = 6, fig.height = 4, fig.align = 'center'}
 # AA demand-supply tTE score
-PlotTEscore(
+plotTEscore(
     data = tTEresults_AA, metadata = conditions_metadata,
     index_col = "conditions", class_col = "group",
     color_palette = c(neurons = "#8073ac", other = "#fee0b6"),

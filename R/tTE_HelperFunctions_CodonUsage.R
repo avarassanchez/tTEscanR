@@ -11,26 +11,26 @@ NULL
 #' from expression data.
 #'
 #' @param data A codon usage matrix with codons as rows and conditions or
-#' samples as columns.
+#'     samples as columns.
 #'
 #' @return A \code{matrix} with the codon/anticodon background.
 #' @export
 #'
 #' @examples
 #' data(default_tTEscanR_mRNA_data)
-#' tTEscanR_obj <- CreateObject(
+#' tTEscanR_obj <- createObject(
 #'     counts = default_tTEscanR_mRNA_data,
 #'     assay = "mRNA"
 #' )
-#' tTEscanR_obj <- ComputeCodonUsage(
+#' tTEscanR_obj <- computeCodonUsage(
 #'     object = tTEscanR_obj, species = "hg38",
 #'     additional_metrics = FALSE, reduce = 1000
 #' )
-#' exonic_background <- ComputeExonicBackground(data = getAssay(
+#' exonic_background <- computeExonicBackground(data = getAssay(
 #'     tTEscanR_obj,
 #'     "CodonUsage"
 #' ))
-ComputeExonicBackground <- function(data) {
+computeExonicBackground <- function(data) {
     row_totals <- rowSums(data)
     total <- sum(row_totals)
 
@@ -52,44 +52,44 @@ ComputeExonicBackground <- function(data) {
 #' versus condition-specific expression.
 #'
 #' @param mean A \code{matrix} containing the mean usage across conditions. Can
-#' be computed using \code{\link{ComputeMeanUsage}}.
+#'     be computed using \code{\link{computeMeanUsage}}.
 #' @param background A \code{matrix} or table containing the frequencies in
-#' exonic regions. Can be computed using \code{\link{ComputeExonicBackground}}.
+#'     exonic regions. Can be computed using
+#'     \code{\link{computeExonicBackground}}.
 #' @param corr_method A correlation method accepted by \code{\link{cor}}.
-#' Defaults to \code{"spearman"}.
+#'     Defaults to \code{"spearman"}.
 #' @param verbose Logical; if \code{TRUE}, displays information messages.
-#' Defaults to \code{TRUE}.
+#'     Defaults to \code{TRUE}.
 #'
 #' @return Integer; correlation information between \code{mean} and
-#' \code{background}.
+#'     \code{background}.
 #' @export
 #'
 #' @examples
 #' data(default_tTEscanR_mRNA_data, default_tTEscanR_metadata)
-#' tTEscanR_obj <- CreateObject(
+#' tTEscanR_obj <- createObject(
 #'     counts = default_tTEscanR_mRNA_data,
 #'     assay = "mRNA"
 #' )
-#' tTEscanR_obj <- ComputeCodonUsage(
+#' tTEscanR_obj <- computeCodonUsage(
 #'     object = tTEscanR_obj, species = "hg38",
 #'     additional_metrics = FALSE, reduce = 1000
 #' )
 #' codon_usage <- getAssay(tTEscanR_obj, "CodonUsage")
-#' exonic_background <- ComputeExonicBackground(data = codon_usage)
+#' exonic_background <- computeExonicBackground(data = codon_usage)
 #' # Input: expression count matrix, need to provide metadata & batch parameters
-#' mean_codon_usage <- ComputeMeanUsage(
+#' mean_codon_usage <- computeMeanUsage(
 #'     data = codon_usage,
 #'     mode = "raw",
 #'     metadata = default_tTEscanR_metadata,
 #'     batch = "tissue"
 #' )
-#' corr_back <- ComputeCorrelationBackground(
+#' corr_back <- computeCorrelationBackground(
 #'     mean = mean_codon_usage,
 #'     background = exonic_background
 #' )
-ComputeCorrelationBackground <- function(
-    mean, background, corr_method = "spearman", verbose = TRUE
-) {
+computeCorrelationBackground <- function(mean, background,
+    corr_method = "spearman", verbose = TRUE) {
     #  Convert the 'mean' input from a tibble to a named vector
     mean_vector <- stats::setNames(mean[[2]], mean[[1]])
 
@@ -124,36 +124,36 @@ ComputeCorrelationBackground <- function(
 #' \code{tTEscanR_Object} the parameters \code{metadata} and \code{batch} will
 #' be extracted from the object, and ignored if specified as input parameters.
 #' Therefore, variables \code{assay} and \code{metadata} need to be coherent
-#' with the rules described in \code{\link{CreateObject}}.
+#' with the rules described in \code{\link{createObject}}.
 #'
 #' @param data A \code{tTEscanR_Object} or expression count \code{matrix}
-#' (with codons, anticodons or amino acids as features).
+#'     (with codons, anticodons or amino acids as features).
 #' @param assay Optional; a character string specifying the name of the assay
-#' to retrieve from the \code{tTEscanR_Object}.
+#'     to retrieve from the \code{tTEscanR_Object}.
 #' @param mode Either \code{"raw"}, \code{"size-corrected"} or
-#' \code{"long-format"} to specify the format that the input data belongs to.
-#' Defaults to \code{"raw"}.
+#'     \code{"long-format"} to specify the format that the input data belongs
+#'     to. Defaults to \code{"raw"}.
 #' @param metadata Optional; a \code{data.frame} with the meta-information
-#' related with the conditions in \code{data}. There has to be one column with
-#' the same labels as the column names.
+#'     related with the conditions in \code{data}. There has to be one column
+#'     with the same labels as the column names.
 #' @param id_col Optional; a factor based on \code{metadata} columns to define
-#' the variable to use to link it with the \code{data}. If \code{NULL} the
-#' column with the highest agreement will be automatically selected.
+#'     the variable to use to link it with the \code{data}. If \code{NULL} the
+#'     column with the highest agreement will be automatically selected.
 #' @param batch Optional; a factor based on \code{metadata} columns to define
-#' the variable to correct for. Required if \code{mode} is \code{"raw"} and
-#' \code{data} is not a \code{tTEscanR_Object}.
+#'     the variable to correct for. Required if \code{mode} is \code{"raw"}
+#'     and \code{data} is not a \code{tTEscanR_Object}.
 #' @param verbose Logical; if \code{TRUE}, displays information messages.
-#' Defaults to \code{TRUE}.
+#'     Defaults to \code{TRUE}.
 #'
 #' @return An updated \code{tTEscanR_Object} if \code{data} is a
-#' \code{tTEscanR_Object}. A \code{data.frame} containing a new layer of
-#' information representing the mean codon usage if \code{data} is an expression
-#' count matrix.
+#'     \code{tTEscanR_Object}. A \code{data.frame} containing a new layer of
+#'     information representing the mean codon usage if \code{data} is an
+#'     expression count matrix.
 #' @export
 #'
 #' @examples
 #' data(default_tTEscanR_tRNA_data, default_tTEscanR_metadata)
-#' tTEscanR_obj <- CreateObject(
+#' tTEscanR_obj <- createObject(
 #'     counts = default_tTEscanR_tRNA_data,
 #'     assay = "tRNA",
 #'     meta.data = list(default_tTEscanR_metadata, "tissue"),
@@ -163,18 +163,17 @@ ComputeCorrelationBackground <- function(
 #'     )
 #' )
 #' # Input: tTEscanR object containing metadata and batch parameters
-#' tTEscanR_obj <- ComputeAnticodonUsage(object = tTEscanR_obj)
-#' anticodon_mean_usage <- ComputeMeanUsage(
+#' tTEscanR_obj <- computeAnticodonUsage(object = tTEscanR_obj)
+#' anticodon_mean_usage <- computeMeanUsage(
 #'     data = tTEscanR_obj,
 #'     assay = "AnticodonUsage"
 #' )
-ComputeMeanUsage <- function(
-    data, assay = NULL, metadata = NULL, id_col = NULL, batch = NULL,
-    mode = c("raw", "size-corrected", "long_format"), verbose = TRUE
-) {
+computeMeanUsage <- function(data, assay = NULL, metadata = NULL, id_col = NULL,
+    batch = NULL, mode = c("raw", "size-corrected", "long_format"),
+    verbose = TRUE) {
     mode <- match.arg(mode)
     is_object <- inherits(data, "tTEscanR_Object")
-    extract_data <- GeneralChecksMeanUsage( # Performs step A
+    extract_data <- generalChecksMeanUsage( # Performs step A
         data = data, assay = assay, metadata = metadata, batch = batch,
         verbose = verbose
     )
@@ -183,7 +182,7 @@ ComputeMeanUsage <- function(
 
     if (verbose) message("B . Calculating the mean usage across conditions.")
     if (mode == "raw") { # Data has not been size-corrected not norm.
-        mat <- ModeRaw(
+        mat <- modeRaw(
             id_col = id_col, metadata = extract_data$metadata,
             raw_mat = mat, batch = extract_data$batch, verbose = verbose
         )
@@ -206,10 +205,10 @@ ComputeMeanUsage <- function(
             ))
         if (verbose) message("- The data is in a proper long format.")
     }
-    CheckDataFrame(usage_results, required_names = FALSE)
+    checkDataFrame(usage_results, required_names = FALSE)
     if (verbose) message("B . COMPLETED")
     if (is_object) { # Update the input tTEscanR object
-        data <- UpdateObject(
+        data <- updateObject(
             object = data, meta.data = usage_results, verbose = FALSE,
             meta.data.ids = paste(assay, "MeanUsage", sep = "_")
         )
@@ -219,7 +218,7 @@ ComputeMeanUsage <- function(
     }
 }
 
-GeneralChecksMeanUsage <- function(data, assay, metadata, batch, verbose) {
+generalChecksMeanUsage <- function(data, assay, metadata, batch, verbose) {
     assay_map <- list( # Links data to retrieve
         CodonUsage = "codon", AnticodonUsage = "anticodon",
         AADemand = "AA", AASupply = "AA"
@@ -236,14 +235,14 @@ GeneralChecksMeanUsage <- function(data, assay, metadata, batch, verbose) {
             )
         }
 
-        IsInObject(
+        isInObject(
             object = data, slot = "assays", section = assay, verbose = FALSE
         )
-        IsInObject(
+        isInObject(
             object = data, slot = "meta.data",
             section = "CorrectionFactor", verbose = FALSE
         )
-        IsInObject(
+        isInObject(
             object = data, slot = "meta.data",
             section = "ConditionsLabels", verbose = FALSE
         )
@@ -264,7 +263,7 @@ GeneralChecksMeanUsage <- function(data, assay, metadata, batch, verbose) {
     ))
 }
 
-ModeRaw <- function(id_col, metadata, raw_mat, batch, verbose) {
+modeRaw <- function(id_col, metadata, raw_mat, batch, verbose) {
     if (verbose) {
         message(
             "- Size correcting the matrix to account for sequencing depth."
@@ -282,10 +281,10 @@ ModeRaw <- function(id_col, metadata, raw_mat, batch, verbose) {
     }
 
     # Filter the data and the metadata based on their matching entries
-    filtered <- FilterByMetadata(
+    filtered <- filterByMetadata(
         data = raw_mat, metadata = metadata, id_col = id_col
     )
-    raw_mat <- ComputeSizeCorrection(
+    raw_mat <- computeSizeCorrection(
         data = filtered[[1]], verbose = FALSE,
         metadata = filtered[[2]], batch = batch
     )
@@ -293,31 +292,29 @@ ModeRaw <- function(id_col, metadata, raw_mat, batch, verbose) {
     return(raw_mat)
 }
 
-ComputeMetricsCodonUsage <- function(
-    codon_usage, codon_freq, metadata, id_col = NULL, batch = NULL,
-    corr_method, verbose
-) {
+computeMetricsCodonUsage <- function(codon_usage, codon_freq, metadata,
+    id_col = NULL, batch = NULL, corr_method, verbose) {
     # CODON EXONIC BACKGROUND
     if (verbose) message("- Computing the codon exonic background.")
-    codon_exonic_back <- ComputeExonicBackground(data = codon_freq)
+    codon_exonic_back <- computeExonicBackground(data = codon_freq)
 
     if (is.null(codon_exonic_back)) {
         stop(
             "The codon exonic background could not be computed.\n",
-            "Failure in ComputeExonicBackground()."
+            "Failure in computeExonicBackground()."
         )
     }
 
     # MEAN CODON USAGE
     if (verbose) message("- Computing the mean codon usage.")
-    mean_codon_usage <- ComputeMeanUsage(
+    mean_codon_usage <- computeMeanUsage(
         data = codon_usage, metadata = metadata,
         id_col = id_col, batch = batch, verbose = FALSE
     )
     if (is.null(mean_codon_usage)) {
         stop(
             "The mean codon usage could not be computed.\n",
-            "Failure in ComputeMeanUsage()."
+            "Failure in computeMeanUsage()."
         )
     }
     # CORRELATION BACKGROUND-MEAN
@@ -327,14 +324,14 @@ ComputeMetricsCodonUsage <- function(
             "usage and the codon exonic background."
         )
     }
-    corr_back_mean <- ComputeCorrelationBackground(
+    corr_back_mean <- computeCorrelationBackground(
         mean = mean_codon_usage, background = codon_exonic_back,
         corr_method = corr_method, verbose = verbose
     )
     if (is.null(corr_back_mean)) {
         stop(
             "The correlation mean-background could not be computed.\n",
-            "Failure in ComputeCorrelationBackground()."
+            "Failure in computeCorrelationBackground()."
         )
     }
     return(list( # Store all the metrics in a named list
@@ -344,9 +341,8 @@ ComputeMetricsCodonUsage <- function(
     ))
 }
 
-ConsistencyWithCodonFreq <- function(
-    data, codon_freq, species, verbose = FALSE
-) {
+consistencyWithCodonFreq <- function(data, codon_freq, species,
+    verbose = FALSE) {
     if (verbose) {
         message(
             "\n------------------------------\n",
@@ -355,7 +351,7 @@ ConsistencyWithCodonFreq <- function(
     }
 
     # Checks the user-defined codon_freq or loads a default table if possible
-    codon_freq <- CheckCodonFreqTable(data = codon_freq, species = species)
+    codon_freq <- checkCodonFreqTable(data = codon_freq, species = species)
     if (verbose) {
         message(
             "A . COMPLETED\n",
@@ -363,7 +359,7 @@ ConsistencyWithCodonFreq <- function(
         )
     }
 
-    gene_annot <- CheckGeneAnnotation(
+    gene_annot <- checkGeneAnnotation(
         vector1 = colnames(codon_freq),
         vector2 = rownames(data), verbose = verbose
     )
@@ -373,7 +369,7 @@ ConsistencyWithCodonFreq <- function(
     return(codon_freq)
 }
 
-CheckNames_tRNA <- function(gene_names) {
+checkNamestRNA <- function(gene_names) {
     if (is.null(gene_names)) stop("No tRNA genes found in row names.")
 
     # Check the actual content of the tRNA gene label

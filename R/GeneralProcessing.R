@@ -1,24 +1,24 @@
 #' Selection of the Optimal tRNA Cut Cutoff
 #'
 #' @param data tRNA gene expression count \code{matrix} with tRNA genes as rows
-#' and conditions as columns.
+#'      and conditions as columns.
 #' @param num_iter Numeric; value to select the number of iterations to perform
-#' in order to determine the optimal cutoff. Defaults to 1000.
+#'      in order to determine the optimal cutoff. Defaults to 1000.
 #' @param cutoffs_limits Minimum and maximum values to test to search for the
-#' optimal tRNA cuts threshold. Defaults to c(50, 10000).
+#'      optimal tRNA cuts threshold. Defaults to c(50, 10000).
 #' @param compute_aa Logic; if \code{TRUE}, computes the amino acid supply,
-#' otherwise only considers the anticodon usage. Defaults to \code{FALSE}.
+#'      otherwise only considers the anticodon usage. Defaults to \code{FALSE}.
 #' @param generate_plot Logic; if \code{TRUE}, generates a correlation plot.
-#' Defaults to \code{TRUE}.
+#'      Defaults to \code{TRUE}.
 #' @param slope_threshold Numeric; value to consider for the determination of
-#' the correlation stability. Defaults to 0.001.
+#'      the correlation stability. Defaults to 0.001.
 #' @param rho_threshold Numeric; value to consider for the determination of the
-#' correlation strength. Defaults to 0.95.
+#'      correlation strength. Defaults to 0.95.
 #' @param verbose Logical; if \code{TRUE}, displays information messages.
-#' Defaults to \code{TRUE}.
+#'      Defaults to \code{TRUE}.
 #'
-#' @returns Table with the optimal cutoff at the anticodon isoacceptor and amino
-#' acid isotype.
+#' @returns Table with the optimal cutoff at the anticodon isoacceptor and
+#'      amino acid isotype.
 #' @export
 #'
 #' @examples
@@ -28,17 +28,15 @@
 #'     generate_plot = FALSE, num_iter = 100,
 #'     cutoffs_limits = c(3000, 5000)
 #' )
-tRNASetCutoff <- function(
-    data, num_iter = 1000, cutoffs_limits = c(50, 10000), generate_plot = TRUE,
-    slope_threshold = 0.001, rho_threshold = 0.95, compute_aa = FALSE,
-    verbose = TRUE
-) {
+tRNASetCutoff <- function(data, num_iter = 1000, cutoffs_limits = c(50, 10000),
+    generate_plot = TRUE, slope_threshold = 0.001, rho_threshold = 0.95,
+    compute_aa = FALSE, verbose = TRUE) {
     if (verbose) message("1 . Computing reference tTEscanR object.")
-    ref <- ReferenceObject(data = data, compute_aa = compute_aa)
+    ref <- referenceObject(data = data, compute_aa = compute_aa)
     anticodon <- ref$anticodon
     supply <- ref$supply
     col_sums <- colSums(data)
-    data <- TransformCounts(data)
+    data <- transformCounts(data)
     if (verbose) message("1 . COMPLETED\n2 . Extracting the potential cutoffs.")
     cuts <- c()
     retrieved_conditions <- c()
@@ -55,19 +53,20 @@ tRNASetCutoff <- function(
             "COMPLETED\n3 . Compute correlations and determine optimal cutoff."
         )
     }
-    cutoff_res <- RunIterations(
+    cutoff_res <- runIterations(
         num_iter = num_iter, data = data, anticodon = anticodon, cuts = cuts,
-        supply = supply, slope = slope_threshold, rho = rho_threshold)
+        supply = supply, slope = slope_threshold, rho = rho_threshold
+    )
     if (verbose) message("3 . COMPLETED")
     cutoff_res <- dplyr::bind_rows(cutoff_res, .id = "iteration")
     if (isTRUE(generate_plot)) {
         if (verbose) message("4 . Generating plots.")
-        cor_results <- ComputeCorrelations(
+        cor_results <- computeCorrelations(
             data = data, ref_anticodon = anticodon, ref_supply = supply,
             cutoffs = cuts
         )
-        corr_plot <- CorrelationCutoffPlot(data = cor_results)
-        hist_plot <- SelectionCutoffPlot(data = cutoff_res)
+        corr_plot <- correlationCutoffPlot(data = cor_results)
+        hist_plot <- selectionCutoffPlot(data = cutoff_res)
         if (verbose) message("4 . COMPLETED")
         return(list(
             optimal_cutoff = cutoff_res,
@@ -81,61 +80,64 @@ tRNASetCutoff <- function(
 #' Generate a tRNA expression matrix
 #'
 #' @param data \code{SummarizedExperiment}, \code{ChromatinAssay}, or
-#' \code{SeuratObject}.
+#'      \code{SeuratObject}.
 #' @param confidence_set Either a file path to the tRNA annotations
-#' (confidence set file from gtRNAdb), or a GRanges object. Contains the set of
-#' high confidence tRNA genes
+#'      (confidence set file from gtRNAdb), or a GRanges object. Contains the
+#'      set of high confidence tRNA genes
 #' @param tRNA_name_map Optional; a \code{data.frame} with the tRNA gene names
-#' linked to \code{confidence_set}. Contains two columns: tRNAscan-SE and
-#' GtRNAdb gene ids.
+#'      linked to \code{confidence_set}. Contains two columns: tRNAscan-SE and
+#'      GtRNAdb gene ids.
 #' @param species Optional; either \code{"hg38"} (human) or \code{"mm39"}
-#' (mouse) to load the default \code{confidence_set}
+#'      (mouse) to load the default \code{confidence_set}
 #' @param flanking_region Integer; number of nucleotides that form the flanking
-#' region of each tRNA. Defaults to 100.
+#'      region of each tRNA. Defaults to 100.
 #' @param assay Optional; a character string specifying the name of the assay to
-#' retrieve from \code{data} if it is a \code{SeuratObject}. Defaults to
-#' \code{"peaks"}.
+#'      retrieve from \code{data} if it is a \code{SeuratObject}. Defaults to
+#'      \code{"peaks"}.
 #' @param name_sep A string delimiter to format the tRNA gene names in the
-#' output matrix. Defaults to \code{c("-", "-")}.
+#'      output matrix. Defaults to \code{c("-", "-")}.
 #' @param save Logical; if \code{TRUE} stores the generated tRNA matrix into a
-#' file.
+#'      file.
 #' @param out_name Optional; name for the saved plot (if \code{save} specified).
 #' @param out_directory Optional; path to the directory where the plot will be
-#' saved (if \code{save} specified).
+#'      saved (if \code{save} specified).
 #' @param verbose Logical; if \code{TRUE}, displays information messages.
-#' Defaults to \code{TRUE}.
+#'      Defaults to \code{TRUE}.
 #'
 #' @return Sparse matrix of tRNA counts (tRNAs x cells)
 #' @export
 #'
-tRNAGetMatrix <- function(
-    data, assay = "peaks", confidence_set = NULL, tRNA_name_map = NULL,
-    species = NULL, flanking_region = 100, name_sep = c("-", "-"), save = TRUE,
-    out_name = NULL, out_directory = NULL, verbose = TRUE
-) {
+tRNAGetMatrix <- function(data, assay = "peaks", confidence_set = NULL,
+    tRNA_name_map = NULL, species = NULL, flanking_region = 100,
+    name_sep = c("-", "-"), save = TRUE, out_name = NULL, out_directory = NULL,
+    verbose = TRUE) {
     if (verbose) message("1 . Importing the high-confidence tRNA annotations.")
-    tRNA_granges <- Get_tRNARanges(
+    tRNA_granges <- getRangestRNA(
         conf = confidence_set, flanking_region = flanking_region,
         map = tRNA_name_map, species = species, verbose = verbose
     )
-    if (verbose) message(
-        "1 . COMPLETED\n", "2 . Filtering tRNA genes with unknown annotations."
-    )
-    tRNA_granges <- Filter_tRNARanges(
+    if (verbose) {
+        message(
+            "1 . COMPLETED\n2 . Filtering tRNA genes with unknown annotations."
+        )
+    }
+    tRNA_granges <- filterRangestRNA(
         granges = tRNA_granges, flanking_region = flanking_region,
         map = tRNA_name_map, species = species
     )
-    if (verbose) message(
-        "2 . COMPLETED\n", "3 . Finding overlaps and aggregating tRNA counts."
-    )
-    tRNA_matrix <- GenerateMatrix(
+    if (verbose) {
+        message(
+            "2 . COMPLETED\n3 . Finding overlaps and aggregating tRNA counts."
+        )
+    }
+    tRNA_matrix <- generateMatrix(
         data = data, tRNA_granges = tRNA_granges, assay = assay,
         name_sep = name_sep, verbose = verbose
     )
     if (verbose) message("3 . COMPLETED\n")
     if (isTRUE(save)) {
         if (verbose) message("4 . Exporting tRNA expression matrix.")
-        output_file <- GetOutputName(
+        output_file <- getOutputName(
             action = "file", out_name = out_name, out_directory = out_directory,
             save_format = "rds", verbose = verbose
         )
@@ -145,27 +147,31 @@ tRNAGetMatrix <- function(
     return(tRNA_matrix) # tRNA gene matrix to us as input in tTEscanR
 }
 
-Get_tRNARanges <- function(conf, flanking_region, map, species, verbose) {
+getRangestRNA <- function(conf, flanking_region, map, species, verbose) {
     # No annotations provided, using default data (if possible)
     if (is.null(conf)) {
-        if (is.null(species)) stop(
-            "No 'confidence_set' provided and no 'species' specified.\n",
-            "Specify 'hg38' for human or 'mm39' for mouse default data."
-        )
-        granges <- SelectDefaultData(
+        if (is.null(species)) {
+            stop(
+                "No 'confidence_set' provided and no 'species' specified.\n",
+                "Specify 'hg38' for human or 'mm39' for mouse default data."
+            )
+        }
+        granges <- selectDefaultData(
             species = species, action = "confidence_set"
         )
-    # The conf parameter is already a GRanges object
+        # The conf parameter is already a GRanges object
     } else if (inherits(conf, "GRanges")) {
         if (verbose) message("The input is already a GRanges object.")
         granges <- conf
-    # The conf parameter is the file to the confidence-set file
+        # The conf parameter is the file to the confidence-set file
     } else if (is.character(conf)) { # Input is a path
         if (file.exists(conf) || dir.exists(conf)) {
             if (verbose) message("Importing tRNA annotations from: ", conf)
             granges <- tRNAscanImport::import.tRNAscanAsGRanges(conf)
-        } else stop("The provided path does not exist: ", conf)
-    # Incorrect format
+        } else {
+            stop("The provided path does not exist: ", conf)
+        }
+        # Incorrect format
     } else {
         stop(
             "The 'confidence_set' argument must be a valid file path ",
@@ -175,31 +181,31 @@ Get_tRNARanges <- function(conf, flanking_region, map, species, verbose) {
     return(granges)
 }
 
-Filter_tRNARanges <- function(granges, flanking_region, map, species) {
+filterRangestRNA <- function(granges, flanking_region, map, species) {
     granges <- granges[granges$tRNA_anticodon != "NNN"] # Filter unknown
     granges <- GenomicRanges::trim(granges + flanking_region)
 
     if (is.null(map)) {
-        if (is.null(species)) stop(
-            "No 'tRNA_name_map' provided and no 'species' specified.\n",
-            "Specify 'hg38' for human or 'mm39' for mouse default data."
-        )
-        map <- SelectDefaultData(species = species, action = "tRNA_map")
-
+        if (is.null(species)) {
+            stop(
+                "No 'tRNA_name_map' provided and no 'species' specified.\n",
+                "Specify 'hg38' for human or 'mm39' for mouse default data."
+            )
+        }
+        map <- selectDefaultData(species = species, action = "tRNA_map")
     }
 
     tRNA_id <- paste0(GenomicRanges::seqnames(granges), ".trna", granges$no)
     map_vec <- stats::setNames(map$GtRNAdb_id, map$tRNAscan.SE_id)
     granges$gene_name <- map_vec[tRNA_id]
 
-    granges$gene_biotype <- 'tRNA'
+    granges$gene_biotype <- "tRNA"
 
     return(granges)
 }
 
-GenerateMatrix <- function(data, tRNA_granges, assay, name_sep, verbose) {
+generateMatrix <- function(data, tRNA_granges, assay, name_sep, verbose) {
     if (inherits(data, "SummarizedExperiment")) {
-
         counts_peak_matrix <- SummarizedExperiment::assay(data, "counts")
         peak_ranges <- SummarizedExperiment::rowRanges(data)
         match <- GenomicRanges::findOverlaps(tRNA_granges, peak_ranges)
@@ -210,11 +216,12 @@ GenerateMatrix <- function(data, tRNA_granges, assay, name_sep, verbose) {
         tRNA_matrix <- M %*% as.matrix(counts_peak_matrix)
         rownames(tRNA_matrix) <- tRNA_granges$gene_name
         colnames(tRNA_matrix) <- colnames(counts_peak_matrix)
-
     } else if (inherits(data, c("Seurat", "ChromatinAssay"))) {
         chrom_assay <- if (inherits(data, "Seurat")) {
             data[[assay %||% "peaks"]] # Check the peaks identifier
-        } else data
+        } else {
+            data
+        }
 
         if (is.null(chrom_assay)) stop("Requested assay not found in object.")
         frags <- Signac::Fragments(chrom_assay)
@@ -229,7 +236,6 @@ GenerateMatrix <- function(data, tRNA_granges, assay, name_sep, verbose) {
 
         matched_indices <- match(rownames(tRNA_matrix), all_tRNA_coords)
         rownames(tRNA_matrix) <- tRNA_granges$gene_name[matched_indices]
-
     } else {
         stop(
             "Unsupported 'data' type. Use SummarizedExperiment, Seurat, ",
@@ -248,14 +254,14 @@ GenerateMatrix <- function(data, tRNA_granges, assay, name_sep, verbose) {
 #' may bias downstream analyses.
 #'
 #' @param data A \code{matrix} or \code{data.frame} of tRNA gene expression
-#' data, with tRNA genes as rows and conditions as columns.
+#'      data, with tRNA genes as rows and conditions as columns.
 #' @param cutoff Numeric; minimum total number of tRNA cuts required to retain
-#' a condition in \code{data}. Defaults to 5000.
+#'      a condition in \code{data}. Defaults to 5000.
 #' @param verbose Logical; if \code{TRUE}, displays information messages.
-#' Defaults to \code{TRUE}.
+#'      Defaults to \code{TRUE}.
 #'
 #' @return A filtered \code{matrix} or \code{data.frame} with tRNAs below the
-#' cutoff removed.
+#'      cutoff removed.
 #' @export
 #'
 #' @examples
@@ -265,6 +271,10 @@ GenerateMatrix <- function(data, tRNA_granges, assay, name_sep, verbose) {
 #'     cutoff = 5000
 #' )
 tRNAFilterCuts <- function(data, cutoff = 5000, verbose = TRUE) {
+    if (ncol(data) == 0 || nrow(data) == 0) {
+        stop("Input matrix is empty. Cannot perform filtering calculations.")
+    }
+
     if (verbose) {
         message(
             "--- Filtering the tRNA gene abundance count matrix ---",
@@ -279,9 +289,10 @@ tRNAFilterCuts <- function(data, cutoff = 5000, verbose = TRUE) {
 
     data <- data[, keep_samples, drop = FALSE]
     if (verbose) {
-        message("- Samples retained: ", ncol(data),
-                "\n--- The tRNA gene abundance count matrix has been ",
-                "successfully filtered ---"
+        message(
+            "- Samples retained: ", ncol(data),
+            "\n--- The tRNA gene abundance count matrix has been ",
+            "successfully filtered ---"
         )
     }
 
@@ -293,26 +304,37 @@ tRNAFilterCuts <- function(data, cutoff = 5000, verbose = TRUE) {
 #' @param data A \code{matrix} with tRNA tags as rows.
 #' @param tRNA_bed Path to the directory that contains the .bed file
 #' @param flanking_region Numeric; number of bases to include expand the region
-#' interrogated. Defaults to 100.
+#'      interrogated. Defaults to 100.
+#' @param name_sep A string delimiter to format the tRNA gene names in the
+#'      output matrix. Defaults to \code{c("-", "-")}.
 #'
 #' @returns A \code{data} with the translated tRNA gene names.
 #' @export
 #'
-tRNASetGenes <- function(data, tRNA_bed, flanking_region = 100) {
+tRNASetGenes <- function(data, tRNA_bed, flanking_region = 100,
+    name_sep = c("-", "-")) {
     tRNA_table <- utils::read.delim(
         tRNA_bed,
         header = FALSE,
         stringsAsFactors = FALSE
     )
 
-    tRNA_table$V2 <- tRNA_table$V2 + 1 - flanking_region
+    tRNA_table$V2 <- pmax(1, tRNA_table$V2 + 1 - flanking_region)
     tRNA_table$V3 <- tRNA_table$V3 + flanking_region
 
-    ref_regions <- paste(tRNA_table$V1, tRNA_table$V2, tRNA_table$V3, sep = "-")
+    sep1 <- name_sep[1]
+    sep2 <- if (length(name_sep) >= 2) name_sep[2] else name_sep[1]
+
+    ref_regions <- paste0(
+        tRNA_table$V1, sep1, tRNA_table$V2, sep2,tRNA_table$V3
+    )
     mapping <- stats::setNames(tRNA_table$V4, ref_regions)
 
-    new_names <- mapping[rownames(data)]
-    rownames(data) <- ifelse(is.na(new_names), rownames(data), new_names)
+    current_rownames <- rownames(data)
+    new_names <- mapping[current_rownames]
+    rownames(data) <- unname(
+        ifelse(is.na(new_names), current_rownames, new_names)
+    )
 
     return(data)
 }
@@ -324,7 +346,7 @@ tRNASetGenes <- function(data, tRNA_bed, flanking_region = 100) {
 #' @param ... A variable number of \code{matrix}.
 #'
 #' @return A single sparse matrix with as a combination of all the input
-#' matrices.
+#'      matrices.
 #' @export
 #'
 #' @examples
@@ -380,7 +402,7 @@ MergeMatrices <- function(...) {
 #'
 #' @param data A \code{matrix} with the features to group for as columns.
 #' @param group_labels A \code{vector} with the metadata features to group
-#' the columns in \code{data}
+#'      the columns in \code{data}
 #'
 #' @return A \code{matrix} with the conditions merged based on the metadata.
 #' @export
@@ -393,8 +415,8 @@ MergeMatrices <- function(...) {
 #' )
 #' rownames(data) <- c("gene_1", "gene_2", "gene_3")
 #' groups <- c("cond_A", "cond_A", "cond_A", "cond_B", "cond_B", "cond_B")
-#' data_combined <- GroupConditions(data = data, group_labels = groups)
-GroupConditions <- function(data, group_labels) {
+#' data_combined <- groupConditions(data = data, group_labels = groups)
+groupConditions <- function(data, group_labels) {
     # Check the dimensions
     if (ncol(data) != length(group_labels)) {
         stop(
@@ -440,45 +462,48 @@ GroupConditions <- function(data, group_labels) {
 #' long-format \code{tibble}. Optionally normalizes the values.
 #'
 #' @param data A table to be converted. Supported formats: \code{matrix} or
-#' \code{data.frame}.
+#'      \code{data.frame}.
 #' @param normalize Logical; if \code{TRUE}, values are converted to relative
-#' frequencies. Defaults to \code{FALSE}.
+#'      frequencies. Defaults to \code{FALSE}.
 #' @param rownames_to_column A character string specifying the name of the new
-#' column that will hold the former row names in \code{data}.
+#'      column that will hold the former row names in \code{data}.
 #' @param names_to A character string specifying the name of the new column
-#' that will hold the former column names in \code{data}.
+#'      that will hold the former column names in \code{data}.
 #' @param values_to A character string specifying the name of the new column
-#' that will hold the corresponding values from the pivoted columns in
-#' \code{data}.
+#'      that will hold the corresponding values from the pivoted columns in
+#'      \code{data}.
 #'
 #' @return A tibble of the input \code{data}
 #' @export
 #'
 #' @examples
 #' data(default_tTEscanR_tRNA_data)
-#' tRNA_long_format <- TransformFormat(
+#' tRNA_long_format <- transformFormat(
 #'     data = default_tTEscanR_tRNA_data,
 #'     normalize = FALSE,
 #'     rownames_to_column = "tRNA_genes",
 #'     names_to = "condition",
 #'     values_to = "abundance"
 #' )
-#' tTEobj <- CreateObject(
+#' tTEobj <- createObject(
 #'     counts = default_tTEscanR_tRNA_data,
 #'     assay = "tRNA"
 #' )
-#' tTEobj <- ComputeAnticodonUsage(object = tTEobj)
-#' anticodon_long_format <- TransformFormat(
+#' tTEobj <- computeAnticodonUsage(object = tTEobj)
+#' anticodon_long_format <- transformFormat(
 #'     data = getAssay(tTEobj, "AnticodonUsage"),
 #'     normalize = TRUE,
 #'     rownames_to_column = "anticodons",
 #'     names_to = "condition", values_to = "usage"
 #' )
-TransformFormat <- function(
-    data, normalize, rownames_to_column, names_to, values_to
-) {
+transformFormat <- function(data, normalize, rownames_to_column, names_to,
+    values_to) {
     # Vectorized normalization (if required)
-    if (isTRUE(normalize)) data <- t(t(data) / colSums(data))
+    if (isTRUE(normalize)) {
+        c_sums <- colSums(data)
+        c_sums[c_sums == 0] <- 1 # Avoid dividing by 0 (avoid NaN/Inf)
+        data <- t(t(data) / c_sums)
+    }
 
     # Ensure data is a matrix
     if (!is.matrix(data)) data <- as.matrix(data)
@@ -487,14 +512,14 @@ TransformFormat <- function(
     num_col <- ncol(data)
 
     # Transform the data into a long format
-    long_format <- data.frame(rep.int(rownames(data), num_col),
-        rep.int(colnames(data), rep.int(num_row, num_col)),
-        as.vector(data),
+    long_format <- data.frame(
+        rep.int(rownames(data), num_col),
+        rep.int(colnames(data), rep.int(num_row, num_col)), as.vector(data),
         stringsAsFactors = FALSE
     )
     colnames(long_format) <- c(rownames_to_column, names_to, values_to)
 
-    CheckDataFrame(long_format) # Evaluate that the data is properly defined
+    checkDataFrame(long_format) # Evaluate that the data is properly defined
 
     # Returns the processed data (long-format and normalized if applicable).
     return(long_format)

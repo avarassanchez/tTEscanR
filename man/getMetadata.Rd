@@ -25,7 +25,7 @@ This function safely retrieves the specified metadata from a
 }
 \examples{
 data(default_tTEscanR_mRNA_data, default_tTEscanR_metadata)
-tTEscanR_obj <- CreateObject(
+tTEscanR_obj <- createObject(
     counts = default_tTEscanR_mRNA_data,
     assay = "mRNA",
     meta.data = default_tTEscanR_metadata,

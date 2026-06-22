@@ -5,24 +5,24 @@
 \title{Compute the DESeq2 Analysis}
 \usage{
 ComputeDEResults(
-    list_data,
-    metadata,
-    condition = NULL,
-    batch = NULL,
-    reference = NULL,
-    reduce = 100,
-    padj_threshold = 0.05,
-    verbose = TRUE
+  list_data,
+  metadata,
+  condition = NULL,
+  batch = NULL,
+  reference = NULL,
+  reduce = 100,
+  padj_threshold = 0.05,
+  verbose = TRUE
 )
 }
 \arguments{
 \item{list_data}{A \code{list} of matrices with features (i.e. genes, codons,
-anticodons or amino acids) as rows and samples or conditions as columns. The
-list can be named or unnamed.}
+anticodons or amino acids) as rows and samples or conditions as columns.
+The list can be named or unnamed.}
 
 \item{metadata}{A \code{data.frame} with the data associated to the
-conditions in the matrices of \code{list_data}. There has to be one column
-with the same labels as the column names.}
+conditions in the matrices of \code{list_data}. There has to be one
+column with the same labels as the column names.}
 
 \item{condition}{Optional; a factor based on \code{metadata} columns to
 define the comparisons to perform in a targeted analysis. Defaults to
@@ -32,8 +32,8 @@ define the comparisons to perform in a targeted analysis. Defaults to
 to correct the data. Required if \code{dim_reduct} specified.}
 
 \item{reference}{Optional; factor from the \code{batch} variable to use as
-reference for the corrections. If not specified, the 1st factor that appears
-will be used instead.}
+reference for the corrections. If not specified, the 1st factor that
+appears will be used instead.}
 
 \item{reduce}{Numeric; a scaling factor used to normalize large expression
 values that exceed R's handling capacity. Defaults to 100.}

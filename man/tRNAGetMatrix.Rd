@@ -5,17 +5,17 @@
 \title{Generate a tRNA expression matrix}
 \usage{
 tRNAGetMatrix(
-    data,
-    assay = "peaks",
-    confidence_set = NULL,
-    tRNA_name_map = NULL,
-    species = NULL,
-    flanking_region = 100,
-    name_sep = c("-", "-"),
-    save = TRUE,
-    out_name = NULL,
-    out_directory = NULL,
-    verbose = TRUE
+  data,
+  assay = "peaks",
+  confidence_set = NULL,
+  tRNA_name_map = NULL,
+  species = NULL,
+  flanking_region = 100,
+  name_sep = c("-", "-"),
+  save = TRUE,
+  out_name = NULL,
+  out_directory = NULL,
+  verbose = TRUE
 )
 }
 \arguments{
@@ -27,8 +27,8 @@ retrieve from \code{data} if it is a \code{SeuratObject}. Defaults to
 \code{"peaks"}.}
 
 \item{confidence_set}{Either a file path to the tRNA annotations
-(confidence set file from gtRNAdb), or a GRanges object. Contains the set of
-high confidence tRNA genes}
+(confidence set file from gtRNAdb), or a GRanges object. Contains the
+set of high confidence tRNA genes}
 
 \item{tRNA_name_map}{Optional; a \code{data.frame} with the tRNA gene names
 linked to \code{confidence_set}. Contains two columns: tRNAscan-SE and

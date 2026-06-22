@@ -24,7 +24,7 @@ This function safely retrieves the specified data from a
 }
 \examples{
 data(default_tTEscanR_mRNA_data)
-tTEscanR_obj <- CreateObject(
+tTEscanR_obj <- createObject(
     counts = default_tTEscanR_mRNA_data,
     assay = "mRNA"
 )

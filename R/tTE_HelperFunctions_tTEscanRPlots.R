@@ -1,8 +1,24 @@
 #' @importFrom rlang :=
 
-GetSafeColorScale <- function(
-    n_colors, color_palette = NULL, aes_type = "fill"
-) {
+checkPaletteNames <- function(color_palette, actual_categories) {
+    if (is.list(color_palette)) color_palette <- unlist(color_palette)
+
+    if (!is.null(color_palette) && !is.null(names(color_palette))) {
+        if (!any(names(color_palette) %in% unique(actual_categories))) {
+            warning(
+                "Provided 'color_palette' names do not match data categories. ",
+                "Applying colors sequentially instead."
+            )
+            color_palette <- unname(color_palette)
+        }
+    }
+    return(color_palette)
+}
+
+getSafeColorScale <- function(n_colors, color_palette = NULL,
+    aes_type = "fill") {
+    if (is.list(color_palette)) color_palette <- unlist(color_palette)
+
     use_custom <- !is.null(color_palette) && (length(color_palette) >= n_colors)
     use_internal <- n_colors <= length(gradual_groups_35)
 
@@ -22,11 +38,12 @@ GetSafeColorScale <- function(
                 n_colors, " categories. Defaulting to internal palette."
             )
         }
+        selected_colors <- unname(gradual_groups_35[seq_len(n_colors)])
         if (aes_type == "fill") {
-            return(ggplot2::scale_fill_manual(values = gradual_groups_35))
+            return(ggplot2::scale_fill_manual(values = selected_colors))
         }
         if (aes_type == "color") {
-            return(ggplot2::scale_color_manual(values = gradual_groups_35))
+            return(ggplot2::scale_color_manual(values = selected_colors))
         }
     }
 
@@ -36,7 +53,6 @@ GetSafeColorScale <- function(
             n_colors, " categories. Defaulting to viridis palette."
         )
     }
-
     if (aes_type == "fill") {
         return(ggplot2::scale_fill_viridis_d(option = "viridis"))
     }
@@ -45,13 +61,12 @@ GetSafeColorScale <- function(
     }
 }
 
-SavePlot <- function(
-    plot, save_format, out_name, out_directory, width = 8, height = 6, verbose
-) {
+savePlot <- function(plot, save_format, out_name, out_directory, width = 8,
+    height = 6, verbose) {
     save_format <- tolower(save_format)
 
     if (save_format %in% c("png", "pdf")) {
-        output_file <- GetOutputName(
+        output_file <- getOutputName(
             action = "plot", out_name = out_name,
             out_directory = out_directory,
             save_format = save_format,
@@ -70,9 +85,8 @@ SavePlot <- function(
     }
 }
 
-GetOutputName <- function(
-    action, out_name, out_directory, save_format, verbose
-) {
+getOutputName <- function(action, out_name, out_directory, save_format,
+    verbose) {
     if (is.null(out_directory)) {
         if (verbose) {
             message(
@@ -90,9 +104,12 @@ GetOutputName <- function(
                 "A standard name will be used."
             )
         }
-        out_name <- ifelse(action == "plot", "distribution_plot",
-            "tRNA_expression_matrix"
-        )
+
+        if (action == "plot") {
+            out_name <- "distribution_plot"
+        } else {
+            out_name <- "tRNA_expression_matrix"
+        }
     }
 
     # Check if the output name already contains the format extension
@@ -107,14 +124,14 @@ GetOutputName <- function(
     return(output_file) # Returns the output name.
 }
 
-GetAnnotData <- function(permut_data, sig_data) {
+getAnnotData <- function(permut_data, sig_data) {
     # Check that the expected columns are present in the data
-    CheckValueInData(
+    checkValueInData(
         param = "permut_data", observed = colnames(permut_data),
         expected = c("codon", "freq")
     )
 
-    CheckValueInData(
+    checkValueInData(
         param = "sig_data", observed = colnames(sig_data),
         expected = c(
             "group", "codon", "freq", "p_val", "tail", "p_val_adj", "sig_adj"
@@ -122,10 +139,12 @@ GetAnnotData <- function(permut_data, sig_data) {
     )
 
     labels_df <- sig_data %>%
-        dplyr::mutate(label = ifelse(.data$sig_adj,
-            paste0("p=", signif(.data$p_val_adj, 2), "*"),
-            paste0("p=", signif(.data$p_val_adj, 2))
-        ))
+        dplyr::mutate(
+            label = ifelse(
+                .data$sig_adj, paste0("p=", signif(.data$p_val_adj, 2), "*"),
+                paste0("p=", signif(.data$p_val_adj, 2))
+            )
+        )
 
     annot_data_labels <- labels_df %>%
         dplyr::group_by(.data$codon) %>%
@@ -137,7 +156,7 @@ GetAnnotData <- function(permut_data, sig_data) {
     return(list(sig_data = sig_data, annot_data_labels = annot_data_labels))
 }
 
-CheckValueInData <- function(param, observed, expected) {
+checkValueInData <- function(param, observed, expected) {
     if (is.null(observed)) {
         return()
     }
@@ -155,7 +174,7 @@ CheckValueInData <- function(param, observed, expected) {
     }
 }
 
-CheckDataInLongFormat <- function(data) {
+checkDataInLongFormat <- function(data) {
     if (!is.data.frame(data)) {
         stop("The input 'data' must be a data.frame or tibble.")
     }
@@ -164,7 +183,8 @@ CheckDataInLongFormat <- function(data) {
     num_cols <- vapply(data, is.numeric, FUN.VALUE = logical(1))
 
     # One categorical column
-    cat_cols <- vapply(data, function(x) is.character(x) || is.factor(x),
+    cat_cols <- vapply(
+        data, function(x) is.character(x) || is.factor(x),
         FUN.VALUE = logical(1)
     )
 
@@ -179,18 +199,16 @@ CheckDataInLongFormat <- function(data) {
     }
 }
 
-GenerateDistPlot <- function(
-    level, target, data, x_axis, y_axis, color, add_titles, show_legend, ncols,
-    bar, facet, add_stats
-) {
+generateDistPlot <- function(level, target, data, x_axis, y_axis, color,
+    add_titles, show_legend, ncols, bar, facet, add_stats) {
     if (level %in% c("jitter", "dot")) {
         p <- ggplot2::ggplot(data = data, mapping = ggplot2::aes(
-            x = .data[[x_axis]], y = .data[[y_axis]],
-            color = .data[[target]]))
+            x = .data[[x_axis]], y = .data[[y_axis]], color = .data[[target]]
+        ))
     } else {
         p <- ggplot2::ggplot(data = data, mapping = ggplot2::aes(
-            x = .data[[x_axis]], y = .data[[y_axis]],
-            fill = .data[[target]]))
+            x = .data[[x_axis]], y = .data[[y_axis]], fill = .data[[target]]
+        ))
     }
     if (level == "jitter") p <- p + ggplot2::geom_jitter(size = 0.5)
     if (level == "barplot") {
@@ -205,22 +223,23 @@ GenerateDistPlot <- function(
         legend.position = show_legend
     )
     if (!is.null(facet)) {
-        p <- p + ggplot2::facet_wrap(ggplot2::vars(
-            .data[[facet]]), ncol = ncols)
+        p <-p + ggplot2::facet_wrap(ggplot2::vars(.data[[facet]]), ncol = ncols)
     }
     if (level == "dot") {
         p <- p + ggplot2::theme(strip.text = ggplot2::element_blank())
     }
     current_aes <- if (level %in% c("jitter", "dot")) "color" else "fill"
-    p <- p + GetSafeColorScale(
-        n_colors = length(unique(data[[target]])), color_palette = color,
-        aes_type = current_aes
+    unique_cat <- unique(data[[target]])
+    palette <- checkPaletteNames(color, unique_cat)
+    p <- p + getSafeColorScale(
+        n_colors = length(unique_cat),
+        color_palette = palette, aes_type = current_aes
     )
     if (isTRUE(add_titles)) {
         p <- p + ggplot2::labs(x = x_axis, y = paste(x_axis, "usage counts"))
     }
     if (isTRUE(add_stats)) { # Statistical Logic
-        stats_results <- AddSignificanceDist(
+        stats_results <- addSignificanceDist(
             data = data, plot = p, x_axis_col = x_axis, y_axis_col = y_axis,
             target = target, facet_col = facet
         )
@@ -230,10 +249,9 @@ GenerateDistPlot <- function(
     }
 }
 
-AddSignificanceDist <- function(
-    data, plot, x_axis_col, y_axis_col, target, facet_col
-) {
-    sig_table <- ComputeBoxplotSignificance(
+addSignificanceDist <- function(data, plot, x_axis_col, y_axis_col, target,
+    facet_col) {
+    sig_table <- computeBoxplotSignificance(
         data,
         x_col = x_axis_col, y_col = y_axis_col, target_col = target,
         group_col = facet_col
@@ -252,10 +270,8 @@ AddSignificanceDist <- function(
     return(list(sig_table = sig_table, plot = plot))
 }
 
-DrawBarCountsPlot <- function(
-    data, var_numerical, var_categorical, var_color, color_palette,
-    show_legend, order, x_limits, facet_col
-) {
+drawBarCountsPlot <- function(data, var_numerical, var_categorical, var_color,
+    color_palette, show_legend, order, x_limits, facet_col) {
     # Set a specific order of the features (if available)
     if (!is.null(order)) {
         data[[var_categorical]] <- factor(
@@ -283,7 +299,7 @@ DrawBarCountsPlot <- function(
     }
 
     n_colors <- length(unique(data[[var_color]]))
-    plot <- plot + GetSafeColorScale(
+    plot <- plot + getSafeColorScale(
         n_colors = n_colors, color_palette = color_palette, aes_type = "fill"
     )
 
@@ -294,9 +310,8 @@ DrawBarCountsPlot <- function(
     return(plot)
 }
 
-DrawDonutPlot <- function(
-    data, var_numerical, var_categorical, color_palette, show_legend
-) {
+drawDonutPlot <- function(data, var_numerical, var_categorical, color_palette,
+    show_legend) {
     total <- sum(data[[var_numerical]], na.rm = TRUE) # Compute percentages
     if (total == 0) {
         stop(
@@ -337,57 +352,55 @@ DrawDonutPlot <- function(
         ggplot2::coord_polar(theta = "y") +
         ggplot2::xlim(c(-1, label_position)) +
         ggplot2::theme_void()
-    plot <- plot + GetSafeColorScale(
+    plot <- plot + getSafeColorScale(
         n_colors = n_cat, color_palette = color_palette, aes_type = "fill"
     )
     plot <- plot + ggplot2::theme(legend.position = show_legend)
     return(plot)
 }
 
-ComputeRings <- function(
-    data, var_color, var_categorical, var_numerical, normalize, n_rings, zoom
-) {
+computeRings <- function(data, var_color, var_cat, var_num,
+    norm, n_rings, zoom) {
     # Standardize dummy groups if needed
-    if (is.null(var_color) || var_color == var_categorical) {
+    if (is.null(var_color) || var_color == var_cat) {
         data$.__dummy_group__ <- "all"
         var_color <- ".__dummy_group__"
     }
-    if (!is.numeric(data[[var_numerical]])) { # Ensure column is numeric
-        data[[var_numerical]] <- as.numeric(as.character(data[[var_numerical]]))
+    if (!is.numeric(data[[var_num]])) { # Ensure column is numeric
+        data[[var_num]] <- as.numeric(as.character(data[[var_num]]))
     }
 
     tmp <- data %>% # Pivot data to get wide format for ggradar
         dplyr::select(dplyr::all_of(c(
-            var_color, var_categorical, var_numerical
+            var_color, var_cat, var_num
         ))) %>% tidyr::pivot_wider(
             id_cols = dplyr::all_of(var_color), names_from = dplyr::all_of(
-                var_categorical
-            ), values_from = dplyr::all_of(var_numerical),
+                var_cat
+            ), values_from = dplyr::all_of(var_num),
             values_fn = sum, values_fill = 0
         )
     num_cols <- setdiff(colnames(tmp), var_color)
 
-    if (isTRUE(normalize)) { # Apply normalization if requested
+    if (isTRUE(norm)) { # Apply normalization if requested
         # Ensure is a vector for division
         row_totals <- rowSums(tmp[, num_cols, drop = FALSE], na.rm = TRUE)
         row_totals[row_totals == 0] <- 1 # Prevent division by zero
         tmp[num_cols] <- tmp[num_cols] / row_totals
     }
-
     all_numeric_values <- unlist(tmp[num_cols]) # Get numbers to calculate dist.
     if (isTRUE(zoom)) {
         # Calculate the 95th percentile
         max_val <- stats::quantile(all_numeric_values, 0.95, na.rm = TRUE)
         max_val <- as.numeric(max_val) + 0.00001
     } else {
-        if (isTRUE(normalize)) {
+        if (isTRUE(norm)) {
             max_val <- 1.00001
         } else {
             max_val <- max(all_numeric_values, na.rm = TRUE) + 0.00001
         }
     }
     ring_values <- seq(0, max_val, length.out = n_rings) # Equally spaced ring
-    if (isTRUE(normalize)) { # Create labels based on normalization
+    if (isTRUE(norm)) { # Create labels based on normalization
         labels_rings <- paste0(round(ring_values * 100, 1), "%")
     } else {
         labels_rings <- as.character(round(ring_values, 2))
@@ -395,24 +408,25 @@ ComputeRings <- function(
     return(list(max_val = max_val, labels_rings = labels_rings))
 }
 
-DrawRadarPlot <- function(
-    data, var_color, var_categorical, var_numerical, normalize, zoom, title,
-    add_titles, show_legend, global_max_val = NULL, labels_rings = NULL,
-    color_palette
-) {
+drawRadarPlot <- function(data, var_color, var_categorical, var_numerical,
+    normalize, zoom, title, add_titles, show_legend, global_max_val = NULL,
+    labels_rings = NULL, color_palette) {
     if (is.null(var_color) || var_color == var_categorical) {
-        data$.__dummy_group__ <- "all"
+        data$.__dummy_group__. <- "all"
         var_color <- ".__dummy_group__."
     }
     if (!is.numeric(data[[var_numerical]])) {
         data[[var_numerical]] <- as.numeric(as.character(data[[var_numerical]]))
     }
-    p <- data %>% dplyr::select(dplyr::all_of(
+    p <- data %>%
+        dplyr::select(dplyr::all_of(
             c(var_color, var_categorical, var_numerical)
-        )) %>% tidyr::pivot_wider(
+        )) %>%
+        tidyr::pivot_wider(
             id_cols = dplyr::all_of(var_color), names_from =
                 dplyr::all_of(var_categorical), values_from = dplyr::all_of(
-                var_numerical), values_fn = sum, values_fill = 0
+                var_numerical
+            ), values_fn = sum, values_fill = 0
         )
     if (isTRUE(normalize)) {
         num_cols <- setdiff(colnames(p), var_color)
@@ -425,17 +439,15 @@ DrawRadarPlot <- function(
     if (!is.null(color_palette)) {
         n_groups <- nrow(p)
         if (length(color_palette) < n_groups) {
-            warning(
-                "Not enough colors in 'color_palette'. ",
-                "Defaulting to ggradar's internal palette."
-            )
+            warning("Uncomplete 'color_palette', using internal palette.")
             color_palette <- NULL
         } else {
             color_palette <- color_palette[seq_len(n_groups)]
         }
     }
     radar_plot <- ggradar::ggradar(
-        p, background.circle.colour = "white", group.colours = color_palette,
+        p,
+        background.circle.colour = "white", group.colours = color_palette,
         grid.min = 0, values.radar = labels_rings, grid.max = global_max_val,
         grid.mid = global_max_val / 2, gridline.min.linetype = 1,
         gridline.mid.linetype = 1, gridline.max.linetype = 1,
@@ -446,32 +458,30 @@ DrawRadarPlot <- function(
     return(radar_plot)
 }
 
-GenerateProportionPlot <- function(
-    level, data, var_numerical, var_categorical, var_color, color_palette, zoom,
-    show_legend, order, x_limits, facet_col, normalize, add_titles, n_rings
-) {
+generateProportionPlot <- function(level, data, var_numerical, var_categorical,
+    var_color, color_palette, zoom, show_legend, order, x_limits, facet_col,
+    normalize, add_titles, n_rings) {
     base_args <- list(
         data = data, var_numerical = var_numerical, show_legend = show_legend,
         var_categorical = var_categorical, color_palette = color_palette
     )
     res <- list(plot = NULL, legend = NULL)
-    if (level == "donut") res$plot <- do.call(DrawDonutPlot, base_args)
+    if (level == "donut") res$plot <- do.call(drawDonutPlot, base_args)
     if (level == "bar") {
         bar_args <- c(base_args, list(
             var_color = var_color, order = order, x_limits = x_limits,
             facet_col = facet_col
         ))
-        res$plot <- do.call(DrawBarCountsPlot, bar_args)
+        res$plot <- do.call(drawBarCountsPlot, bar_args)
     }
     if (level == "radar") {
         cond <- sort(unique(data[[var_categorical]]))
         condition_index <- stats::setNames(seq_along(cond), cond)
         data[[var_categorical]] <- condition_index[data[[var_categorical]]]
         res$legend <- data.frame(Index = seq_along(cond), Condition = cond)
-        rings_info <- ComputeRings(
-            data = data, var_color = var_color, n_rings = n_rings,
-            normalize = normalize, var_categorical = var_categorical,
-            zoom = zoom, var_numerical = var_numerical
+        rings_info <- computeRings(
+            data = data, var_color = var_color, n_rings = n_rings, zoom = zoom,
+            norm = normalize, var_cat = var_categorical, var_num = var_numerical
         )
         radar_args <- c(base_args[names(base_args) != "data"], list(
             var_color = var_color, add_titles = add_titles,
@@ -479,24 +489,27 @@ GenerateProportionPlot <- function(
             zoom = zoom, global_max_val = rings_info$max_val
         ))
         if (is.null(facet_col)) {
-            res$plot <- do.call(DrawRadarPlot, c(
-                list(data = data, title = paste(
-                    "Radar plot by", var_categorical)), radar_args
-            ))
+            res$plot <- do.call(drawRadarPlot, c(list(
+                data = data, title = paste("Radar plot by", var_categorical)
+            ), radar_args))
         } else {
             data_split <- split(data, data[[facet_col]])
             plots_list <- lapply(names(data_split), function(name) {
-                do.call(DrawRadarPlot, c(
+                do.call(drawRadarPlot, c(
                     list(data = data_split[[name]], title = name), radar_args
                 ))
             })
             res$plot <- patchwork::wrap_plots(plots_list)
         }
     }
-    if (is.null(res$legend)) return(list(plot = res$plot)) else return(res)
+    if (is.null(res$legend)) {
+        return(list(plot = res$plot))
+    } else {
+        return(res)
+    }
 }
 
-SignificanceSymbol <- function(pvalue) {
+significanceSymbol <- function(pvalue) {
     if (!is.numeric(pvalue)) {
         return(rep(NA_character_, length(pvalue)))
     }
@@ -513,10 +526,9 @@ SignificanceSymbol <- function(pvalue) {
     return(symbols)
 }
 
-ComputeTEsignificance <- function(
-    merged, x_col = "class", target_col, group_col = NULL
-) {
-    target_levels <- sort(unique(merged[[target_col]]))
+computeTEsignificance <- function(merged, x_col = "class", target, score,
+    group = NULL) {
+    target_levels <- sort(unique(merged[[target]]))
     if (length(target_levels) < 2) { # Need at least 2 levels to compare
         return(NULL)
     }
@@ -524,7 +536,7 @@ ComputeTEsignificance <- function(
     # Generate all possible pairs: 2 columns, N rows
     comparisons <- utils::combn(target_levels, 2)
     # Define the grouping variables (facets only)
-    group_vars <- if (!is.null(group_col)) group_col else NULL
+    group_vars <- if (!is.null(group)) group else NULL
 
     run_pairwise_stats <- function(df) {
         # Loop through each pair in the 'comparisons' matrix
@@ -533,8 +545,8 @@ ComputeTEsignificance <- function(
             g2_name <- comparisons[2, i]
             p_val <- tryCatch(
                 {
-                    val1 <- df$tTE[df[[target_col]] == g1_name]
-                    val2 <- df$tTE[df[[target_col]] == g2_name]
+                    val1 <- df[[score]][df[[target]] == g1_name]
+                    val2 <- df[[score]][df[[target]] == g2_name]
                     stats::wilcox.test(val1, val2)$p.value
                 },
                 error = function(e) NA_real_
@@ -556,7 +568,7 @@ ComputeTEsignificance <- function(
     if (nrow(sig_table) > 0) { # Final formatting
         sig_table <- sig_table %>%
             dplyr::mutate(
-                p_signif = SignificanceSymbol(.data$p_value),
+                p_signif = significanceSymbol(.data$p_value),
                 !!x_col := .data$group2
             ) %>%
             dplyr::filter(!is.na(.data$p_value))
@@ -564,58 +576,8 @@ ComputeTEsignificance <- function(
     return(sig_table)
 }
 
-ComputeTEsignificanceSimple <- function(
-    merged, x_col = "class", target_col, group_col = NULL
-) {
-    levels <- sort(unique(merged[[target_col]]))
-    if (length(levels) != 2) {
-        return(NULL)
-    }
-    group_vars <- if (!is.null(group_col)) group_col else NULL
-
-    # If there are no group_vars, we run a single test on the whole dataset
-    if (is.null(group_vars)) {
-        sig_table <- data.frame(temp_id = 1) %>%
-            dplyr::mutate(
-                p_value = tryCatch(
-                    {
-                        g1 <- merged$tTE[merged[[target_col]] == levels[1]]
-                        g2 <- merged$tTE[merged[[target_col]] == levels[2]]
-                        stats::wilcox.test(g1, g2)$p.value
-                    },
-                    error = function(e) NA_real_
-                )
-            )
-    } else {
-        sig_table <- merged %>% # If we have facets, group by those facets only
-            dplyr::group_by(dplyr::across(dplyr::all_of(group_vars))) %>%
-            dplyr::summarise(
-                p_value = tryCatch(
-                    {
-                        g1 <- .data$tTE[.data[[target_col]] == levels[1]]
-                        g2 <- .data$tTE[.data[[target_col]] == levels[2]]
-                        stats::wilcox.test(g1, g2)$p.value
-                    },
-                    error = function(e) NA_real_
-                ),
-                .groups = "drop"
-            )
-    }
-    # Add columns back for the plot to recognize where to put the stars
-    if (nrow(sig_table) > 0) {
-        sig_table <- sig_table %>%
-            dplyr::mutate(
-                p_signif = SignificanceSymbol(.data$p_value),
-                group1 = levels[1], group2 = levels[2],
-                comparison = paste0(levels[1], "_vs_", levels[2])
-            )
-    }
-    return(sig_table)
-}
-
-ComputeBoxplotSignificance <- function(
-    merged, x_col, y_col, target_col, group_col = NULL
-) {
+computeBoxplotSignificance <- function(merged, x_col, y_col, target_col,
+    group_col = NULL) {
     if (length(unique(merged[[target_col]])) != 2) {
         return(NULL)
     }
@@ -629,7 +591,8 @@ ComputeBoxplotSignificance <- function(
         dplyr::summarise(
             p_value = tryCatch(
                 {
-                    stats::wilcox.test(form,
+                    stats::wilcox.test(
+                        form,
                         data = dplyr::pick(dplyr::everything())
                     )$p.value
                 },
@@ -646,7 +609,7 @@ ComputeBoxplotSignificance <- function(
                 p_value = stats::p.adjust(.data$p_value, method = "BH")
             ) %>%
             dplyr::mutate(
-                p_signif = SignificanceSymbol(.data$p_value),
+                p_signif = significanceSymbol(.data$p_value),
                 group1 = as.character(target_levels[1]),
                 group2 = as.character(target_levels[2])
             )

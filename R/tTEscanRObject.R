@@ -28,14 +28,14 @@ setClass(Class = "tTEscanR_Object", slots = c(
 #'
 #' @param object A \code{tTEscanR_Object}.
 #' @param name A character string specifying the name of the assay to retrieve
-#' (e.g. "mRNA", "tRNA").
+#'     (e.g. "mRNA", "tRNA").
 #'
 #' @returns The requested assay data (typically a matrix or data.frame).
 #' @export
 #'
 #' @examples
 #' data(default_tTEscanR_mRNA_data)
-#' tTEscanR_obj <- CreateObject(
+#' tTEscanR_obj <- createObject(
 #'     counts = default_tTEscanR_mRNA_data,
 #'     assay = "mRNA"
 #' )
@@ -61,15 +61,15 @@ setMethod("getAssay", "tTEscanR_Object", function(object, name) {
 #'
 #' @param object A \code{tTEscanR_Object}.
 #' @param name Optional; A character string specifying the name of the metadata
-#' to retrieve (e.g. "ConditionsLabels", "CorrectionFactor").
+#'     to retrieve (e.g. "ConditionsLabels", "CorrectionFactor").
 #'
 #' @returns A \code{data.frame} or a vector depending of the \code{name}
-#' parameter.
+#'     parameter.
 #' @export
 #'
 #' @examples
 #' data(default_tTEscanR_mRNA_data, default_tTEscanR_metadata)
-#' tTEscanR_obj <- CreateObject(
+#' tTEscanR_obj <- createObject(
 #'     counts = default_tTEscanR_mRNA_data,
 #'     assay = "mRNA",
 #'     meta.data = default_tTEscanR_metadata,
@@ -121,9 +121,7 @@ setValidity("tTEscanR_Object", function(object) {
             if (any(duplicated_names)) { # Check for duplicated names
                 error_msg <- paste(
                     "Duplicated 'assay' names detected:",
-                    paste(unique(assay_names[duplicated_names]),
-                        collapse = ","
-                    )
+                    paste(unique(assay_names[duplicated_names]), collapse = ",")
                 )
                 errors <- c(errors, error_msg)
             }
@@ -147,7 +145,7 @@ setValidity("tTEscanR_Object", function(object) {
 #' information and additional intermediate calculations. A
 #' \code{tTEscanR_Object} can be created using a single dataset, or initialized
 #' with a list of datasets provided at once. Additional assays and metadata
-#' layers can be appended later using the \code{\link{UpdateObject}}
+#' layers can be appended later using the \code{\link{updateObject}}
 #' function.
 #'
 #' @details
@@ -172,17 +170,17 @@ setValidity("tTEscanR_Object", function(object) {
 #' \code{assay}.
 #'
 #' @param counts A count \code{matrix} (or \code{list} of matrices) that will
-#' be stored in the \code{assays} slot.
+#'     be stored in the \code{assays} slot.
 #' @param assay Optional; a \code{character} string (or \code{list} of
-#' characters) to identify the \code{counts}. Required if \code{counts} is not
-#' a named \code{list}.
+#'     characters) to identify the \code{counts}. Required if \code{counts}
+#'     is not a named \code{list}.
 #' @param meta.data Optional; a variable (or \code{list} of variables) with
-#' additional information that will be stored in \code{meta.data} slot.
+#'     additional information that will be stored in \code{meta.data} slot.
 #' @param meta.data.ids Optional; a \code{character} string (or \code{list}
-#' with the labels) to identify the \code{meta.data}. Required if
-#' \code{meta.data} is not a named \code{list}.
+#'     with the labels) to identify the \code{meta.data}. Required if
+#'     \code{meta.data} is not a named \code{list}.
 #' @param verbose Logical; if \code{TRUE}, displays information messages.
-#' Defaults to \code{TRUE}.
+#'     Defaults to \code{TRUE}.
 #'
 #' @return A \code{tTEscanR_Object}.
 #' @export
@@ -192,7 +190,7 @@ setValidity("tTEscanR_Object", function(object) {
 #'     default_tTEscanR_mRNA_data, default_tTEscanR_tRNA_data,
 #'     default_tTEscanR_metadata
 #' )
-#' tTEscanR_obj <- CreateObject(
+#' tTEscanR_obj <- createObject(
 #'     counts = list(
 #'         mRNA = default_tTEscanR_mRNA_data,
 #'         tRNA = default_tTEscanR_tRNA_data
@@ -200,10 +198,8 @@ setValidity("tTEscanR_Object", function(object) {
 #'     meta.data = default_tTEscanR_metadata,
 #'     meta.data.ids = "ConditionsLabels"
 #' )
-CreateObject <- function(
-    counts, assay = NULL, meta.data = NULL, meta.data.ids = NULL,
-    verbose = TRUE
-) {
+createObject <- function(counts, assay = NULL, meta.data = NULL,
+    meta.data.ids = NULL, verbose = TRUE) {
     if (verbose) {
         message(
             "--- Creation of a tTEscanR Object ---",
@@ -211,7 +207,7 @@ CreateObject <- function(
         )
     }
     if (verbose) message("- Adding the 'counts' to the tTEscanR object.")
-    assay_list <- DefineNewData(
+    assay_list <- defineNewData(
         data = counts, id = assay, mode = "fix",
         verbose = verbose, action_update = FALSE
     )
@@ -219,7 +215,7 @@ CreateObject <- function(
     metadata_list <- list()
     if (!is.null(meta.data)) {
         if (verbose) message("- Adding the 'metadata' to the tTEscanR object.")
-        metadata_list <- DefineNewData(
+        metadata_list <- defineNewData(
             data = meta.data, id = meta.data.ids,
             mode = "flexible", verbose = verbose
         )
@@ -242,47 +238,45 @@ CreateObject <- function(
 #' tTEscanR Object Update
 #' @description
 #' Updates an existing \code{tTEscanR_object} using
-#' \code{\link{CreateObject}}. For more details, refer to
-#' \code{\link{CreateObject}}.
+#' \code{\link{createObject}}. For more details, refer to
+#' \code{\link{createObject}}.
 #'
 #' @param object An existing \code{tTEscanR_Object}.
 #' @param counts Optional; a count matrix (or \code{list} of matrices) that
-#' will be stored in the \code{assays} slot of the input \code{object}.
-#' Supported formats: \code{matrix}, \code{data.frame} and \code{list}.
+#'     will be stored in the \code{assays} slot of the input \code{object}.
+#'     Supported formats: \code{matrix}, \code{data.frame} and \code{list}.
 #' @param assay Optional; a \code{character} string (or \code{list} of strings)
-#' specifying the name of the \code{counts}. Supported
-#' formats: \code{character} and \code{list}.
+#'     specifying the name of the \code{counts}. Supported
+#'     formats: \code{character} and \code{list}.
 #' @param main_name Optional; a \code{character} string specifying the name of
-#' the \code{meta.data} if dealing with a \code{list} that needs to be added as
-#' a single element.
+#'     the \code{meta.data} if dealing with a \code{list} that needs to be
+#'     added as a single element.
 #' @param meta.data Optional; a \code{list} with additional information that
-#' will be stored in \code{meta.data} slot of the input \code{object}.
+#'     will be stored in \code{meta.data} slot of the input \code{object}.
 #' @param meta.data.ids Optional; a \code{list} with the labels to identify the
-#' \code{meta.data} (if \code{meta.data} is given).
+#'     \code{meta.data} (if \code{meta.data} is given).
 #' @param overwrite Logical; if \code{TRUE}, overwrites any existing assay or
-#' metadata in the \code{object} if the \code{assay} or \code{meta.data.ids}
-#' label coincides. Defaults to \code{FALSE}.
+#'     metadata in the \code{object} if the \code{assay} or
+#'     \code{meta.data.ids} label coincides. Defaults to \code{FALSE}.
 #' @param verbose Logical; if \code{TRUE}, displays information messages.
-#' Defaults to \code{TRUE}.
+#'     Defaults to \code{TRUE}.
 #'
 #' @return An updated \code{tTEscanR_Object}.
 #' @export
 #'
 #' @examples
 #' data(default_tTEscanR_mRNA_data, default_tTEscanR_tRNA_data)
-#' tTEscanR_obj <- CreateObject(
+#' tTEscanR_obj <- createObject(
 #'     counts = default_tTEscanR_mRNA_data,
 #'     assay = "mRNA"
 #' )
-#' tTEscanR_obj <- UpdateObject(
+#' tTEscanR_obj <- updateObject(
 #'     object = tTEscanR_obj,
 #'     counts = default_tTEscanR_tRNA_data,
 #'     assay = "tRNA"
 #' )
-UpdateObject <- function(
-    object, counts = NULL, assay = NULL, main_name = NULL, meta.data = NULL,
-    meta.data.ids = NULL, overwrite = FALSE, verbose = TRUE
-) {
+updateObject <- function(object, counts = NULL, assay = NULL, main_name = NULL,
+    meta.data = NULL, meta.data.ids = NULL, overwrite = FALSE, verbose = TRUE) {
     if (verbose) {
         message("1 . Initial assessment and addition of the input data.")
     }
@@ -300,7 +294,7 @@ UpdateObject <- function(
 
     if (!is.null(counts)) { # ADDING COUNTS
         if (verbose) message("- Adding the 'counts' to the tTEscanR object.")
-        object <- DefineNewData(
+        object <- defineNewData(
             object = object, slot = "assays", data = counts, id = assay,
             mode = "fix", action_update = TRUE, overwrite = overwrite,
             verbose = verbose
@@ -309,11 +303,11 @@ UpdateObject <- function(
 
     if (!is.null(meta.data)) { # ADDING METADATA
         if (verbose) message("- Adding the 'meta.data' to the tTEscanR object.")
-            object <- DefineNewData(
-                object = object, slot = "meta.data", data = meta.data,
-                id = meta.data.ids, mode = "flexible", main_name = main_name,
-                action_update = TRUE, overwrite = overwrite, verbose = verbose
-            )
+        object <- defineNewData(
+            object = object, slot = "meta.data", data = meta.data,
+            id = meta.data.ids, mode = "flexible", main_name = main_name,
+            action_update = TRUE, overwrite = overwrite, verbose = verbose
+        )
     }
 
     if (verbose) {
@@ -327,21 +321,19 @@ UpdateObject <- function(
     return(object)
 }
 
-DefineNewData <- function(
-    object = NULL, slot = NULL, data, id = NULL, action_update = FALSE,
-    overwrite = FALSE, main_name = NULL, mode, verbose
-) {
+defineNewData <- function(object = NULL, slot = NULL, data, id = NULL,
+    action_update = FALSE, overwrite = FALSE, main_name = NULL, mode, verbose) {
     if (verbose) message("- Evaluating the parameters...")
-    input_format <- IdentifyInputFormat(data = data, mode = mode)
+    input_format <- identifyInputFormat(data = data, mode = mode)
     if (!input_format %in% c("list", "single")) {
         stop(
-            "Internal problem in IdentifyInputFormat, returned an ",
+            "Internal problem in identifyInputFormat, returned an ",
             "invalid 'mode'."
         )
     }
 
     # Check inputs and get final, validated IDs
-    id <- CheckInputCombinations(data = data, labels = id, mode = input_format)
+    id <- checkInputCombinations(data = data, labels = id, mode = input_format)
     if (input_format == "single") data <- list(data)
     if (!action_update) {
         names(data) <- id
@@ -352,7 +344,7 @@ DefineNewData <- function(
         curr_id <- id[i]
         curr_data <- data[[i]]
         if (is.null(main_name)) {
-            IsInObject(
+            isInObject(
                 object = object, slot = slot, section = curr_id,
                 update_assay = TRUE, overwrite = overwrite, verbose = verbose
             )
@@ -365,7 +357,7 @@ DefineNewData <- function(
             if (is.null(object@meta.data[[main_name]])) {
                 object@meta.data[[main_name]] <- list()
             }
-            IsInObject(
+            isInObject(
                 object = object, slot = "meta.data", section = main_name,
                 subset = curr_id, update_assay = TRUE, overwrite = overwrite,
                 verbose = verbose
@@ -376,7 +368,7 @@ DefineNewData <- function(
     return(object)
 }
 
-CheckInputCombinations <- function(data, labels, mode = c("single", "list")) {
+checkInputCombinations <- function(data, labels, mode = c("single", "list")) {
     mode <- match.arg(mode)
     if (mode == "single") data <- list(data)
 
@@ -411,19 +403,16 @@ CheckInputCombinations <- function(data, labels, mode = c("single", "list")) {
         duplicated_labels <- unique(labels[duplicated(labels)])
         stop(
             "Please provide unique 'labels' to identify the each piece ",
-            "of data.\n", "Duplicated labels: ", paste(duplicated_labels,
-                collapse = ","
-            )
+            "of data.\n", "Duplicated labels: ",
+            paste(duplicated_labels, collapse = ",")
         )
     }
     return(labels)
 }
 
-IsInObject <- function(
-    object, slot = c("assays", "meta.data"), section, subset = NULL,
-    compute_assay = FALSE, update_assay = FALSE, overwrite = FALSE,
-    verbose = TRUE
-) {
+isInObject <- function(object, slot = c("assays", "meta.data"), section,
+    subset = NULL, compute_assay = FALSE, update_assay = FALSE,
+    overwrite = FALSE, verbose = TRUE) {
     slot_name <- match.arg(slot) # Validate the slots
     targets <- slot(object, slot_name) # Extracts sections inside the slots
     if (!section %in% names(targets)) { # The section does NOT exists
@@ -464,5 +453,9 @@ IsInObject <- function(
             }
         }
     }
-    if (compute_assay) return(TRUE) else return(invisible(TRUE))
+    if (compute_assay) {
+        return(TRUE)
+    } else {
+        return(invisible(TRUE))
+    }
 }

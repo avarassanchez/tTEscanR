@@ -2,15 +2,13 @@
 title: "<img src='tTEscanR_logo.png' style='height:60px; 
 vertical-align:middle;'> tTEscanR tRNA-Specific Preprocessing Module"
 output: 
-  rmarkdown::html_vignette:
-    toc: true
-  rmarkdown::html_document:
+  BiocStyle::html_document:
     toc: true
     toc_float: true
     theme: default
     css: style.css
 vignette: >
-  %\VignetteIndexEntry{tTEscanR tRNA-Specific Preprocessing Module}
+  %\VignetteIndexEntry{2. tRNA-Specific Preprocessing Module}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 bibliography: references.bib
@@ -53,7 +51,6 @@ conditions the columns. Additionally, it helps annotating the tRNA genes.
 
 ```{r setup, message = FALSE, warning = FALSE}
 # install.packages("/avarassanchez/tTEscanR")
-devtools::load_all()
 library(tTEscanR)
 ```
 
@@ -67,7 +64,7 @@ library(Matrix)
 
 # Parameters
 num_peaks <- 100
-num_cells <- 20  # Increased to pass min.cells = 10
+num_cells <- 20 # Increased to pass min.cells = 10
 set.seed(42)
 
 # Create peak names with "-" separator as required by your code
@@ -78,9 +75,9 @@ peak_names <- paste(chroms, starts, ends, sep = "-")
 
 # Create a sparse matrix (more memory efficient for Seurat/Signac)
 counts <- Matrix(
-    rpois(num_peaks * num_cells, lambda = 5), 
-    nrow = num_peaks, 
-    ncol = num_cells, 
+    rpois(num_peaks * num_cells, lambda = 5),
+    nrow = num_peaks,
+    ncol = num_cells,
     sparse = TRUE
 )
 
@@ -121,7 +118,8 @@ fragments_df <- bind_rows(fragment_list) %>%
 # Write to a temporary text file
 temp_txt <- "foo.fragments.txt"
 write.table(
-    fragments_df, temp_txt, sep = "\t", 
+    fragments_df, temp_txt,
+    sep = "\t",
     row.names = FALSE, col.names = FALSE, quote = FALSE
 )
 
@@ -165,7 +163,7 @@ into tRNA gene names.
 
 ```{r getMatrix, message = TRUE, warning = FALSE}
 tRNA_matrix <- tRNAGetMatrix(
-    data = chrom_obj, assay = "peaks", confidence_set = NULL, species = "hg38" 
+    data = chrom_obj, assay = "peaks", confidence_set = NULL, species = "hg38"
 )
 ```
 

@@ -176,4 +176,3 @@ usethis::use_data(final_matrix_genetic_code,
     hg38_set, hg38_map, mm39_set, mm39_map,
     overwrite = TRUE, internal = TRUE
 )
-

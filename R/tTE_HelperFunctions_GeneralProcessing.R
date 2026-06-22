@@ -1,10 +1,10 @@
-RunIterations <- function(num_iter, data, anticodon, supply, cuts, slope, rho) {
+runIterations <- function(num_iter, data, anticodon, supply, cuts, slope, rho) {
     cutoff_res <- list() # Store optimal results of each iteration
 
     pb <- utils::txtProgressBar(min = 0, max = num_iter, style = 3) # Timer
 
     for (i in seq_len(num_iter)) { # Obtain the optimal cutoff per iteration
-        out <- Iterate_tRNACutoff(
+        out <- iterateCutofftRNA(
             data = data, anticodon = anticodon, supply = supply, cutoffs = cuts,
             slope_threshold = slope, rho_threshold = rho
         )
@@ -14,12 +14,11 @@ RunIterations <- function(num_iter, data, anticodon, supply, cuts, slope, rho) {
     }
 
     close(pb)
-
     return(cutoff_res)
 }
 
-TransformCounts <- function(data) {
-    data_long <- TransformFormat(
+transformCounts <- function(data) {
+    data_long <- transformFormat(
         data = data, normalize = FALSE, rownames_to_column = "features",
         names_to = "conditions", values_to = "counts"
     )
@@ -27,23 +26,30 @@ TransformCounts <- function(data) {
     data_long <- dplyr::filter(data_long, .data$counts > 0)
 
     # Transforms every count into an independent row
-    data_long <- tidyr::uncount(data_long, weights = .data$counts)
+    data_long <- tidyr::uncount(
+        data_long, weights = .data$counts, .remove = TRUE
+    )
+
+    # Ensure the counts column is removed
+    if ("counts" %in% colnames(data_long)) {
+        data_long$counts <- NULL
+    }
 
     return(data_long)
 }
 
-ReferenceObject <- function(data, compute_aa) {
+referenceObject <- function(data, compute_aa) {
     # Create object
-    ref <- CreateObject(counts = data, assay = "tRNA", verbose = FALSE)
+    ref <- createObject(counts = data, assay = "tRNA", verbose = FALSE)
 
     # Compute anticodon usage
-    ref <- ComputeAnticodonUsage(ref, verbose = FALSE)
-    anticodon <- GetReference(getAssay(ref, "AnticodonUsage"))
+    ref <- computeAnticodonUsage(object = ref, verbose = FALSE)
+    anticodon <- getReference(getAssay(ref, "AnticodonUsage"))
 
     # Compute amino acid supply if applicable
     if (isTRUE(compute_aa)) {
-        ref <- ComputeAAUsage(ref, level = "supply", verbose = FALSE)
-        supply <- GetReference(getAssay(ref, "AASupply"))
+        ref <- computeAAUsage(object = ref, level = "supply", verbose = FALSE)
+        supply <- getReference(getAssay(ref, "AASupply"))
     } else {
         supply <- NULL
     }
@@ -51,12 +57,12 @@ ReferenceObject <- function(data, compute_aa) {
     return(list(anticodon = anticodon, supply = supply))
 }
 
-GetReference <- function(assay_slot) {
+getReference <- function(assay_slot) {
     value <- rowSums(assay_slot)
     return(value / sum(value))
 }
 
-CutoffMatrix <- function(data, cutoff) {
+cutoffMatrix <- function(data, cutoff) {
     data <- dplyr::slice_sample(data, n = cutoff)
     data <- data %>%
         dplyr::count(.data$features, .data$conditions) %>%
@@ -72,13 +78,13 @@ CutoffMatrix <- function(data, cutoff) {
     return(matrix)
 }
 
-FilteringCutoffs <- function(data, cutoff, aa_supply) {
-    data_above <- CutoffMatrix(data = data, cutoff = cutoff)
+filteringCutoffs <- function(data, cutoff, aa_supply) {
+    data_above <- cutoffMatrix(data = data, cutoff = cutoff)
 
-    object_above <- CreateObject(
+    object_above <- createObject(
         counts = data_above, assay = "tRNA", verbose = FALSE
     )
-    object_above <- ComputeAnticodonUsage(
+    object_above <- computeAnticodonUsage(
         object = object_above, verbose = FALSE
     )
 
@@ -86,7 +92,7 @@ FilteringCutoffs <- function(data, cutoff, aa_supply) {
     total_anticodon <- total_anticodon / sum(total_anticodon)
 
     if (!is.null(aa_supply)) {
-        object_above <- ComputeAAUsage(
+        object_above <- computeAAUsage(
             object = object_above, level = "supply", verbose = FALSE
         )
         total_supply <- rowSums(getAssay(object_above, "AASupply"))
@@ -98,7 +104,7 @@ FilteringCutoffs <- function(data, cutoff, aa_supply) {
     return(list(anticodon = total_anticodon, supply = total_supply))
 }
 
-ComputeCorrelations <- function(data, ref_anticodon, ref_supply, cutoffs) {
+computeCorrelations <- function(data, ref_anticodon, ref_supply, cutoffs) {
     cor_results <- data.frame(
         cutoff = cutoffs, anticodon_spearman = NA_real_,
         supply_spearman = NA_real_,
@@ -107,7 +113,7 @@ ComputeCorrelations <- function(data, ref_anticodon, ref_supply, cutoffs) {
 
     for (i in seq_along(cutoffs)) {
         cut <- cutoffs[i]
-        obj <- FilteringCutoffs(
+        obj <- filteringCutoffs(
             data = data, cutoff = cut, aa_supply = ref_supply
         )
 
@@ -138,9 +144,8 @@ ComputeCorrelations <- function(data, ref_anticodon, ref_supply, cutoffs) {
     return(cor_results)
 }
 
-SelectionCutoff <- function(
-    cor_long, slope_threshold = 0.001, rho_threshold = 0.9
-) {
+selectionCutoff <- function(cor_long, slope_threshold = 0.001,
+    rho_threshold = 0.9) {
     # Retain those cutoff that give a high correlation score
     cor_filtered <- cor_long %>% dplyr::filter(
         abs(.data$spearman_corr) >= rho_threshold
@@ -186,10 +191,9 @@ SelectionCutoff <- function(
     return(optimal_cutoff)
 }
 
-Iterate_tRNACutoff <- function(
-    data, anticodon, supply, cutoffs, slope_threshold, rho_threshold
-) {
-    cor_results <- ComputeCorrelations(
+iterateCutofftRNA <- function(data, anticodon, supply, cutoffs,
+    slope_threshold, rho_threshold) {
+    cor_results <- computeCorrelations(
         data = data, ref_anticodon = anticodon,
         ref_supply = supply, cutoffs = cutoffs
     )
@@ -205,7 +209,7 @@ Iterate_tRNACutoff <- function(
             names_to = "type", values_to = "spearman_corr"
         )
     }
-    optimal_cutoff <- SelectionCutoff(
+    optimal_cutoff <- selectionCutoff(
         cor_long = cor_long, slope_threshold = slope_threshold,
         rho_threshold = rho_threshold
     )
@@ -213,10 +217,8 @@ Iterate_tRNACutoff <- function(
     return(optimal_cutoff)
 }
 
-CorrelationCutoffPlot <- function(
-    data, add_titles = TRUE, save_format = NULL, out_name = NULL,
-    out_directory = NULL, show_legend = "bottom"
-) {
+correlationCutoffPlot <- function(data, add_titles = TRUE, save_format = NULL,
+    out_name = NULL, out_directory = NULL, show_legend = "bottom") {
     cor_long <- data %>%
         tidyr::pivot_longer(
             cols = c("anticodon_spearman", "supply_spearman"),
@@ -246,7 +248,7 @@ CorrelationCutoffPlot <- function(
     }
 
     if (!is.null(save_format)) { # Save the ggplot
-        SavePlot(
+        savePlot(
             plot = plot, save_format = save_format, out_name = out_name,
             out_directory = out_directory
         )
@@ -255,16 +257,14 @@ CorrelationCutoffPlot <- function(
     return(plot)
 }
 
-SelectionCutoffPlot <- function(
-    data, add_titles = TRUE, save_format = NULL, out_name = NULL,
-    out_directory = NULL, show_legend = "bottom"
-) {
+selectionCutoffPlot <- function(data, add_titles = TRUE, save_format = NULL,
+    out_name = NULL, out_directory = NULL, show_legend = "bottom") {
     plot <- ggplot2::ggplot(data, ggplot2::aes(
         x = .data$optimal_cutoff, fill = .data$type
     )) +
         ggplot2::geom_bar(position = "identity") +
         ggplot2::facet_wrap(~type, scales = "free") +
-        ggplot2::theme_bw() + # coord_cartesian(ylim = c(0, 150)) +
+        ggplot2::theme_bw() +
         ggplot2::scale_fill_manual(values = c("#034e7b", "#a6bddb")) +
         ggplot2::theme(axis.text.x = ggplot2::element_text(
             angle = 90, vjust = 0.5, hjust = 1
@@ -277,49 +277,7 @@ SelectionCutoffPlot <- function(
     }
 
     if (!is.null(save_format)) { # Save the ggplot
-        SavePlot(
-            plot = plot, save_format = save_format, out_name = out_name,
-            out_directory = out_directory
-        )
-    }
-
-    return(plot)
-}
-
-CumulativeSelectionCutoffPlot <- function(
-    data, cutoffs, add_titles = TRUE, save_format = NULL, out_name = NULL,
-    out_directory = NULL, show_legend = "bottom"
-) {
-    conditions_per_threshold <- c()
-
-    for (i in cutoffs) {
-        conditions <- length(which(data$total_counts > i))
-        conditions_per_threshold <- c(conditions_per_threshold, conditions)
-    }
-
-    conditions_per_threshold_table <- data.frame(
-        cuts = cutoffs, conditions = conditions_per_threshold
-    )
-
-    plot <- ggplot2::ggplot(conditions_per_threshold_table, ggplot2::aes(
-        x = .data$cuts, y = .data$conditions
-    )) +
-        ggplot2::geom_col() +
-        ggplot2::geom_vline(
-            xintercept = 5000, linetype = "dashed",
-            color = "#636363", linewidth = 0.8
-        ) +
-        ggplot2::scale_x_continuous(expand = c(0, 0)) +
-        ggplot2::theme_bw()
-
-    if (isTRUE(add_titles)) { # Add titles
-        plot <- plot + ggplot2::labs(
-            title = "Distribution of Cutoff Values", x = "Cutoff", y = "Density"
-        )
-    }
-
-    if (!is.null(save_format)) { # Save the ggplot
-        SavePlot(
+        savePlot(
             plot = plot, save_format = save_format, out_name = out_name,
             out_directory = out_directory
         )
