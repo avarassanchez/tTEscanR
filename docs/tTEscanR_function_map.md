@@ -60,7 +60,7 @@
     <td>computeMeanUsage( )</td>
   </tr>
   <tr>
-    <td>computeAdditionalMetrics_CodonUsage( )</td>
+    <td>computeMetricsCodonUsage( )</td>
   </tr>
   <tr>
     <td>consistencyWithCodonFreq( )</td>
