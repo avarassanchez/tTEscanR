@@ -44,35 +44,35 @@ The **tTEscanR** package provides a strucutred framework for analyzing codon-ant
   <tbody>
     <tr>
       <td rowspan="2"><b>tTEscanR object definition</b></td>
-      <td><code>CreateObject()</code></td>
+      <td><code>createObject()</code></td>
       <td>Initializes a <b>tTEscanR</b> object to store analysis data.</td>
     </tr>
     <tr>
-      <td><code>UpdateObject()</code></td>
+      <td><code>updateObject()</code></td>
       <td>Modifies or extends an existing <b>tTEscanR</b> object.</td>
     </tr>
     <tr>
       <td rowspan="2"><b>Codon-anticodon usage assessment</b></td>
-      <td><code>ComputeCodonUsage()</code></td>
+      <td><code>computeCodonUsage()</code></td>
       <td>Calculates codon usage by matrix multiplication of mRNA expression data with codon frequency tables.</td>
     </tr>
     <tr>
-      <td><code>ComputeAnticodonUsage()</code></td>
+      <td><code>computeAnticodonUsage()</code></td>
       <td>Determines anticodon usage by aggregating tRNA expression data at the anticodon level.</td>
     </tr>
     <tr>
       <td><b>Amino acid level assessment</b></td>
-      <td><code>ComputeAAUsage()</code></td>
+      <td><code>computeAAUsage()</code></td>
       <td>Computes amino acid demand (from codon usage) and supply (from anticodon usage), either separately or together.</td>
     </tr>
     <tr>
       <td><b>tTE computation</b></td>
-      <td><code>Compute_tTE()</code></td>
+      <td><code>computeTheoreticalTE()</code></td>
       <td>Calculates <b>Theoretical Translation Efficiency (tTE)</b> by correlating amino acid demand and supply across matched conditions.</td>
     </tr>
     <tr>
       <td><b>Single execution</b></td>
-      <td><code>RunPipeline()</code></td>
+      <td><code>runPipeline()</code></td>
       <td>Uses all the functions listed above to compute the (i) codon-anticodon usage, (ii) amino acid supply-demand ratios, and (iii) theoretical translation efficiency.</td>
     </tr>
   </tbody>
@@ -93,15 +93,15 @@ The **tTEscanR** package includes helper functions to support specific steps of 
   <tbody>
     <tr>
       <td rowspan="3"><b>General preprocessing</b></td>
-      <td><code>MergeMatrices()</code></td>
+      <td><code>mergeMatrices()</code></td>
       <td>Effectively combines matrices.</td>
     </tr>
     <tr>
-      <td><code>GroupConditions()</code></td>
+      <td><code>groupConditions()</code></td>
       <td>Aggregates the individual columns into conditions based on a reference metadata.</td>
     </tr>
     <tr>
-      <td><code>FeaturesToAA()</code></td>
+      <td><code>featuresToAA()</code></td>
       <td>Translates based on a specified genetic codes codons and/or anticodons to amino acids.</td>
     </tr>
     <tr>
@@ -123,28 +123,28 @@ The **tTEscanR** package includes helper functions to support specific steps of 
     </tr>
     <tr>
       <td rowspan="2"><b>Codon frequency reference</b></td>
-      <td><code>GetCodonFreq()</code></td>
+      <td><code>getCodonFreq()</code></td>
       <td>Retrieves reference genomes and computes codon frequency per gene matrices.</td>
     </tr>
     <tr>
-      <td><code>ExtractCodons()</code></td>
+      <td><code>extractCodons()</code></td>
       <td>Analyzes codon composition from a given DNA sequence set.</td>
     </tr>
     <tr>
       <td rowspan="4"><b>Additional metrics</b></td>
-      <td><code>ComputeMeanUsage()</code></td>
+      <td><code>computeMeanUsage()</code></td>
       <td>Computes the feature's usage across conditions.</td>
     </tr>
     <tr>
-      <td><code>ComputeExonicBackground()</code></td>
+      <td><code>computeExonicBackground()</code></td>
       <td>Computes the baseline codon/anticodon usage regardless of the expression levels.</td>
     </tr>
     <tr>
-      <td><code>GetCorrelationBackground()</code></td>
+      <td><code>getCorrelationBackground()</code></td>
       <td>Correlates the mean usage against the background.</td>
     </tr>
     <tr>
-      <td><code>ShowPoolContribution()</code></td>
+      <td><code>showPoolContribution()</code></td>
       <td>Examines the contribution of the top features to the overall codon usage.</td>
     </tr>
   </tbody>
@@ -157,30 +157,30 @@ library(tTEscanR)
 data(mRNA_data, tRNA_data, metadata)
 
 # Adding the mRNA and tRNA datasets and the metadata to the object
-tTEscanR_obj <- CreateObject(counts = list(mRNA_data, tRNA_data),
+tTEscanR_obj <- createObject(counts = list(mRNA_data, tRNA_data),
                     assay = list("mRNA", "tRNA"),
                     meta.data = list(metadata, "tissue"),
                     meta.data.ids = list("ConditionsLabels", "CorrectionFactor")) 
 
 # Adding extra information to the object
-matching_celltypes <- intersect(colnames(mRNA_data), colnames(tRNA_data)) 
-tTEscanR_obj <- UpdateObject(object = tTEscanR_obj, 
+matching_celltypes <- union(colnames(mRNA_data), colnames(tRNA_data)) 
+tTEscanR_obj <- updateObject(object = tTEscanR_obj, 
                     meta.data = list(matching_celltypes), 
                     meta.data.ids = list("matching_celltypes"), 
                     overwrite = TRUE)
 
 # Compute codon usage with default hg38 canonical codon frequency per gene table.
-tTEscanR_obj <- ComputeCodonUsage(object = tTEscanR_obj, 
+tTEscanR_obj <- computeCodonUsage(object = tTEscanR_obj, 
                     codon_freq = NULL, 
                     species = "hg38", 
                     additional_metrics = TRUE)
 
-tTEscanR_obj <- ComputeAnticodonUsage(object = tTEscanR_obj)
+tTEscanR_obj <- computeAnticodonUsage(object = tTEscanR_obj)
 
 # The both parameter allows to perform at the same time the AA demand and supply assessment
-tTEscanR_obj <- ComputeAAUsage(object = tTEscanR_obj, level = "both")
+tTEscanR_obj <- computeAAUsage(object = tTEscanR_obj, level = "both")
 
-tTEscanR_obj <- Compute_tTE(object = tTEscanR_obj, level = "both")
+tTEscanR_obj <- computeTheoreticalTE(object = tTEscanR_obj, level = "both")
 ```
 
 ## 5. References
