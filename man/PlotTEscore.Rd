@@ -26,7 +26,8 @@ plotTEscore(
 )
 }
 \arguments{
-\item{data}{A tTE results table obtained from \code{\link{computeTheoreticalTE}}.}
+\item{data}{A tTE results table obtained from
+\code{\link{computeTheoreticalTE}}.}
 
 \item{metadata}{A table with additional information regarding the conditions
 in \code{data}.}
@@ -89,9 +90,9 @@ statitical measures summarized.
 \description{
 This function generates a violin plot to visualize the distribution of tTE
 scores across different condition. The tTE scores should be obtained using
-\code{\link{computeTheoreticalTE}}. The plot allows the user to easily compare the
-tTE distribution between different conditions, with the option to highlight
-specific feature clusters based on the provided \code{targets}.
+\code{\link{computeTheoreticalTE}}. The plot allows the user to easily
+compare the tTE distribution between different conditions, with the option
+to highlight specific feature clusters based on the provided \code{targets}.
 }
 \examples{
 data(

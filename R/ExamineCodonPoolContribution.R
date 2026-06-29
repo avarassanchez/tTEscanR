@@ -253,8 +253,8 @@ computeIndividualGeneCorrelation <- function(codon_usage, mean_codon_usage,
     correlation_to_mean_codon_usage <- as.numeric(correlation_vec)
     names(correlation_to_mean_codon_usage) <- colnames(codon_usage)
 
-    # Returns a matrix that stores how similar the codon usage in a particular
-    # condition is to the mean codon usage across all conditions
+    ## Returns a matrix that stores how similar the codon usage in a particular
+    ## condition is to the mean codon usage across all conditions
     return(correlation_to_mean_codon_usage)
 }
 
@@ -271,7 +271,7 @@ analizeTopGeneImpact <- function(data, codon_freq, pool_contribution,
     colnames(top_N_names) <- colnames(data)
     rownames(top_N_names) <- paste("top", seq_len(N), "gene", sep = "")
 
-    # Calculating correlation without top N genes
+    ## Calculating correlation without top N genes
     data_copy <- as.matrix(data)
     for (i in seq_len(ncol(data_copy))) {
         data_copy[top_N_names[, i], i] <- 0

@@ -192,7 +192,7 @@ computeAnticodonUsage <- function(object, overwrite = FALSE, verbose = TRUE) {
             "3 . Pooling the counts from each tRNA gene with common anticodons."
         )
     }
-    # Initialize an mapping matrix - 1 to add the gene and 0 to ignore it
+    ## Initialize an mapping matrix - 1 to add the gene and 0 to ignore it
     map_factor <- factor(anticodons, levels = unique_anticodons)
     M <- Matrix::sparse.model.matrix(~ 0 + map_factor)
     M <- Matrix::t(M) # Set the anticodons as rows
@@ -239,7 +239,7 @@ generalChecksUsage <- function(step, section, object, codon_freq = NULL,
     if (verbose) message("- The ", section, " assay has been properly loaded.")
 
     if (step == "codon") {
-        codon_freq <- GeneralChecksCodonUsage(
+        codon_freq <- generalChecksCodonUsage(
             data = data, codon_freq = codon_freq, species = species,
             verbose = verbose
         )
@@ -257,8 +257,8 @@ generalChecksUsage <- function(step, section, object, codon_freq = NULL,
     }
 }
 
-GeneralChecksCodonUsage <- function(data, codon_freq, species, verbose) {
-    # Loading codon_freq & check consistency with mRNA_data
+generalChecksCodonUsage <- function(data, codon_freq, species, verbose) {
+    ## Loading codon_freq & check consistency with mRNA_data
     available_formats <- c("dgCMatrix", "data.frame", "matrix")
     if (!is.null(codon_freq)) {
         if (!any(class(codon_freq) %in% available_formats)) {

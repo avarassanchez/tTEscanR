@@ -88,10 +88,10 @@ setMethod("getMetadata", "tTEscanR_Object", function(object, name) {
 })
 
 setValidity("tTEscanR_Object", function(object) {
-    # setValidity is called by the new() used to generate a tTEscanR_Object
+    ## setValidity is called by the new() used to generate a tTEscanR_Object
     errors <- character() # Empty vector to store any validation errors
 
-    # Set the names of the assays that can be included in a tTEscanR_Object
+    ## Set the names of the assays that can be included in a tTEscanR_Object
     valid_assay_ids <- c(
         "mRNA", "tRNA", "CodonUsage", "AnticodonUsage",
         "AADemand", "AASupply", "SizeCorrected_mRNA", "SizeCorrectedCodonUsage",
@@ -221,7 +221,7 @@ createObject <- function(counts, assay = NULL, meta.data = NULL,
         )
     }
 
-    # Generate the object
+    ## Generate the object
     object <- new(
         Class = "tTEscanR_Object", assays = assay_list,
         meta.data = metadata_list
@@ -332,7 +332,7 @@ defineNewData <- function(object = NULL, slot = NULL, data, id = NULL,
         )
     }
 
-    # Check inputs and get final, validated IDs
+    ## Check inputs and get final, validated IDs
     id <- checkInputCombinations(data = data, labels = id, mode = input_format)
     if (input_format == "single") data <- list(data)
     if (!action_update) {

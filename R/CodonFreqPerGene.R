@@ -163,13 +163,13 @@ extractCodons <- function(sequences, verbose = TRUE) {
     transcript_names <- extract_values$transcript_names
     if (verbose) message("\n- Extraction completed.\n- Assembling matrix...")
 
-    # Filter out the skipped sequences
+    ## Filter out the skipped sequences
     valid_indices <- !vapply(counts_list, is.null, FUN.VALUE = numeric(1))
     if (!any(valid_indices)) {
         stop("No valid sequences remained after filtering.")
     }
 
-    # Give proper format to the matrix (do.call cbind is incredibly fast here!)
+    ## Give proper format to the matrix (do.call cbind is incredibly fast here!)
     codon_freq_per_gene_matrix <- do.call(cbind, counts_list[valid_indices])
     rownames(codon_freq_per_gene_matrix) <- all_64_codons
     colnames(codon_freq_per_gene_matrix) <- transcript_names[valid_indices]
@@ -198,7 +198,7 @@ helperExtractCodons <- function(sequences, all_64_codons) {
         }
         transcript_names[i] <- transcript_id
 
-        # Ensure the validity of the sequence
+        ## Ensure the validity of the sequence
         sequence <- toupper(sequence)
         sequence <- gsub("U", "T", sequence)
         valid_nucleotides <- grepl("^[ATGCN]+$", sequence)
@@ -215,7 +215,7 @@ helperExtractCodons <- function(sequences, all_64_codons) {
             utils::setTxtProgressBar(pb, i)
             next # Skip this sequence, but don't stop the whole function
         }
-        # Generate the table with the counts
+        ## Generate the table with the counts
         triplets <- substring(
             sequence, seq(1, nchar(sequence) - 2, 3), seq(3, nchar(sequence), 3)
         )

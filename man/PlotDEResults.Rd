@@ -10,13 +10,13 @@ plotDEResults(
   heatmap = TRUE,
   dim_reduct = NULL,
   numPC = 2,
-  condition = NULL,
+  target = NULL,
   verbose = TRUE,
-  color_factor = condition,
+  color_factor = NULL,
   shape_factor = NULL,
   label_factor = NULL,
   highlight_median = FALSE,
-  scale_pca = FALSE,
+  scale_pca = TRUE,
   color_palette = NULL,
   fc_threshold = 1,
   padj_threshold = 0.05,
@@ -26,7 +26,7 @@ plotDEResults(
 }
 \arguments{
 \item{DE_results_list}{A DESeq2 object with the normalized and vst counts.
-Can be obtained by running \code{\link{ComputeDEResults}}}
+Can be obtained by running \code{\link{computeDEResults}}}
 
 \item{dataset_name}{String to specify the assay in \code{DE_results_list}
 to extract.}
@@ -41,7 +41,7 @@ to \code{"PCA"}.}
 \item{numPC}{Numeric; number of principal components to include in the PCA
 analysis. Required if \code{dim_reduct} is \code{"PCA"}. Defaults to 2.}
 
-\item{condition}{Optional; a factor based on \code{metadata} columns to
+\item{target}{Optional; a factor based on \code{metadata} columns to
 define the comparisons to perform in a targeted analysis. Defaults to
 \code{NULL}.}
 
@@ -62,7 +62,7 @@ data points. Used if \code{dim_reduct} specified.}
 cluster will be summarized into the median. Defaults to \code{FALSE}.}
 
 \item{scale_pca}{Logical; if \code{TRUE}, scales the data if
-\code{dim_reduct} is \code{"PCA"}. Defaults to \code{FALSE}.}
+\code{dim_reduct} is \code{"PCA"}. Defaults to \code{TRUE}.}
 
 \item{color_palette}{Optional; a \code{vector} of color codes to customize
 the plot appearance.}
@@ -90,12 +90,12 @@ Generates Visualizations from the DEA data
 }
 \examples{
 data(default_tTEscanR_tRNA_data, default_tTEscanR_metadata)
-DE_analysis <- ComputeDEResults(
+DE_analysis <- computeDEResults(
     list_data = list(tRNA = default_tTEscanR_tRNA_data),
     metadata = default_tTEscanR_metadata, batch = "tissue"
 )
 DE_plots <- plotDEResults(
     DE_results_list = DE_analysis, dataset_name = "tRNA",
-    dim_reduct = "PCA", condition = "tissue", heatmap = FALSE
+    dim_reduct = "PCA", color_factor = "tissue", heatmap = FALSE
 )
 }

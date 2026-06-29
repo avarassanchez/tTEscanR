@@ -112,7 +112,7 @@ getOutputName <- function(action, out_name, out_directory, save_format,
         }
     }
 
-    # Check if the output name already contains the format extension
+    ## Check if the output name already contains the format extension
     if (!endsWith(tolower(out_name), paste0(".", tolower(save_format)))) {
         out_name <- paste0(out_name, ".", save_format)
     }
@@ -125,7 +125,7 @@ getOutputName <- function(action, out_name, out_directory, save_format,
 }
 
 getAnnotData <- function(permut_data, sig_data) {
-    # Check that the expected columns are present in the data
+    ## Check that the expected columns are present in the data
     checkValueInData(
         param = "permut_data", observed = colnames(permut_data),
         expected = c("codon", "freq")
@@ -179,16 +179,16 @@ checkDataInLongFormat <- function(data) {
         stop("The input 'data' must be a data.frame or tibble.")
     }
 
-    # One numeric column
+    ## One numeric column
     num_cols <- vapply(data, is.numeric, FUN.VALUE = logical(1))
 
-    # One categorical column
+    ## One categorical column
     cat_cols <- vapply(
         data, function(x) is.character(x) || is.factor(x),
         FUN.VALUE = logical(1)
     )
 
-    # Will return TRUE if the data is in long format
+    ## Will return TRUE if the data is in long format
     is_long <- any(cat_cols) & any(num_cols)
 
     if (!is_long) {
@@ -258,7 +258,7 @@ addSignificanceDist <- function(data, plot, x_axis_col, y_axis_col, target,
     )
 
     if (!is.null(sig_table) && nrow(sig_table) > 0) {
-        # Extract the position of the significance info
+        ## Extract the position of the significance info
         y_max <- max(data[[y_axis_col]], na.rm = TRUE) * 1.05
         plot <- plot + ggpubr::stat_pvalue_manual(
             sig_table,
@@ -272,7 +272,7 @@ addSignificanceDist <- function(data, plot, x_axis_col, y_axis_col, target,
 
 drawBarCountsPlot <- function(data, var_numerical, var_categorical, var_color,
     color_palette, show_legend, order, x_limits, facet_col) {
-    # Set a specific order of the features (if available)
+    ## Set a specific order of the features (if available)
     if (!is.null(order)) {
         data[[var_categorical]] <- factor(
             data[[var_categorical]],
@@ -318,7 +318,7 @@ drawDonutPlot <- function(data, var_numerical, var_categorical, color_palette,
             "Sum of '", var_numerical, "' is zero, cannot compute fractions."
         )
     }
-    # Compute the cumulative percentages and the position of the label
+    ## Compute the cumulative percentages and the position of the label
     data$fraction <- data[[var_numerical]] / total
     data$ymax <- cumsum(data$fraction)
     data$ymin <- c(0, utils::head(data$ymax, -1))
@@ -331,7 +331,7 @@ drawDonutPlot <- function(data, var_numerical, var_categorical, color_palette,
     } else {
         data$label <- as.character(round(data[[var_numerical]], 2))
     }
-    # Adjusting the sizes automatically based on the number of categories
+    ## Adjusting the sizes automatically based on the number of categories
     n_cat <- length(unique(data[[var_categorical]]))
     circle_min <- 1 + log10(n_cat) * 0.5 # Radius scales with log of categories
     donut_width <- ifelse(n_cat <= 3, 2.5, 1.5)
@@ -361,7 +361,7 @@ drawDonutPlot <- function(data, var_numerical, var_categorical, color_palette,
 
 computeRings <- function(data, var_color, var_cat, var_num,
     norm, n_rings, zoom) {
-    # Standardize dummy groups if needed
+    ## Standardize dummy groups if needed
     if (is.null(var_color) || var_color == var_cat) {
         data$.__dummy_group__ <- "all"
         var_color <- ".__dummy_group__"
@@ -382,14 +382,14 @@ computeRings <- function(data, var_color, var_cat, var_num,
     num_cols <- setdiff(colnames(tmp), var_color)
 
     if (isTRUE(norm)) { # Apply normalization if requested
-        # Ensure is a vector for division
+        ## Ensure is a vector for division
         row_totals <- rowSums(tmp[, num_cols, drop = FALSE], na.rm = TRUE)
         row_totals[row_totals == 0] <- 1 # Prevent division by zero
         tmp[num_cols] <- tmp[num_cols] / row_totals
     }
     all_numeric_values <- unlist(tmp[num_cols]) # Get numbers to calculate dist.
     if (isTRUE(zoom)) {
-        # Calculate the 95th percentile
+        ## Calculate the 95th percentile
         max_val <- stats::quantile(all_numeric_values, 0.95, na.rm = TRUE)
         max_val <- as.numeric(max_val) + 0.00001
     } else {
@@ -533,13 +533,13 @@ computeTEsignificance <- function(merged, x_col = "class", target, score,
         return(NULL)
     }
 
-    # Generate all possible pairs: 2 columns, N rows
+    ## Generate all possible pairs: 2 columns, N rows
     comparisons <- utils::combn(target_levels, 2)
-    # Define the grouping variables (facets only)
+    ## Define the grouping variables (facets only)
     group_vars <- if (!is.null(group)) group else NULL
 
     run_pairwise_stats <- function(df) {
-        # Loop through each pair in the 'comparisons' matrix
+        ## Loop through each pair in the 'comparisons' matrix
         purrr::map_df(seq_len(ncol(comparisons)), function(i) {
             g1_name <- comparisons[1, i]
             g2_name <- comparisons[2, i]
@@ -583,7 +583,7 @@ computeBoxplotSignificance <- function(merged, x_col, y_col, target_col,
     }
     target_levels <- sort(unique(merged[[target_col]]))
 
-    # Create formula dynamically
+    ## Create formula dynamically
     form <- stats::as.formula(paste(y_col, "~", target_col))
 
     sig_table <- merged %>% # Perform the Wilcoxon test
@@ -600,7 +600,7 @@ computeBoxplotSignificance <- function(merged, x_col, y_col, target_col,
             ), .groups = "drop"
         )
 
-    # Filter out NA values (failed tests)
+    ## Filter out NA values (failed tests)
     sig_table <- sig_table %>% dplyr::filter(!is.na(.data$p_value))
 
     if (nrow(sig_table) > 0) {

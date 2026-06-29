@@ -176,7 +176,7 @@ retrieveAAUsageData <- function(object, data_section, data_function,
         ]
 
         target_codons <- rownames(raw_data)
-    } else { ## Extract AA from the anticodons
+    } else { # Extract AA from the anticodons
         target_codons <-
             as.character(
                 Biostrings::reverseComplement(
@@ -185,6 +185,6 @@ retrieveAAUsageData <- function(object, data_section, data_function,
             )
     }
 
-    # The output consists of list with the data, and the codon/anticodons
+    ## The output consists of list with the data, and the codon/anticodons
     return(list(data = raw_data, codons = target_codons))
 }

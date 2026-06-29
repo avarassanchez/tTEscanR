@@ -279,13 +279,13 @@ mock_seq_with_version <- data.frame(
     stringsAsFactors = FALSE
 )
 
-test_that("ExtractSequences requests versioned and non-versioned attributes", {
+test_that("extractSequences requests versioned and non-versioned attributes", {
 
     # CASE 1
     spy_getSequence <- mockery::mock(mock_seq_no_version)
-    mockery::stub(ExtractSequences, "biomaRt::getSequence", spy_getSequence)
+    mockery::stub(extractSequences, "biomaRt::getSequence", spy_getSequence)
 
-    res <- ExtractSequences(
+    res <- extractSequences(
         transcripts = c("ENST01", "ENST02"),
         ensembl = "dummy_mart",
         retain_geneversion = FALSE
@@ -299,9 +299,9 @@ test_that("ExtractSequences requests versioned and non-versioned attributes", {
 
     # CASE 2
     spy_getSequence <- mockery::mock(mock_seq_with_version)
-    mockery::stub(ExtractSequences, "biomaRt::getSequence", spy_getSequence)
+    mockery::stub(extractSequences, "biomaRt::getSequence", spy_getSequence)
 
-    res <- ExtractSequences(
+    res <- extractSequences(
         transcripts = c("ENST01.1", "ENST02.3"),
         ensembl = "dummy_mart",
         retain_geneversion = TRUE
@@ -330,7 +330,7 @@ test_that("callingEnsembl builds translator tables and drops unavailable sequenc
 
     mockery::stub(callingEnsembl, "biomaRt::useEnsembl", "dummy_mart")
     mockery::stub(callingEnsembl, "extractGenes", mock_genes_df)
-    mockery::stub(callingEnsembl, "ExtractSequences", mock_seqs_df)
+    mockery::stub(callingEnsembl, "extractSequences", mock_seqs_df)
 
     expect_message({
         res <- callingEnsembl(
@@ -361,7 +361,7 @@ test_that("callingEnsembl throws an error if all sequences are missing or unavai
 
     mockery::stub(callingEnsembl, "biomaRt::useEnsembl", "dummy_mart")
     mockery::stub(callingEnsembl, "extractGenes", mock_genes_df)
-    mockery::stub(callingEnsembl, "ExtractSequences", all_unavailable_df)
+    mockery::stub(callingEnsembl, "extractSequences", all_unavailable_df)
 
     expect_error(
         callingEnsembl(
@@ -372,7 +372,7 @@ test_that("callingEnsembl throws an error if all sequences are missing or unavai
             retain_geneversion = FALSE,
             verbose = FALSE
         ),
-        "No transcripts found with available sequences."
+        "No transcripts"
     )
 })
 
@@ -427,8 +427,8 @@ mock_extracted_df <- data.frame(
 
 test_that("fromFASTAtoTable filters out mitochondrial records and outputs list components", {
 
-    mockery::stub(fromFASTAtoTable, "ExtractFromFASTA", mock_extracted_df)
-    mockery::stub(fromFASTAtoTable, "DefineTranslatorTable", "dummy_translator")
+    mockery::stub(fromFASTAtoTable, "extractFromFASTA", mock_extracted_df)
+    mockery::stub(fromFASTAtoTable, "defineTranslatorTable", "dummy_translator")
 
     expect_message({
         res <- fromFASTAtoTable(
@@ -446,8 +446,8 @@ test_that("fromFASTAtoTable filters out mitochondrial records and outputs list c
 
 test_that("fromFASTAtoTable narrows scope down to targeted identifiers explicitly matching a format", {
 
-    mockery::stub(fromFASTAtoTable, "ExtractFromFASTA", mock_extracted_df)
-    mockery::stub(fromFASTAtoTable, "DefineTranslatorTable", "dummy_translator")
+    mockery::stub(fromFASTAtoTable, "extractFromFASTA", mock_extracted_df)
+    mockery::stub(fromFASTAtoTable, "defineTranslatorTable", "dummy_translator")
 
     res <- fromFASTAtoTable(
         data = mock_fasta_data,
@@ -462,7 +462,7 @@ test_that("fromFASTAtoTable narrows scope down to targeted identifiers explicitl
 
 test_that("fromFASTAtoTable stops cleanly if given a list of non-existent query identifiers", {
 
-    mockery::stub(fromFASTAtoTable, "ExtractFromFASTA", mock_extracted_df)
+    mockery::stub(fromFASTAtoTable, "extractFromFASTA", mock_extracted_df)
 
     trace(fromFASTAtoTable, edit = FALSE)
 

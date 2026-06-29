@@ -25,8 +25,8 @@
 #' data(default_tTEscanR_tRNA_data)
 #' optimal_tRNA_cutoffs <- tRNASetCutoff(
 #'     data = default_tTEscanR_tRNA_data,
-#'     generate_plot = FALSE, num_iter = 100,
-#'     cutoffs_limits = c(3000, 5000)
+#'     generate_plot = FALSE, num_iter = 50,
+#'     cutoffs_limits = c(3500, 4000)
 #' )
 tRNASetCutoff <- function(data, num_iter = 1000, cutoffs_limits = c(50, 10000),
     generate_plot = TRUE, slope_threshold = 0.001, rho_threshold = 0.95,
@@ -148,7 +148,7 @@ tRNAGetMatrix <- function(data, assay = "peaks", confidence_set = NULL,
 }
 
 getRangestRNA <- function(conf, flanking_region, map, species, verbose) {
-    # No annotations provided, using default data (if possible)
+    ## No annotations provided, using default data (if possible)
     if (is.null(conf)) {
         if (is.null(species)) {
             stop(
@@ -159,11 +159,11 @@ getRangestRNA <- function(conf, flanking_region, map, species, verbose) {
         granges <- selectDefaultData(
             species = species, action = "confidence_set"
         )
-        # The conf parameter is already a GRanges object
+        ## The conf parameter is already a GRanges object
     } else if (inherits(conf, "GRanges")) {
         if (verbose) message("The input is already a GRanges object.")
         granges <- conf
-        # The conf parameter is the file to the confidence-set file
+        ## The conf parameter is the file to the confidence-set file
     } else if (is.character(conf)) { # Input is a path
         if (file.exists(conf) || dir.exists(conf)) {
             if (verbose) message("Importing tRNA annotations from: ", conf)
@@ -171,7 +171,7 @@ getRangestRNA <- function(conf, flanking_region, map, species, verbose) {
         } else {
             stop("The provided path does not exist: ", conf)
         }
-        # Incorrect format
+        ## Incorrect format
     } else {
         stop(
             "The 'confidence_set' argument must be a valid file path ",
@@ -197,8 +197,9 @@ filterRangestRNA <- function(granges, flanking_region, map, species) {
 
     tRNA_id <- paste0(GenomicRanges::seqnames(granges), ".trna", granges$no)
     map_vec <- stats::setNames(map$GtRNAdb_id, map$tRNAscan.SE_id)
-    granges$gene_name <- map_vec[tRNA_id]
 
+    mapped_names <- map_vec[tRNA_id]
+    granges$gene_name <- ifelse(is.na(mapped_names), tRNA_id, mapped_names)
     granges$gene_biotype <- "tRNA"
 
     return(granges)
@@ -316,6 +317,7 @@ tRNASetGenes <- function(data, tRNA_bed, flanking_region = 100,
     tRNA_table <- utils::read.delim(
         tRNA_bed,
         header = FALSE,
+        sep = "\t",
         stringsAsFactors = FALSE
     )
 
@@ -358,15 +360,15 @@ tRNASetGenes <- function(data, tRNA_bed, flanking_region = 100,
 #'     c("geneB", "geneC"),
 #'     c("s2", "s3")
 #' ))
-#' merged_matrix <- MergeMatrices(df1, df2)
-MergeMatrices <- function(...) {
+#' merged_matrix <- mergeMatrices(df1, df2)
+mergeMatrices <- function(...) {
     cnnew <- character()
     rnnew <- character()
     x <- numeric()
     i <- numeric()
     j <- numeric()
 
-    # Iterates over each matrices passed
+    ## Iterates over each matrices passed
     for (df in list(...)) {
         df <- as.matrix(df)
         storage.mode(df) <- "numeric"
@@ -386,7 +388,7 @@ MergeMatrices <- function(...) {
         x <- c(x, df[non_zero])
     }
 
-    # Create sparse matrix - only the non-zero values are stored
+    ## Create sparse matrix - only the non-zero values are stored
     result_df <- Matrix::sparseMatrix(
         i = i, j = j, x = x, dims = c(length(rnnew), length(cnnew)),
         dimnames = list(rnnew, cnnew)
@@ -426,7 +428,7 @@ groupConditions <- function(data, group_labels) {
         )
     }
 
-    # Check for missing (NA) labels
+    ## Check for missing (NA) labels
     if (any(is.na(group_labels))) {
         stop(
             "NAs found in 'group_labels'. Rremove or handle missing grouping ",
@@ -434,7 +436,7 @@ groupConditions <- function(data, group_labels) {
         )
     }
 
-    # Check the order of the labels - Ensure group_labels contains factors
+    ## Check the order of the labels - Ensure group_labels contains factors
     if (is.factor(group_labels)) {
         groups <- droplevels(group_labels)
     } else {
@@ -505,13 +507,13 @@ transformFormat <- function(data, normalize, rownames_to_column, names_to,
         data <- t(t(data) / c_sums)
     }
 
-    # Ensure data is a matrix
+    ## Ensure data is a matrix
     if (!is.matrix(data)) data <- as.matrix(data)
 
     num_row <- nrow(data)
     num_col <- ncol(data)
 
-    # Transform the data into a long format
+    ## Transform the data into a long format
     long_format <- data.frame(
         rep.int(rownames(data), num_col),
         rep.int(colnames(data), rep.int(num_row, num_col)), as.vector(data),
@@ -521,6 +523,6 @@ transformFormat <- function(data, normalize, rownames_to_column, names_to,
 
     checkDataFrame(long_format) # Evaluate that the data is properly defined
 
-    # Returns the processed data (long-format and normalized if applicable).
+    ## Returns the processed data (long-format and normalized if applicable).
     return(long_format)
 }

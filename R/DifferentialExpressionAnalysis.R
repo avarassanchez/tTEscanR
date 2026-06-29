@@ -19,7 +19,7 @@
 #' @param reference Optional; factor from the \code{batch} variable to use as
 #'     reference for the corrections. If not specified, the 1st factor that
 #'     appears will be used instead.
-#' @param condition Optional; a factor based on \code{metadata} columns to
+#' @param target Optional; a factor based on \code{metadata} columns to
 #'     define the comparisons to perform in a targeted analysis. Defaults to
 #'      \code{NULL}.
 #' @param fc_threshold Numeric; fold change threshold used for highlighting
@@ -29,6 +29,8 @@
 #' @param label_significant Logical; if \code{TRUE} displays the axis of the
 #'     plots based on \code{fc_threshold} and \code{padj_threshold}. Defaults
 #'     to \code{TRUE}.
+#' @param compute_pairwise Logical; if \code{TRUE}, computes all the pairwise
+#'     comparisons based on the conditions included in the input data.
 #' @param reduce Numeric; a scaling factor used to normalize large expression
 #'     values that exceed R's handling capacity. Defaults to 100.
 #' @param heatmap Logical; if \code{TRUE}, generates a heatmap for exploratory
@@ -62,24 +64,25 @@
 #' @examples
 #' data(default_tTEscanR_tRNA_data, default_tTEscanR_metadata)
 #' DE_analysis <- runDEAnalysis(
-#'     list_data = list(mRNA = default_tTEscanR_tRNA_data),
+#'     list_data = list(tRNA = default_tTEscanR_tRNA_data),
 #'     metadata = default_tTEscanR_metadata, batch = "tissue",
 #'     color_factor = "tissue"
 #' )
-runDEAnalysis <- function(list_data, metadata, condition = NULL, batch = NULL,
-    reference = NULL, reduce = 100, dim_reduct = NULL, color_factor = NULL,
-    heatmap = TRUE, shape_factor = NULL, label_factor = NULL,
+runDEAnalysis <- function(list_data, metadata, batch = NULL,
+    reference = NULL, reduce = 100, dim_reduct = NULL, color_factor = batch,
+    heatmap = TRUE, shape_factor = NULL, label_factor = NULL, target = NULL,
     highlight_median = FALSE, numPC = 2, color_palette = NULL, fc_threshold = 1,
     show_legend = "none", padj_threshold = 0.05, label_significant = TRUE,
-    verbose = TRUE) {
+    compute_pairwise = TRUE, verbose = TRUE) {
     if (verbose) message("--- Running the differential expression analysis ---")
-    # Compute results
-    results <- ComputeDEResults(
-        list_data = list_data, metadata = metadata, condition = condition,
-        batch = batch, reference = reference, reduce = reduce, verbose = verbose
+    ## Compute results
+    results <- computeDEResults(
+        list_data = list_data, metadata = metadata, target = target,
+        batch = batch, reference = reference, reduce = reduce,
+        verbose = verbose, compute_pairwise = compute_pairwise
     )
 
-    # Plot all datasets
+    ## Plot all datasets
     plots <- list()
     for (dataset_name in names(results)) {
         plots[[dataset_name]] <- plotDEResults(
@@ -87,7 +90,7 @@ runDEAnalysis <- function(list_data, metadata, condition = NULL, batch = NULL,
             dim_reduct = dim_reduct, color_factor = color_factor,
             shape_factor = shape_factor, label_factor = label_factor,
             highlight_median = highlight_median, numPC = numPC,
-            color_palette = color_palette, condition = condition,
+            color_palette = color_palette, target = target,
             fc_threshold = fc_threshold, padj_threshold = padj_threshold,
             heatmap = heatmap, label_significant = label_significant,
             verbose = verbose, show_legend = show_legend
@@ -110,7 +113,7 @@ runDEAnalysis <- function(list_data, metadata, condition = NULL, batch = NULL,
 #' @param metadata A \code{data.frame} with the data associated to the
 #'     conditions in the matrices of \code{list_data}. There has to be one
 #'     column with the same labels as the column names.
-#' @param condition Optional; a factor based on \code{metadata} columns to
+#' @param target Optional; a factor based on \code{metadata} columns to
 #'     define the comparisons to perform in a targeted analysis. Defaults to
 #'     \code{NULL}.
 #' @param batch Optional; name of the categorical variable in \code{metadata}
@@ -118,6 +121,8 @@ runDEAnalysis <- function(list_data, metadata, condition = NULL, batch = NULL,
 #' @param reference Optional; factor from the \code{batch} variable to use as
 #'     reference for the corrections. If not specified, the 1st factor that
 #'     appears will be used instead.
+#' @param compute_pairwise Logical; if \code{TRUE}, computes all the pairwise
+#'     comparisons based on the conditions included in the input data.
 #' @param padj_threshold Numeric; p-value threshold used for highlighting
 #'     significant features in the volcano plot. Defaults to 0.05.
 #' @param reduce Numeric; a scaling factor used to normalize large expression
@@ -130,18 +135,18 @@ runDEAnalysis <- function(list_data, metadata, condition = NULL, batch = NULL,
 #'
 #' @examples
 #' data(default_tTEscanR_tRNA_data, default_tTEscanR_metadata)
-#' DE_analysis <- ComputeDEResults(
+#' DE_analysis <- computeDEResults(
 #'     list_data = list(tRNA = default_tTEscanR_tRNA_data),
 #'     metadata = default_tTEscanR_metadata, batch = "tissue"
 #' )
-ComputeDEResults <- function(list_data, metadata, condition = NULL,
-    batch = NULL, reference = NULL, reduce = 100, padj_threshold = 0.05,
-    verbose = TRUE) {
+computeDEResults <- function(list_data, metadata, target = NULL, batch = NULL,
+    reference = NULL, reduce = 100, padj_threshold = 0.05, verbose = TRUE,
+    compute_pairwise = TRUE) {
     DE_results_list <- list()
-    if (is.null(condition) && is.null(batch)) { # Set the correction factor
-        stop("Please specify the 'condition' or the 'batch'.")
+    if (is.null(target) && is.null(batch)) { # Set the correction factor
+        stop("Please specify the 'target' or the 'batch'.")
     }
-    cf <- if (!is.null(batch)) batch else condition
+    cf <- if (!is.null(batch)) batch else target
     if (is.null(names(list_data))) { # Check names of the datasets in list_data
         names(list_data) <- paste0("dataset_", seq_along(list_data))
     } else {
@@ -150,30 +155,32 @@ ComputeDEResults <- function(list_data, metadata, condition = NULL,
             names(list_data)[empty] <- paste0("dataset_", which(empty))
         }
     }
-
     for (i in seq_along(list_data)) {
         dataset_name <- names(list_data)[i]
-        if (verbose) message("- Processing dataset: ", names(list_data)[i])
+        if (verbose) message("- Processisng dataset: ", names(list_data)[i])
         filter <- filterByMetadata(
             data = list_data[[i]], metadata = metadata, verbose = verbose
         )
         DESeq2_run <- computeDESeq2(
-            data = filter$data, condition = condition, reduce = reduce,
+            data = filter$data, condition = target, reduce = reduce,
             metadata = filter$metadata, batch = cf, reference = reference,
             verbose = verbose
         )
-        # Run all pairwise comparisons
-        pairwise_results <- computeAllPairwiseComp(
-            dds = DESeq2_run, factor_name = cf, padj_threshold = padj_threshold,
-            verbose = verbose
-        )
-        # Extract normalized counts and vst
+        ## Run all pairwise comparisons
+        if (isTRUE(compute_pairwise)){
+            pairwise_results <- computeAllPairwiseComp(
+                dds = DESeq2_run, factor_name = cf,
+                padj_threshold = padj_threshold, verbose = verbose
+            )
+        } else {
+            pairwise_results <- NULL
+        }
+        ## Extract normalized counts and vst
         size_corrected <- DESeq2::counts(DESeq2_run, normalized = TRUE)
         vst <- SummarizedExperiment::assay(
             DESeq2::varianceStabilizingTransformation(DESeq2_run)
         )
-
-        # Store results and metadata
+        ## Store results and metadata
         DE_results_list[[names(list_data)[i]]] <- list(
             DESeq2_run = DESeq2_run, pairwise_results = pairwise_results,
             size_corrected = size_corrected, vst = vst,
@@ -186,7 +193,7 @@ ComputeDEResults <- function(list_data, metadata, condition = NULL,
 #' Generates Visualizations from the DEA data
 #'
 #' @param DE_results_list A DESeq2 object with the normalized and vst counts.
-#'     Can be obtained by running \code{\link{ComputeDEResults}}
+#'     Can be obtained by running \code{\link{computeDEResults}}
 #' @param dataset_name String to specify the assay in \code{DE_results_list}
 #'     to extract.
 #' @param dim_reduct Either \code{"PCA"}, \code{"UMAP"} or \code{"tSNE"} to
@@ -204,7 +211,7 @@ ComputeDEResults <- function(list_data, metadata, condition = NULL,
 #' @param numPC Numeric; number of principal components to include in the PCA
 #'     analysis. Required if \code{dim_reduct} is \code{"PCA"}. Defaults to 2.
 #' @param scale_pca Logical; if \code{TRUE}, scales the data if
-#'     \code{dim_reduct} is \code{"PCA"}. Defaults to \code{FALSE}.
+#'     \code{dim_reduct} is \code{"PCA"}. Defaults to \code{TRUE}.
 #' @param heatmap Logical; if \code{TRUE}, generates a heatmap for exploratory
 #'     analysis. Defaults to \code{TRUE}.
 #' @param color_palette Optional; a \code{vector} of color codes to customize
@@ -212,7 +219,7 @@ ComputeDEResults <- function(list_data, metadata, condition = NULL,
 #' @param show_legend Either \code{"none"} (default), \code{"top"},
 #'     \code{"bottom"}, \code{"right"} or \code{"left"} to specify the
 #'     position of the legend in the plot.
-#' @param condition Optional; a factor based on \code{metadata} columns to
+#' @param target Optional; a factor based on \code{metadata} columns to
 #'     define the comparisons to perform in a targeted analysis. Defaults to
 #'     \code{NULL}.
 #' @param fc_threshold Numeric; fold change threshold used for highlighting
@@ -231,18 +238,18 @@ ComputeDEResults <- function(list_data, metadata, condition = NULL,
 #'
 #' @examples
 #' data(default_tTEscanR_tRNA_data, default_tTEscanR_metadata)
-#' DE_analysis <- ComputeDEResults(
+#' DE_analysis <- computeDEResults(
 #'     list_data = list(tRNA = default_tTEscanR_tRNA_data),
 #'     metadata = default_tTEscanR_metadata, batch = "tissue"
 #' )
 #' DE_plots <- plotDEResults(
 #'     DE_results_list = DE_analysis, dataset_name = "tRNA",
-#'     dim_reduct = "PCA", condition = "tissue", heatmap = FALSE
+#'     dim_reduct = "PCA", color_factor = "tissue", heatmap = FALSE
 #' )
 plotDEResults <- function(DE_results_list, dataset_name = NULL, heatmap = TRUE,
-    dim_reduct = NULL, numPC = 2, condition = NULL, verbose = TRUE,
-    color_factor = condition, shape_factor = NULL, label_factor = NULL,
-    highlight_median = FALSE, scale_pca = FALSE, color_palette = NULL,
+    dim_reduct = NULL, numPC = 2, target = NULL, verbose = TRUE,
+    color_factor = NULL, shape_factor = NULL, label_factor = NULL,
+    highlight_median = FALSE, scale_pca = TRUE, color_palette = NULL,
     fc_threshold = 1, padj_threshold = 0.05, label_significant = TRUE,
     show_legend = "none") {
     if (is.null(dataset_name)) dataset_name <- names(DE_results_list)[1]
@@ -278,10 +285,10 @@ plotDEResults <- function(DE_results_list, dataset_name = NULL, heatmap = TRUE,
         ) # Scale set to FALSE if the vst was already normalized
         results_list[["exploratory"]] <- exploratory_plots
     }
-    if (!is.null(condition)) { # Targeted Approach
+    if (!is.null(target)) { # Targeted Approach
         run <- DE_results_list[[dataset_name]]$DESeq2_run
         targeted_results <- targetedApproach(
-            DESeq2 = run, sig = label_significant, condition = condition,
+            DESeq2 = run, sig = label_significant, condition = target,
             fc = fc_threshold, padj = padj_threshold, verbose = verbose
         )
         results_list[["targeted"]] <- targeted_results
@@ -306,7 +313,7 @@ CheckSpecificParameters <- function(color, shape, label, meta) {
 
     provided_factors <- c(color, shape, label)
 
-    # If a factor is set to NULL it will not be added to the vector
+    ## If a factor is set to NULL it will not be added to the vector
     missing_factors <- setdiff(provided_factors, colnames(meta))
     if (length(missing_factors) > 0) {
         stop(

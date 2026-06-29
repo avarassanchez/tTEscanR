@@ -221,13 +221,13 @@ matrix_B <- matrix(
     dimnames = list(c("Gene_B", "Gene_C"), c("Sample_2", "Sample_3"))
 )
 
-test_that("MergeMatrices cleanly joins non-overlapping matrix domains into a unified sparse matrix", {
+test_that("mergeMatrices cleanly joins non-overlapping matrix domains into a unified sparse matrix", {
     matrix_C <- matrix( # Does not share any row or columns
         c(99), nrow = 1, ncol = 1,
         dimnames = list("Gene_C", "Sample_3")
     )
 
-    res <- MergeMatrices(matrix_A, matrix_C)
+    res <- mergeMatrices(matrix_A, matrix_C)
 
     expect_s4_class(res, "dgCMatrix") # Confirm structural sparse type
     expect_equal(nrow(res), 3) # 3 genes
@@ -237,36 +237,36 @@ test_that("MergeMatrices cleanly joins non-overlapping matrix domains into a uni
     expect_equal(as.numeric(res["Gene_A", "Sample_3"]), 0) # Fill with 0s
 })
 
-test_that("MergeMatrices successfully handles and forces alternative storage structures", {
+test_that("mergeMatrices successfully handles and forces alternative storage structures", {
     mixed_matrix <- matrix(
         c("10", "0", "0", "20"), nrow = 2,
         dimnames = list(c("Gene_A", "Gene_B"), c("Sample_1", "Sample_2"))
     )
 
     expect_silent({
-        res <- MergeMatrices(mixed_matrix)
+        res <- mergeMatrices(mixed_matrix)
     })
 
     expect_equal(as.numeric(res["Gene_A", "Sample_1"]), 10)
     expect_equal(as.numeric(res["Gene_B", "Sample_2"]), 20)
 })
 
-test_that("MergeMatrices handles all-zero matrices without crashing coordinate counters", {
+test_that("mergeMatrices handles all-zero matrices without crashing coordinate counters", {
     zero_matrix <- matrix(
         c(0, 0), nrow = 2, ncol = 1,
         dimnames = list(c("Gene_A", "Gene_B"), c("Sample_Null"))
     )
 
     expect_silent({
-        res <- MergeMatrices(matrix_A, zero_matrix)
+        res <- mergeMatrices(matrix_A, zero_matrix)
     })
 
     expect_true("Sample_Null" %in% colnames(res))
     expect_equal(as.numeric(sum(res[, "Sample_Null"])), 0)
 })
 
-test_that("MergeMatrices aggregates intersecting coordinate cells by summation", {
-    res <- MergeMatrices(matrix_A, matrix_B)
+test_that("mergeMatrices aggregates intersecting coordinate cells by summation", {
+    res <- mergeMatrices(matrix_A, matrix_B)
 
     expect_equal(as.numeric(res["Gene_B", "Sample_2"]), 19)
     expect_equal(as.numeric(res["Gene_A", "Sample_1"]), 5)

@@ -16,7 +16,7 @@ computeSizeCorrection <- function(data, metadata, batch = NULL, reduce = 100,
         )
     }
 
-    # Check consistency in conditions included in the data and metadata
+    ## Check consistency in conditions included in the data and metadata
     filtered <- filterByMetadata(
         data = data, metadata = metadata, verbose = verbose
     )
@@ -25,7 +25,7 @@ computeSizeCorrection <- function(data, metadata, batch = NULL, reduce = 100,
         batch = batch, reduce = reduce, verbose = verbose
     )
 
-    # Extracting the normalized data from the DESeq2 object
+    ## Extracting the normalized data from the DESeq2 object
     if (verbose) message("- Extracting the size-corrected counts.")
     size_corrected_output_matrix <- DESeq2::counts(
         DESeq2_run,
@@ -55,7 +55,7 @@ computeAllPairwiseComp <- function(dds, factor_name, padj_threshold = 0.05,
         stop("Factor must have at least 2 levels to compute contrasts.")
     }
 
-    # Generate all pairwise combinations
+    ## Generate all pairwise combinations
     combn_matrix <- utils::combn(levels_factor, 2)
     results_list <- list()
 
@@ -76,7 +76,7 @@ computeAllPairwiseComp <- function(dds, factor_name, padj_threshold = 0.05,
 }
 
 getDesignFormula <- function(batch, condition, verbose) {
-    # Dynamic definition of the design formula
+    ## Dynamic definition of the design formula
     if (!is.null(batch) && !is.null(condition)) {
         if (batch == condition) {
             design_formula <- stats::as.formula(paste("~", condition))
@@ -88,7 +88,7 @@ getDesignFormula <- function(batch, condition, verbose) {
             }
         } else {
             design_formula <- stats::as.formula(
-                paste("~", batch, "+", condition)
+                paste("~", batch, "+", condition) # condition
             )
             if (verbose) {
                 message(
@@ -167,7 +167,7 @@ setConditionParam <- function(cond, col, ref, verbose) {
     }
     col[[cond]] <- factor(col[[cond]])
 
-    # Apply reference level to primary condition
+    ## Apply reference level to primary condition
     if (!is.null(ref)) {
         if (!(ref %in% levels(col[[cond]]))) {
             stop(
@@ -195,7 +195,7 @@ targetedApproach <- function(DESeq2, verbose = TRUE, fc, padj, sig, condition) {
 
     if (verbose) {
         message(
-            "    Levels found in 'condition' factor: ",
+            "    Levels found in 'target' factor: ",
             paste(levels_factor, collapse = ", "),
             "\n    Number of pairwise combinations: ", length(combs)
         )
@@ -206,7 +206,9 @@ targetedApproach <- function(DESeq2, verbose = TRUE, fc, padj, sig, condition) {
         contrast_name <- paste(level1, "vs", level2, sep = "_")
 
         if (verbose) message("Processing contrast: ", contrast_name)
-        res <- DESeq2::results(DESeq2, contrast = c(condition, level1, level2))
+        res <- DESeq2::results(
+            DESeq2, contrast = c(condition, level1, level2), alpha = padj
+        )
         res_df <- as.data.frame(res)
 
         target_results <- tibble::tibble(
@@ -313,7 +315,7 @@ highlightMedian <- function(df, color, x_col, y_col, p, median) {
 
 runDimReduct <- function(vst, metadata, condition = NULL, show_legend, numPC,
     color = condition, shape = NULL, label = NULL, dim_reduct, median,
-    palette = NULL, scale = FALSE, verbose) {
+    palette = NULL, scale = TRUE, verbose) {
     plots <- list()
     M <- t(vst) # Transpose vst to samples x features
     var <- NULL
@@ -336,7 +338,7 @@ runDimReduct <- function(vst, metadata, condition = NULL, show_legend, numPC,
             },
             error = function(e) {
                 warning("UMAP failed: ", e$message, "\nUsing PCA instead.")
-                pca <- stats::prcomp(M, scale. = TRUE, center = TRUE)$x
+                pca <- stats::prcomp(M, scale. = scale, center = TRUE)$x
                 pca[, seq_len(min(2, ncol(pca))), drop = FALSE]
             }
         )
@@ -393,7 +395,7 @@ generateReductPlot <- function(plots, dim_reduct, coords, numPC,
 
 generateVolcanoPlot <- function(data, fc_threshold, padj_threshold,
     label_significant) {
-    # Extract the statistical significant data
+    ## Extract the statistical significant data
     sig_data <- data %>% dplyr::filter(
         abs(.data$log2_FC) > fc_threshold,
         .data$neg_log10_adjusted_p_value > -log10(padj_threshold)
@@ -452,13 +454,13 @@ produceHeatmapDiffExp <- function(data) {
     Euc_Dists <- stats::dist(t(data)) # Compute Euclidean distances
     dist_matrix <- as.matrix(Euc_Dists)
 
-    # Sort nodes in hierarchical clustering
+    ## Sort nodes in hierarchical clustering
     dend <- dendsort::dendsort(stats::as.dendrogram(stats::hclust(Euc_Dists)))
 
-    # Control the size of the labels in the heatmap
+    ## Control the size of the labels in the heatmap
     font_size <- heatmapFontSize(data = dist_matrix)
 
-    # Produce heatmap that has been hierarchically clustered
+    ## Produce heatmap that has been hierarchically clustered
     heatmap_grop <- grid::grid.grabExpr({
         Dist_heatmap <- ComplexHeatmap::Heatmap(
             matrix = dist_matrix, name = "Euclidean\nDistance",
@@ -475,15 +477,15 @@ produceHeatmapDiffExp <- function(data) {
 }
 
 produceElbowPlot <- function(data, variance) {
-    # To keep the output cleaner the number of PCs will be limited to 50
+    ## To keep the output cleaner the number of PCs will be limited to 50
     numPC <- min(length(variance), 50)
-    # Generates table with each PC and their variance
+    ## Generates table with each PC and their variance
     elbow_tibble <- tibble::tibble(
         PC = seq_len(numPC),
         variance_explained = variance[seq_len(numPC)]
     )
 
-    # Generate plot - reorder to add PCs in the x-axis & variance in the y-axis
+    ## Generate plot - reorder to add PCs in the x-axis & variance in the y-axis
     elbow_plot <- ggplot2::ggplot(data = elbow_tibble, ggplot2::aes(
         x = .data$PC, y = .data$variance_explained
     )) +

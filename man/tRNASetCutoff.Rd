@@ -51,7 +51,7 @@ Selection of the Optimal tRNA Cut Cutoff
 data(default_tTEscanR_tRNA_data)
 optimal_tRNA_cutoffs <- tRNASetCutoff(
     data = default_tTEscanR_tRNA_data,
-    generate_plot = FALSE, num_iter = 100,
-    cutoffs_limits = c(3000, 5000)
+    generate_plot = FALSE, num_iter = 50,
+    cutoffs_limits = c(3500, 4000)
 )
 }

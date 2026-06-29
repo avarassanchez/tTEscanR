@@ -48,7 +48,7 @@ extractGenes <- function(ensembl, filter, retain_mitochondrial,
     return(coding) # Returns a table with the features retrieved by getBM()
 }
 
-ExtractSequences <- function(transcripts, ensembl, retain_geneversion) {
+extractSequences <- function(transcripts, ensembl, retain_geneversion) {
     if (isTRUE(retain_geneversion)) {
         id_attribute <- "ensembl_transcript_id_version"
     } else {
@@ -60,7 +60,7 @@ ExtractSequences <- function(transcripts, ensembl, retain_geneversion) {
         mart = ensembl
     )
 
-    # Returns a table with: (i) transcript id, and (ii) nucleotide sequence
+    ## Returns a table with: (i) transcript id, and (ii) nucleotide sequence
     return(transcript_sequences)
 }
 
@@ -92,7 +92,7 @@ callingEnsembl <- function(dataset_name, transcripts, filter,
         transcripts <- transcripts[[trans_id_col]] # Retrieve ids
     }
     if (verbose) message("2 . COMPLETED\n3 . Extracting the genomic sequences.")
-    seq <- ExtractSequences( # Based on id, retrieve sequence
+    seq <- extractSequences( # Based on id, retrieve sequence
         transcripts = transcripts, ensembl = ensembl,
         retain_geneversion = retain_geneversion
     )
@@ -109,7 +109,7 @@ callingEnsembl <- function(dataset_name, transcripts, filter,
         }
         if (len == length(seq)) {
             stop(
-                "No transcripts found with available sequences.\n",
+                "No transcripts with available sequence. ",
                 "Check 'transcripts' if applicable."
             )
         }
@@ -121,7 +121,7 @@ callingEnsembl <- function(dataset_name, transcripts, filter,
 }
 
 checkFASTAFormat <- function(file) {
-    # Perform a check considering a subset of the file so that not all is loaded
+    ## Perform check considering a subset of the file so that not all is loaded
     lines <- readLines(file, n = 100, warn = FALSE)
     if (length(lines) == 0) {
         stop("Not a valid FASTA file: empty file.")
@@ -171,7 +171,7 @@ fromFASTAtoTable <- function(data, transcripts, retain_mitochondrial, verbose) {
         }
         tran_seq <- tran_seq[!mitochondrial_index, ]
     }
-    tran_seq <- ExtractFromFASTA(transcript_seq = tran_seq)
+    tran_seq <- extractFromFASTA(transcript_seq = tran_seq)
     if (!is.null(transcripts)) { # Targeted approach based on the transcripts
         if (verbose) message("- Trimming by the ids included as 'transcripts'.")
         targeted_indx <- list(
@@ -196,19 +196,19 @@ fromFASTAtoTable <- function(data, transcripts, retain_mitochondrial, verbose) {
     if (verbose) {
         message("- Number of protein-coding transcripts: ", nrow(tran_seq))
     }
-    trans <- DefineTranslatorTable(tran_seq)
+    trans <- defineTranslatorTable(tran_seq)
     return(list(transcript_sequences = tran_seq, translator_table = trans))
 }
 
-DefineTranslatorTable <- function(transcript_sequences) {
-    # Generate a translator table for the gene ids
+defineTranslatorTable <- function(transcript_sequences) {
+    ## Generate a translator table for the gene ids
     translator_table <- transcript_sequences[, c(
         "ensembl_transcript_id",
         "ensembl_gene_id",
         "external_gene_name"
     )]
 
-    # Remove entries without external gene names
+    ## Remove entries without external gene names
     translator_table <- translator_table[
         !is.na(translator_table$external_gene_name),
     ]
@@ -216,8 +216,8 @@ DefineTranslatorTable <- function(transcript_sequences) {
     return(translator_table)
 }
 
-ExtractFromFASTA <- function(transcript_seq) {
-    # The FASTA file contains all the info - retrieve each part independently
+extractFromFASTA <- function(transcript_seq) {
+    ## The FASTA file contains all the info - retrieve each part independently
     transcript_seq <- data.frame(
         coding = transcript_seq$coding,
         ensembl_gene_id = stringr::str_extract(

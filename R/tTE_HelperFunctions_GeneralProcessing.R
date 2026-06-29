@@ -25,12 +25,12 @@ transformCounts <- function(data) {
 
     data_long <- dplyr::filter(data_long, .data$counts > 0)
 
-    # Transforms every count into an independent row
+    ## Transforms every count into an independent row
     data_long <- tidyr::uncount(
         data_long, weights = .data$counts, .remove = TRUE
     )
 
-    # Ensure the counts column is removed
+    ## Ensure the counts column is removed
     if ("counts" %in% colnames(data_long)) {
         data_long$counts <- NULL
     }
@@ -39,14 +39,14 @@ transformCounts <- function(data) {
 }
 
 referenceObject <- function(data, compute_aa) {
-    # Create object
+    ## Create object
     ref <- createObject(counts = data, assay = "tRNA", verbose = FALSE)
 
-    # Compute anticodon usage
+    ## Compute anticodon usage
     ref <- computeAnticodonUsage(object = ref, verbose = FALSE)
     anticodon <- getReference(getAssay(ref, "AnticodonUsage"))
 
-    # Compute amino acid supply if applicable
+    ## Compute amino acid supply if applicable
     if (isTRUE(compute_aa)) {
         ref <- computeAAUsage(object = ref, level = "supply", verbose = FALSE)
         supply <- getReference(getAssay(ref, "AASupply"))
@@ -146,12 +146,12 @@ computeCorrelations <- function(data, ref_anticodon, ref_supply, cutoffs) {
 
 selectionCutoff <- function(cor_long, slope_threshold = 0.001,
     rho_threshold = 0.9) {
-    # Retain those cutoff that give a high correlation score
+    ## Retain those cutoff that give a high correlation score
     cor_filtered <- cor_long %>% dplyr::filter(
         abs(.data$spearman_corr) >= rho_threshold
     )
 
-    # Compute the slope on the remaining points
+    ## Compute the slope on the remaining points
     cor_stability <- cor_filtered %>%
         dplyr::group_by(.data$type) %>%
         dplyr::arrange(.data$cutoff, .by_group = TRUE) %>%

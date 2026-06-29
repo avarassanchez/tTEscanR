@@ -129,7 +129,7 @@ generalChecksDistPlot <- function(data, plot, x_axis_col, y_axis_col,
     condition_col, facet_col, bar_position, show_legend) {
     checkDataInLongFormat(data) # Data in long format.
 
-    # Valid plot layout
+    ## Valid plot layout
     checkValueInData(
         param = "plot", observed = plot,
         expected = c("jitter", "boxplot", "barplot", "dot")
@@ -266,13 +266,13 @@ plotTargetComparison <- function(target_data, overall_data, x_axis_col,
 }
 
 selectColorPalette <- function(palette, diff) {
-    # The color palette is a list - vector like required
+    ## The color palette is a list - vector like required
     if (is.list(palette)) palette <- unlist(palette)
 
-    # Use default color_palette
+    ## Use default color_palette
     if (is.null(palette)) palette <- c("#bababa", "#b2182b", "#fddbc7")
 
-    # Validate lenght of the oclor palette
+    ## Validate lenght of the oclor palette
     colors_needed <- ifelse(isTRUE(diff), 3, 2)
 
     if (length(palette) < colors_needed) {
@@ -413,14 +413,14 @@ plotProportion <- function(data, plot = "bar", var_numerical, var_categorical,
     num_rings = 5, save_format = NULL, out_name = NULL,
     out_directory = NULL, zoom = FALSE, show_legend = "none",
     add_titles = TRUE, order = NULL, normalize = TRUE, verbose = TRUE) {
-    # Checking the type of plot and the input variables
+    ## Checking the type of plot and the input variables
     if (is.null(var_color)) var_color <- var_categorical
     generalChecksProportionPlot(
         plot = plot, data = data, var_color = var_color, facet_col = facet_col,
         var_categorical = var_categorical, var_numerical = var_numerical
     )
 
-    # Generate plot
+    ## Generate plot
     plot <- generateProportionPlot(
         data = data, level = plot, var_numerical = var_numerical,
         var_categorical = var_categorical, var_color = var_color,
@@ -429,7 +429,7 @@ plotProportion <- function(data, plot = "bar", var_numerical, var_categorical,
         zoom = zoom, add_titles = add_titles, n_rings = num_rings
     )
 
-    # Save the ggplot
+    ## Save the ggplot
     if (!is.null(save_format)) {
         savePlot(
             plot = plot$plot, save_format = save_format, out_name = out_name,
@@ -666,8 +666,7 @@ additionalCustomization <- function(plot, merged, outliers, facet, colors,
 
 generalChecksScoresPlot <- function(data, meta, stats, target, facet,
     index, class, score_col, cond_col, pval_col) {
-    # Extracted when computing the tTE through tTEscanR
-    # required_cols <- c("condition", "tTE", "p_value", "neg_log10_tTE_p_value")
+    ## Extracted when computing the tTE through tTEscanR
     required_cols <- c(score_col, cond_col, pval_col)
 
     checkValueInData("data columns", required_cols, colnames(data))
@@ -966,7 +965,7 @@ addTitleCorrelation <- function(p, plot, add_titles) {
 
 generalChecksCorrelationPlot <- function(plot, data, x_axis_col, y_axis_col,
     condition_col, label_col) {
-    # Suitable plot
+    ## Suitable plot
     if (!(plot %in% c("MeanCodonUsage", "PoolDiversity"))) {
         stop("Please use MeanCodonUsage or PoolDiversity as 'plot'.")
     }

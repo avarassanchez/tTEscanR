@@ -8,19 +8,19 @@ test_that("Differential expression analysis executes correctly (multiple scenari
     expect_error(suppressWarnings(runDEAnalysis(list_data = list(mRNA = mRNA_data_test), metadata = default_tTEscanR_metadata)), "specify the") # batch missing
     expect_error(suppressWarnings(runDEAnalysis(list_data = mRNA_data_test, metadata = default_tTEscanR_metadata, batch = "tissue")), "No matching Sample IDs") # list_data not a named list
     expect_no_error(suppressWarnings(runDEAnalysis(list_data = list(mRNA = mRNA_data_test), metadata = default_tTEscanR_metadata, batch = "tissue"))) # Generates only the heatmap
-    expect_error(suppressWarnings(runDEAnalysis(list_data = list(mRNA = mRNA_data_test), metadata = default_tTEscanR_metadata, batch = "tissue", dim_reduct = "PCA")), "specify a suitable 'color_factor'") # color_factor missing
+    expect_no_error(suppressWarnings(runDEAnalysis(list_data = list(mRNA = mRNA_data_test), metadata = default_tTEscanR_metadata, batch = "tissue", dim_reduct = "PCA"))) # color_factor has as default batch
 
     # CASE 3: targeted approach with two classes
     default_tTEscanR_metadata$targets <- "other"
     default_tTEscanR_metadata$targets[grep("endothelial", default_tTEscanR_metadata$cell.type)] <- "endothelial"
     expect_no_error(suppressWarnings(runDEAnalysis(
-        list_data = list(mRNA = default_tTEscanR_mRNA_data), metadata = default_tTEscanR_metadata, condition = "targets",
+        list_data = list(mRNA = default_tTEscanR_mRNA_data), metadata = default_tTEscanR_metadata, target = "targets",
         batch = "tissue", color_factor = "tissue", fc_threshold = 1, padj_threshold = 0.05
     )))
 
     # CASE 4: single class should fail
     default_tTEscanR_metadata$targets <- "other"
-    expect_error(suppressWarnings(runDEAnalysis(list_data = list(mRNA = mRNA_data_test), metadata = default_tTEscanR_metadata, condition = "targets", batch = "tissue")))
+    expect_error(suppressWarnings(runDEAnalysis(list_data = list(mRNA = mRNA_data_test), metadata = default_tTEscanR_metadata, target = "targets", batch = "tissue")))
 
     # CASE 5: invalid data argument
     expect_error(runDEAnalysis(list_data = mRNA_data_test, metadata = default_tTEscanR_metadata, batch = "tissue", dim_reduct = "PCA"))

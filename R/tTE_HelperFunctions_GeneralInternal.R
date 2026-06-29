@@ -1,11 +1,11 @@
-###
-# General functions used internally by the tTEscanR main functions
-# 3 parts: (i) checking functions
-#          (ii) input data control
-#          (iii) translation functions
-###
+####
+## General functions used internally by the tTEscanR main functions
+## 3 parts: (i) checking functions
+##          (ii) input data control
+##          (iii) translation functions
+####
 
-# (i) Checking functions
+## (i) Checking functions
 
 checkCodonFreqTable <- function(data, species, verbose = TRUE) {
     if (is.null(data)) { # No user-defined codon frequency table has been given
@@ -16,12 +16,12 @@ checkCodonFreqTable <- function(data, species, verbose = TRUE) {
             )
         }
 
-        # Extract from the tTEscanR memory the default codon frequency table
+        ## Extract from the tTEscanR memory the default codon frequency table
         return(selectDefaultData(species = species, verbose = verbose))
     }
 
-    # A user-defined codon-frequency table has been given
-    # Check that the format of the table is suitable
+    ## A user-defined codon-frequency table has been given
+    ## Check that the format of the table is suitable
     checkDataFrame(data = data, required_names = TRUE)
     actual_codons <- rownames(data)
 
@@ -29,11 +29,11 @@ checkCodonFreqTable <- function(data, species, verbose = TRUE) {
 }
 
 checkDataFrame <- function(data, required_names = TRUE) {
-    # Control - in case the data object is empty
+    ## Control - in case the data object is empty
     if (is.null(data)) stop("The dataset is empty or could not be found.")
     dims <- dim(data)
 
-    # We use at least 2 columns and 2 rows - evaluate it is not empty
+    ## We use at least 2 columns and 2 rows - evaluate it is not empty
     if (is.null(dims) || dims[1] < 1 || dims[2] < 1) {
         row_val <- ifelse(is.null(dims), 0, dims[1])
         col_val <- ifelse(is.null(dims), 0, dims[2])
@@ -43,7 +43,7 @@ checkDataFrame <- function(data, required_names = TRUE) {
         ))
     }
 
-    # required_names is used to specify if the data needs row and column names
+    ## required_names is used to specify if the data needs row and column names
     if (required_names) {
         row_names <- rownames(data)
         col_names <- colnames(data)
@@ -66,7 +66,7 @@ checkDataFrame <- function(data, required_names = TRUE) {
 }
 
 checkGeneAnnotation <- function(vector1, vector2, verbose = TRUE) {
-    # Check in which format each vector of genes is
+    ## Check in which format each vector of genes is
     if (verbose) message("- Vector 1: codon frequency per gene table.")
     format1 <- isEnsemblID(gene_vector = vector1, verbose = verbose)
     if (verbose) message("- Vector 1 was properly loaded\n")
@@ -104,7 +104,7 @@ checkIntegerLength <- function(data, reduce, verbose) {
     return(data)
 }
 
-# (ii) Input data control
+## (ii) Input data control
 
 selectDefaultData <- function(species, action = "codon_freq", verbose = TRUE) {
     valid_species <- c("hg38", "mm39")
@@ -115,7 +115,7 @@ selectDefaultData <- function(species, action = "codon_freq", verbose = TRUE) {
         )
     }
 
-    # Construct the name of the object to retrieve
+    ## Construct the name of the object to retrieve
     if (action == "codon_freq") {
         if (verbose) {
             message("- The default ", species, " 'codon_freq' will be used.")
@@ -235,7 +235,7 @@ filterByMetadata <- function(data, metadata, id_col = NULL, verbose = TRUE) {
     return(list(data = filtered_data, metadata = filtered_metadata))
 }
 
-# (iii) Translation functions
+## (iii) Translation functions
 
 performTranslation <- function(data, notation_from, notation_to,
     genetic_code, verbose) {
@@ -280,7 +280,7 @@ performTranslation <- function(data, notation_from, notation_to,
     )
     colnames(translated_features) <- c(notation_from, notation_to)
 
-    # Return a table with the input and the translated features
+    ## Return a table with the input and the translated features
     return(translated_features)
 }
 
@@ -414,7 +414,7 @@ isEnsemblID <- function(gene_vector, verbose) {
         perl = TRUE
     )
 
-    # Evaluates if the Ensembl format contains the gene version
+    ## Evaluates if the Ensembl format contains the gene version
     if (any(matches)) {
         if (any(grepl("\\.", gene_vector[matches]))) {
             if (verbose) message("- Gene versions detected.")
@@ -427,6 +427,6 @@ isEnsemblID <- function(gene_vector, verbose) {
         stop("There are gene annotation inconsistencies in the gene vector.")
     }
 
-    # Same annotation in all genes
+    ## Same annotation in all genes
     return(if (all_ens) "Ensembl ID" else "Gene Symbol")
 }

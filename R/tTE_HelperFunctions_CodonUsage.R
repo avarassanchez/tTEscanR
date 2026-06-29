@@ -34,13 +34,13 @@ computeExonicBackground <- function(data) {
     row_totals <- rowSums(data)
     total <- sum(row_totals)
 
-    # Check in order to avoid denominator = 0
+    ## Check in order to avoid denominator = 0
     if (total == 0) stop("- All values in the matrix are 0.")
 
-    # Relative contribution of each row to the overall total sum of all values
+    ## Relative contribution of each row to the overall total sum of all values
     exonic_background <- row_totals / total
 
-    # Returns a numeric vector with an element per row
+    ## Returns a numeric vector with an element per row
     return(exonic_background)
 }
 
@@ -90,13 +90,13 @@ computeExonicBackground <- function(data) {
 #' )
 computeCorrelationBackground <- function(mean, background,
     corr_method = "spearman", verbose = TRUE) {
-    #  Convert the 'mean' input from a tibble to a named vector
+    ##  Convert the 'mean' input from a tibble to a named vector
     mean_vector <- stats::setNames(mean[[2]], mean[[1]])
 
-    # Extract the common features between mean and background
+    ## Extract the common features between mean and background
     common_features <- intersect(names(mean_vector), names(background))
 
-    # If needed filter the vectors accordingly
+    ## If needed filter the vectors accordingly
     if (length(common_features) != length(mean_vector) ||
         length(common_features) != length(background)) {
         if (verbose) {
@@ -294,7 +294,7 @@ modeRaw <- function(id_col, metadata, raw_mat, batch, verbose) {
 
 computeMetricsCodonUsage <- function(codon_usage, codon_freq, metadata,
     id_col = NULL, batch = NULL, corr_method, verbose) {
-    # CODON EXONIC BACKGROUND
+    ## CODON EXONIC BACKGROUND
     if (verbose) message("- Computing the codon exonic background.")
     codon_exonic_back <- computeExonicBackground(data = codon_freq)
 
@@ -305,7 +305,7 @@ computeMetricsCodonUsage <- function(codon_usage, codon_freq, metadata,
         )
     }
 
-    # MEAN CODON USAGE
+    ## MEAN CODON USAGE
     if (verbose) message("- Computing the mean codon usage.")
     mean_codon_usage <- computeMeanUsage(
         data = codon_usage, metadata = metadata,
@@ -317,7 +317,7 @@ computeMetricsCodonUsage <- function(codon_usage, codon_freq, metadata,
             "Failure in computeMeanUsage()."
         )
     }
-    # CORRELATION BACKGROUND-MEAN
+    ## CORRELATION BACKGROUND-MEAN
     if (verbose) {
         message(
             "- Computing the correlation between the mean codon ",
@@ -350,7 +350,7 @@ consistencyWithCodonFreq <- function(data, codon_freq, species,
         )
     }
 
-    # Checks the user-defined codon_freq or loads a default table if possible
+    ## Checks the user-defined codon_freq or loads a default table if possible
     codon_freq <- checkCodonFreqTable(data = codon_freq, species = species)
     if (verbose) {
         message(
@@ -365,19 +365,19 @@ consistencyWithCodonFreq <- function(data, codon_freq, species,
     )
     if (verbose) message("B . COMPLETED\n", "------------------------------\n")
 
-    # Return the codon (rows) frequency per gene (columns) table
+    ## Return the codon (rows) frequency per gene (columns) table
     return(codon_freq)
 }
 
 checkNamestRNA <- function(gene_names) {
     if (is.null(gene_names)) stop("No tRNA genes found in row names.")
 
-    # Check the actual content of the tRNA gene label
-    # Accepts both tRNA gene or isoacceptor names
+    ## Check the actual content of the tRNA gene label
+    ## Accepts both tRNA gene or isoacceptor names
     pattern <- "^tRNA-[A-Za-z]{3,4}-[ATGC]{3}(-[0-9]+-[0-9]+)?$"
     invalid_rows <- grep(pattern, gene_names, invert = TRUE)
 
-    # Report if there is any rowname that does not follow the requirements above
+    ## Report if there is any rowname that does not follow the requirements
     if (length(invalid_rows) > 0) {
         stop(
             "Inconsistent tRNA gene format.\n",

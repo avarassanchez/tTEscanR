@@ -7,15 +7,15 @@
 runDEAnalysis(
   list_data,
   metadata,
-  condition = NULL,
   batch = NULL,
   reference = NULL,
   reduce = 100,
   dim_reduct = NULL,
-  color_factor = NULL,
+  color_factor = batch,
   heatmap = TRUE,
   shape_factor = NULL,
   label_factor = NULL,
+  target = NULL,
   highlight_median = FALSE,
   numPC = 2,
   color_palette = NULL,
@@ -23,6 +23,7 @@ runDEAnalysis(
   show_legend = "none",
   padj_threshold = 0.05,
   label_significant = TRUE,
+  compute_pairwise = TRUE,
   verbose = TRUE
 )
 }
@@ -34,10 +35,6 @@ The list can be named or unnamed.}
 \item{metadata}{A \code{data.frame} with the data associated to the
 conditions in the matrices of \code{list_data}. There has to be one
 column with the same labels as the column names.}
-
-\item{condition}{Optional; a factor based on \code{metadata} columns to
-define the comparisons to perform in a targeted analysis. Defaults to
-\code{NULL}.}
 
 \item{batch}{Optional; name of the categorical variable in \code{metadata} to
 correct the data.}
@@ -67,6 +64,10 @@ analysis. Defaults to \code{TRUE}.}
 \item{label_factor}{Optional; name of the categorical variable to label the
 data points. Used if \code{dim_reduct} specified.}
 
+\item{target}{Optional; a factor based on \code{metadata} columns to
+define the comparisons to perform in a targeted analysis. Defaults to
+\code{NULL}.}
+
 \item{highlight_median}{Logical; if \code{TRUE} the data points of each
 cluster will be summarized into the median. Defaults to \code{FALSE}.}
 
@@ -90,6 +91,9 @@ significant features in the volcano plot. Defaults to 0.05.}
 plots based on \code{fc_threshold} and \code{padj_threshold}. Defaults
 to \code{TRUE}.}
 
+\item{compute_pairwise}{Logical; if \code{TRUE}, computes all the pairwise
+comparisons based on the conditions included in the input data.}
+
 \item{verbose}{Logical; if \code{TRUE}, displays information messages.
 Defaults to \code{TRUE}.}
 }
@@ -108,7 +112,7 @@ contrast table.
 \examples{
 data(default_tTEscanR_tRNA_data, default_tTEscanR_metadata)
 DE_analysis <- runDEAnalysis(
-    list_data = list(mRNA = default_tTEscanR_tRNA_data),
+    list_data = list(tRNA = default_tTEscanR_tRNA_data),
     metadata = default_tTEscanR_metadata, batch = "tissue",
     color_factor = "tissue"
 )

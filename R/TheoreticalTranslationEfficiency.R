@@ -92,7 +92,7 @@ generalChecksComputetTE <- function(object, verbose) {
     }
     if (verbose) message("- The input contains a proper tTEscanR object.")
 
-    # Evaluate that the required data and metadata are present in the object
+    ## Evaluate that the required data and metadata are present in the object
     isInObject(
         object = object, slot = "assays", section = "tRNA",
         update_assay = FALSE, overwrite = FALSE, verbose = FALSE
@@ -145,7 +145,7 @@ helperComputetTE <- function(results, level, verbose, object, meta, batch,
         if (verbose) {
             message("- Computing statistical significance (may take time)...")
         }
-        # Filter tRNA by shared cond.- tRNA used to increase num. ft shuffling
+        ## Filter tRNA by shared cond.- tRNA used to increase num. ft shuffling
         tRNA <- getAssay(object, "tRNA")[, colnames(filt1$mRNA), drop = FALSE]
         checkDataFrame(data = tRNA)
         tRNA <- computeSizeCorrection(
@@ -166,7 +166,7 @@ helperComputetTE <- function(results, level, verbose, object, meta, batch,
 assignMapLevel <- function(level, tRNA_exp, data_mRNA, genetic_code) {
     tRNA_names <- rownames(tRNA_exp)
 
-    # Extract the anticodons from the tRNA data
+    ## Extract the anticodons from the tRNA data
     tRNAsAnticodons <- vapply(
         strsplit(tRNA_names, "-"), "[[", 3,
         FUN.VALUE = character(1)
@@ -215,7 +215,7 @@ computePvalues <- function(tTE_conditions, data_mRNA, tRNA_exp_filtered,
     for (i in seq_len(n_cond)) { # Iterate over conditions present in the data
         curr_cond <- tTE_conditions[i] # Get condition interrogated each time
         mRNA_vec <- data_mRNA[, curr_cond] # Observed (true) usage
-        # Observed tRNA usage: shuffled N_perm times determine stat. signif.
+        ## Observed tRNA usage: shuffled N_perm times determine stat. signif.
         tRNA_vec_raw <- tRNA_exp_filtered[, curr_cond]
         n_tRNA_genes <- length(tRNA_vec_raw)
         null_correlations <- numeric(N_perm) # Vector to store permutation val.
@@ -231,11 +231,11 @@ computePvalues <- function(tTE_conditions, data_mRNA, tRNA_exp_filtered,
                 method = corr_method
             )
         }
-        # Fit parameters (mu and sigma for null distribution)
+        ## Fit parameters (mu and sigma for null distribution)
         mean_random_correlations <- mean(null_correlations)
         sd_random_correlations <- stats::sd(null_correlations)
 
-        # Calculate p-value for the actual tTE
+        ## Calculate p-value for the actual tTE
         tTE_p_values[i] <- stats::pnorm(
             tTE_scores[i],
             mean = mean_random_correlations,
@@ -267,10 +267,10 @@ computeStatisticalSignificance <- function(level, tTE_scores, data_mRNA,
     tRNA_exp_filtered <- as.matrix(tRNA_exp[keep_tRNA_indices, , drop = FALSE])
     tRNA_map_level_filtered <- tRNA_map_level[keep_tRNA_indices]
 
-    # Initialize the output matrix
+    ## Initialize the output matrix
     map_factor <- factor(tRNA_map_level_filtered, levels = common_features)
 
-    # Generates summary table with the input tTE scores and their p-values
+    ## Generates summary table with the input tTE scores and their p-values
     tTE_conditions <- colnames(data_tRNA)
     tTE_result <- computePvalues(
         data_mRNA = data_mRNA, map_factor = map_factor, tTE_scores = tTE_scores,
@@ -283,11 +283,11 @@ computeStatisticalSignificance <- function(level, tTE_scores, data_mRNA,
 computeCorrelation <- function(data_mRNA, data_tRNA, corr_method, verbose) {
     if (verbose) message("- Computing the ", corr_method, " correlation.")
 
-    # Extract the features and the conditions to consider
-    # Both datasets have been filtered for common conditions
+    ## Extract the features and the conditions to consider
+    ## Both datasets have been filtered for common conditions
     tTE_conditions <- colnames(data_mRNA)
 
-    # Selects condition in each iteration & filters the data accordingly
+    ## Selects condition in each iteration & filters the data accordingly
     tTEs_at_level <- vapply(seq_along(tTE_conditions), function(i) {
         stats::cor(data_mRNA[, i], data_tRNA[, i], method = corr_method)
     }, FUN.VALUE = numeric(1))
@@ -306,7 +306,7 @@ computeCorrelation <- function(data_mRNA, data_tRNA, corr_method, verbose) {
 filterMatrix <- function(data_mRNA, data_tRNA, level = c("codon", "aa"),
     verbose) {
     level <- match.arg(level)
-    # Extracting the matching conditions
+    ## Extracting the matching conditions
     tTE_conditions <- intersect(colnames(data_mRNA), colnames(data_tRNA))
     if (length(tTE_conditions) == 0) {
         stop(
