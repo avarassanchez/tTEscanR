@@ -184,6 +184,10 @@ tTEscanR_obj <- computeAAUsage(object = tTEscanR_obj, level = "both")
 tTEscanR_obj <- computeTheoreticalTE(object = tTEscanR_obj, level = "both")
 ```
 
+## 5. AI statement
+
+During the development of this package, generative AI tools (specifically ChatGPT and Gemini) were utilized to optimize specific code implementations and to assist in designing robust test cases for core functions. All AI-assisted code and unit tests were thoroughly reviewed, manually verified, and validated by the authors to ensure technical accuracy and compliance with Bioconductor standards.
+
 ## 5. References
 
 Gao W, Gallardo-Dodd CJ, Kutter C. *Cell type-specific analysis by single-cell profiling identifies a stable mammalian tRNA-mRNA interface and increased translation efficiency in neurons.* Genome Res. 2022;32(1):97-110. [doi:10.1101/gr.275944.121](https://doi.org/10.1101/gr.275944.121)
