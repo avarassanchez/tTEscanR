@@ -13,28 +13,28 @@
   <tr>
     <td rowspan="5">tTEscanR Object</td>
     <td rowspan="5">tTEscanRObject.R</td>
-    <td>Create_tTEscanR_Object( )</td>
+    <td>createObject( )</td>
     <td rowspan="2">Visible</td>
   </tr>
   <tr>
-    <td>Update_tTEscanR_Object( )</td>
+    <td>updateObject( )</td>
   </tr>
   <tr>
-    <td>DefineNewData( )</td>
+    <td>defineNewData( )</td>
     <td rowspan="3">Internal</td>
   </tr>
   <tr>
-    <td>CheckInputCombinations( )</td>
+    <td>checkInputCombinations( )</td>
   </tr>
   <tr>
-    <td>IsIn_tTEscanR_Object( )</td>
+    <td>isInObject( )</td>
   </tr>
 
   <!-- General pipeline -->
   <tr>
     <td>General Pipeline</td>
     <td>tTEscanR_General.R</td>
-    <td>Run_tTEscanR_pipeline( )</td>
+    <td>runPipeline( )</td>
     <td>Visible</td>
   </tr>
 
@@ -42,28 +42,28 @@
   <tr>
     <td rowspan="8">Codon Usage</td>
     <td rowspan="2">CodonUsage.R</td>
-    <td>ComputeCodonUsage( )</td>
+    <td>computeCodonUsage( )</td>
     <td rowspan="2">Visible</td>
   </tr>
   <tr>
-    <td>ComputeAnticodonUsage( )</td>
+    <td>computeAnticodonUsage( )</td>
   </tr>
   <tr>
     <td rowspan="6">tTE_HelperFunctions_CodonUsage.R</td>
-    <td>ComputeCodonExonicBackground( )</td>
+    <td>computeCodonExonicBackground( )</td>
     <td rowspan="4">Visible</td>
   </tr>
   <tr>
-    <td>ComputeCorrelationBackground( )</td>
+    <td>computeCorrelationBackground( )</td>
   </tr>
   <tr>
-    <td>ComputeMeanUsage( )</td>
+    <td>computeMeanUsage( )</td>
   </tr>
   <tr>
-    <td>ComputeAdditionalMetrics_CodonUsage( )</td>
+    <td>computeAdditionalMetrics_CodonUsage( )</td>
   </tr>
   <tr>
-    <td>ConsistencyWithCodonFreq( )</td>
+    <td>consistencyWithCodonFreq( )</td>
     <td rowspan="2">Internal</td>
   </tr>
   <tr>
@@ -74,302 +74,302 @@
   <tr>
     <td rowspan="7">Codon Freq Per Gene</td>
     <td>CodonFreqPerGene.R</td>
-    <td>GetCodonFreq( )</td>
+    <td>getCodonFreq( )</td>
     <td>Visible</td>
   </tr>
   <tr>
     <td rowspan="6">tTE_HelperFunctions_CodonFreq.R</td>
-    <td>ExtractCodons( )</td>
+    <td>extractCodons( )</td>
     <td>Visible</td>
   </tr>
   <tr>
-    <td>ExtractGenes( )</td>
+    <td>extractGenes( )</td>
     <td rowspan="5">Internal</td>
   </tr>
   <tr>
-    <td>ExtractSequences( )</td>
+    <td>extractSequences( )</td>
   </tr>
   <tr>
-    <td>CallingEnsembl( )</td>
+    <td>callingEnsembl( )</td>
   </tr>
   <tr>
-    <td>CheckFASTAFormat( )</td>
+    <td>checkFASTAFormat( )</td>
   </tr>
   <tr>
-    <td>FromFASTAtoTable( )</td>
+    <td>fromFASTAtoTable( )</td>
   </tr>
 
   <!-- Codon Pool Contribution -->
   <tr>
     <td rowspan="4">Pool Contribution</td>
     <td rowspan="4">ExamineCodonPoolContribution.R</td>
-    <td>ShowPoolContribution( )</td>
+    <td>showPoolContribution( )</td>
     <td>Visible</td>
   </tr>
   <tr>
-    <td>ComputeIndividualGeneCorrelation( )</td>
+    <td>computeIndividualGeneCorrelation( )</td>
     <td rowspan="3">Internal</td>
   </tr>
   <tr>
-    <td>AnalyzeTopGeneImpact( )</td>
+    <td>analyzeTopGeneImpact( )</td>
   </tr>
   <tr>
-    <td>GetOrCompute( )</td>
+    <td>getOrCompute( )</td>
   </tr>
 
   <!-- Amino Acid Usage -->
   <tr>
     <td rowspan="3">Amino Acid Usage</td>
     <td rowspan="3">AAUsage.R</td>
-    <td>ComputeAAUsage( )</td>
+    <td>computeAAUsage( )</td>
     <td>Visible</td>
   </tr>
   <tr>
-    <td>GroupAA( )</td>
+    <td>groupAA( )</td>
     <td rowspan="2">Internal</td>
   </tr>
   <tr>
-    <td>RetrieveAAUsageData( )</td>
+    <td>retrieveAAUsageData( )</td>
   </tr>
 
   <!-- Theoretical Translation Efficiency -->
   <tr>
     <td rowspan="4">Theoretical Translation Efficiency</td>
     <td rowspan="4">TheoreticalTranslationEfficiency.R</td>
-    <td>Compute_tTE( )</td>
+    <td>computeTheoreticalTE( )</td>
     <td>Visible</td>
   </tr>
   <tr>
-    <td>ComputeStatisticalSignificance( )</td>
+    <td>computeStatisticalSignificance( )</td>
     <td rowspan="3">Internal</td>
   </tr>
   <tr>
-    <td>ComputeCorrelation( )</td>
+    <td>computeCorrelation( )</td>
   </tr>
   <tr>
-    <td>FilterMatrix( )</td>
+    <td>filterMatrix( )</td>
   </tr>
 
   <!-- Abundance analysis -->
   <tr>
     <td rowspan="13">Differential Expression Analysis</td>
     <td rowspan="3">DifferentialExpressionAnalysis.R</td>
-    <td>RunDEAnalysis( )</td>
+    <td>runDEAnalysis( )</td>
     <td rowspan="3">Visible</td>
   </tr>
   <tr>
-    <td>ComputeDEResults( )</td>
+    <td>computeDEResults( )</td>
   </tr>
   <tr>
-    <td>PlotDEResults( )</td>
+    <td>plotDEResults( )</td>
   </tr>
   <tr>
     <td rowspan="10">tTE_HelperFunctions_DEA.R</td>
-    <td>ComputeSizeCorrection( )</td>
+    <td>computeSizeCorrection( )</td>
     <td rowspan="10">Internal</td>
   </tr>
   <tr>
-    <td>ComputeAllPairwiseComp( )</td>
+    <td>computeAllPairwiseComp( )</td>
   </tr>
   <tr>
-    <td>ComputeDESeq2( )</td>
+    <td>computeDESeq2( )</td>
   </tr>
   <tr>
-    <td>TargetedApproach( )</td>
+    <td>targetedApproach( )</td>
   </tr>
   <tr>
-    <td>MakeScatterPlot( )</td>
+    <td>makeScatterPlot( )</td>
   </tr>
   <tr>
-    <td>RunDimReduct( )</td>
+    <td>runDimReduct( )</td>
   </tr>
   <tr>
-    <td>GenerateVolcanoPlot( )</td>
+    <td>generateVolcanoPlot( )</td>
   </tr>
   <tr>
-    <td>HeatmapFontSize( )</td>
+    <td>heatmapFontSize( )</td>
   </tr>
   <tr>
-    <td>ProduceHeatmapDiffExp( )</td>
+    <td>produceHeatmapDiffExp( )</td>
   </tr>
   <tr>
-    <td>ProduceElbowPlot( )</td>
+    <td>produceElbowPlot( )</td>
   </tr>
 
   <!-- Permutation Test -->
   <tr>
     <td rowspan="2">Permutation Test</td>
     <td rowspan="2">PermutationTest.R</td>
-    <td>GetPermutationDist( )</td>
+    <td>getPermutationDist( )</td>
     <td rowspan="2">Visible</td>
   </tr>
   <tr>
-    <td>ObtainSignificance( )</td>
+    <td>obtainSignificance( )</td>
   </tr>
 
   <!-- General Functions -->
   <tr>
     <td rowspan="26">General Functions</td>
     <td rowspan="7">GeneralProcessing.R</td>
-    <td>Get_tRNAMatrix( )</td>
+    <td>tRNAGetMatrix( )</td>
     <td rowspan="7">Visible</td>
   </tr>
   <tr>
-    <td>Set_tRNACutoff( )</td>
+    <td>tRNASetCutoff( )</td>
   </tr>
   <tr>
-    <td>Filter_tRNACuts( )</td>
+    <td>tRNAFilterCuts( )</td>
   </tr>
   <tr>
-    <td>Set_tRNAgenes( )</td>
+    <td>tRNASetGenes( )</td>
   </tr>
   <tr>
-    <td>TransformFormat( )</td>
+    <td>transformFormat( )</td>
   </tr>
   <tr>
-    <td>MergeMatrices( )</td>
+    <td>mergeMatrices( )</td>
   </tr>
   <tr>
-    <td>GroupConditions( )</td>
+    <td>groupConditions( )</td>
   </tr>
   <tr>
     <td rowspan="9">tTE_HelperFunctions_GeneralProcessing.R</td>
-    <td>TransformCounts( )</td>
+    <td>transformCounts( )</td>
     <td rowspan="9">Internal</td>
   </tr>
   <tr>
-    <td>CutoffMatrix( )</td>
+    <td>cutoffMatrix( )</td>
   </tr>
   <tr>
-    <td>FilteringCutoffs( )</td>
+    <td>filteringCutoffs( )</td>
   </tr>
   <tr>
-    <td>ComputeCorrelations( )</td>
+    <td>computeCorrelations( )</td>
   </tr>
   <tr>
-    <td>Selection_Cutoff( )</td>
+    <td>selectionCutoff( )</td>
   </tr>
   <tr>
-    <td>Iterate_tRNACutoff( )</td>
+    <td>iteratetRNACutoff( )</td>
   </tr>
   <tr>
-    <td>CorrelationCutoffPlot( )</td>
+    <td>correlationCutoffPlot( )</td>
   </tr>
   <tr>
-    <td>SelectionCutoffPlot( )</td>
+    <td>selectionCutoffPlot( )</td>
   </tr>
   <tr>
-    <td>Cumulative_SelectionCutoffPlot( )</td>
+    <td>cumulativeSelectionCutoffPlot( )</td>
   </tr>
   <tr>
     <td rowspan="6">tTE_HelperFunctions_GeneralInternal.R</td>
-    <td>SelectDefaultData( )</td>
+    <td>selectDefaultData( )</td>
     <td rowspan="6">Internal</td>
   </tr>
   <tr>
-    <td>IdentifyInputFormat( )</td>
+    <td>identifyInputFormat( )</td>
   </tr>
   <tr>
-    <td>FilterByMetadata( )</td>
+    <td>filterByMetadata( )</td>
   </tr>
   <tr>
-    <td>CheckCodonFreqTable( )</td>
+    <td>checkCodonFreqTable( )</td>
   </tr>
   <tr>
-    <td>CheckDataFrame( )</td>
+    <td>checkDataFrame( )</td>
   </tr>
   <tr>
-    <td>CheckGeneAnnotation( )</td>
+    <td>checkGeneAnnotation( )</td>
   </tr>
   <tr>
     <td rowspan="4">tTE_HelperFunctions_GeneralTranslation.R</td>
-    <td>FeaturesToAA( )</td>
+    <td>featuresToAA( )</td>
     <td>Visible</td>
   </tr>
   </tr>
-    <td>PerformTranslation( )</td>
+    <td>performTranslation( )</td>
     <td rowspan="3">Internal</td>
   </tr>
   <tr>
-    <td>RetrieveTranslation( )</td>
+    <td>retrieveTranslation( )</td>
   </tr>
   <tr>
-    <td>IsEnsemblID( )</td>
+    <td>isEnsemblID( )</td>
   </tr>
 
   <!-- Plots -->
 <tr>
     <td rowspan="22">Plots</td>
     <td rowspan="7">tTEscanPlots.R</td>
-    <td>tTE_DistributionPlot( )</td>
+    <td>plotDistribution( )</td>
     <td rowspan="6">Visible</td>
 </tr>
 <tr>
-    <td>tTE_PlotTargetComparison( )</td>
+    <td>plotTargetComparison( )</td>
 </tr>
 <tr>
-    <td>tTE_ProportionPlot( )</td>
+    <td>plotProportion( )</td>
 </tr>
 <tr>
-    <td>tTE_ScoresPlot( )</td>
+    <td>plotScores( )</td>
 </tr>
 <tr>
-    <td>tTE_CorrelationPlot( )</td>
+    <td>plotCorrelation( )</td>
 </tr>
 <tr>
-    <td>tTE_PermutationPlot( )</td>
+    <td>plotPermutation( )</td>
 </tr>
 <tr>
-    <td>CorrelationCutoffPlot( )</td>
+    <td>correlationCutoffPlot( )</td>
     <td>Internal</td>
   </tr>
 
 <tr>
     <td rowspan="15">tTE_HelperFunctions_tTEscanRPlots.R</td>
-    <td>SavePlot( )</td>
+    <td>savePlot( )</td>
     <td rowspan="15">Internal</td>
 </tr>
 <tr>
-    <td>GetSafeColorScale( )</td>
+    <td>getSafeColorScale( )</td>
 </tr>
 <tr>
-    <td>GetAnnotData( )</td>
+    <td>getAnnotData( )</td>
 </tr>
 <tr>
-    <td>CheckValueInData( )</td>
+    <td>checkValueInData( )</td>
 </tr>
 <tr>
-    <td>CheckDataInLongFormat( )</td>
+    <td>checkDataInLongFormat( )</td>
 </tr>
 <tr>
-    <td>GetOutputName( )</td>
+    <td>getOutputName( )</td>
 </tr>
 <tr>
-    <td>GenerateDistPlot( )</td>
+    <td>generateDistPlot( )</td>
 </tr>
 <tr>
-    <td>DrawBarCountsPlot( )</td>
+    <td>drawBarCountsPlot( )</td>
 </tr>
 <tr>
-    <td>DrawDonutPlot( )</td>
+    <td>drawDonutPlot( )</td>
 </tr>
 <tr>
-    <td>ComputeRings( )</td>
+    <td>computeRings( )</td>
 </tr>
 <tr>
-    <td>DrawRadarPlot( )</td>
+    <td>drawRadarPlot( )</td>
 </tr>
 <tr>
-    <td>GenerateProportionPlot( )</td>
+    <td>generateProportionPlot( )</td>
 </tr>
 <tr>
-    <td>SignificanceSymbol( )</td>
+    <td>significanceSymbol( )</td>
 </tr>
 <tr>
-    <td>Compute_tTE_Significance( )</td>
+    <td>computeTEsignificance( )</td>
 </tr>
 <tr>
-    <td>Compute_Boxplot_Significance( )</td>
+    <td>computeBoxplotSignificance( )</td>
 </tr>
 
 </table>
