@@ -20,7 +20,7 @@ In order to ensure robustness throughout the pipeline **specific ids** have been
 - Table with the conditions of the mRNA and tRNA data as *"ConditionsLabels"*
 - Active correction factor to use when running differential expression analyses as *"CorrectionFactor"*
 
-**Function:** `Create_tTEscanR_Object()`. 
+**Function:** `createObject()`. 
 
 Initializes a **tTEscanR** object, a strucutred container designed to hold data. The object consists of two main components; *"assays"*, which stores data matrices, and *"meta.data"*, which stores associated information and additional intermediate calculations.  A **tTEscanR** object can be created using a single dataset, or initialized with a list of datasets provided at once. Additional assays and metadata layers can be appended later using `Update_tTEscanR_Object()`. 
 
@@ -33,7 +33,7 @@ Initializes a **tTEscanR** object, a strucutred container designed to hold data.
 
 <hr>
 
-**Function:** `Update_tTEscanR_Object()`. 
+**Function:** `updateObject()`. 
 
 Updates an existing **tTEscanR** object by overwriting existing sections or adding new ones, as specified in the parameters.
 
@@ -50,21 +50,21 @@ Updates an existing **tTEscanR** object by overwriting existing sections or addi
 data(default_tTEscanR_mRNA_data, default_tTEscanR_tRNA_data, default_tTEscanR_metadata)
 
 # Adding the mRNA dataset to the object
-tTEscanR_obj <- Create_tTEscanR_Object(counts = list(default_tTEscanR_mRNA_data,
-                                                     default_tTEscanR_tRNA_data),
-                                       assay = list("mRNA", "tRNA"))
+tTEscanR_obj <- createObject(counts = list(default_tTEscanR_mRNA_data,
+                                           default_tTEscanR_tRNA_data),
+                             assay = list("mRNA", "tRNA"))
 
 # Updating the object created before with the tRNA dataset
-tTEscanR_obj <- Update_tTEscanR_Object(object = tTEscanR_obj,
-                                       meta.data = default_tTEscanR_metadata,
-                                       meta.data.ids = "ConditionsLabels")
+tTEscanR_obj <- updateObject(object = tTEscanR_obj,
+                             meta.data = default_tTEscanR_metadata,
+                             meta.data.ids = "ConditionsLabels")
 ```
 
 ### 1.2. Codon-anticodon usage assessment
 
 The **codon usage** is computed through matrix multiplication between the mRNA gene expression data (genes as rows and conditions as columns) and a **codon frequency-per-gene** table. This table represents the codon distribution of each protein-coding gene in a reference genome, with the 61 sense codons as rows and each gene as columns. As a result, the codon usage calculation produces a matrix where **codons are represented as rows and conditions as columns**. This transformation enables downstream analysis of codon preferences across different conditions.
 
-**Function:** `ComputeCodonUsage()`. 
+**Function:** `computeCodonUsage()`. 
 
 Estimates codon usage profiles based on gene-level mRNA expression data. It optionally accepts pre-computed user-prodived codon-frequency tables, or uses internally generated tables when not provided. Currently the default organisms are human (hg38) and mouse (mm39). When enabled, it can evaluate the correlation between background codon composition and observed mean codon usage. 
 
@@ -83,9 +83,9 @@ Estimates codon usage profiles based on gene-level mRNA expression data. It opti
 ```{r}
 # The metadata was previously added to the tTEscanR object
 # Adding the corrrection factor to the tTEscanR object
-tTEscanR_obj <- Update_tTEscanR_Object(object = tTEscanR_obj,
-                                       meta.data = "tissue",
-                                       meta.data.ids = "CorrectionFactor")
+tTEscanR_obj <- updayeObject(object = tTEscanR_obj,
+                             meta.data = "tissue",
+                             meta.data.ids = "CorrectionFactor")
 ```
 
 ```{r}
@@ -93,7 +93,7 @@ tTEscanR_obj <- Update_tTEscanR_Object(object = tTEscanR_obj,
 # - Default human canonical hg38 codon frequency per gene table
 # - Enable to translate the genes if no matching formats are detected
 
-tTEscanR_obj <- ComputeCodonUsage(object = tTEscanR_obj, 
+tTEscanR_obj <- computeCodonUsage(object = tTEscanR_obj, 
                                   codon_freq = NULL, 
                                   species = "hg38", 
                                   additional_metrics = TRUE,
@@ -104,7 +104,7 @@ tTEscanR_obj <- ComputeCodonUsage(object = tTEscanR_obj,
 
 The **anticodon usage** is computed from a tRNA gene expression matrix including high-confidence tRNA genes predicted using [tRNAscan-SE](https://trna.ucsc.edu/tRNAscan-SE/) as rows, and conditions as columns. Details on how to pre-process the tRNA data are described in [Helper functions](#2-helper-functions). To create a more concise representation, tRNA genes sharing the same anticodon are grouped together by **tRNA isoacceptors**, producing a reduced matrix. 
 
-**Function:** `ComputeAnticodonUsage()`.
+**Function:** `computeAnticodonUsage()`.
 
 Calculates anticodon usage profiles from tRNA gene expression data. It summarizes the expression of tRNAs by their anticodon isdentity, which can be used to estimate the tRNA supply landscape. As a result it produces a matrix where **anticodons are represented as rows and condition as columns**.
 
@@ -114,14 +114,14 @@ Calculates anticodon usage profiles from tRNA gene expression data. It summarize
 - `verbose`: Logical; if TRUE, displays information messages.
 
 ```{r}
-tTEscanR_obj <- ComputeAnticodonUsage(object = tTEscanR_obj)
+tTEscanR_obj <- computeAnticodonUsage(object = tTEscanR_obj)
 ```
 
 ### 1.3. Amino acid level assessment
 
 The **amino acid level** assessment involves calculating amino acid **demand** and **supply**. Demand is determined by grouping codons that correspond to the same amino acid (based on the genetic code), while supply is measured by pooling anticodon families based on the amino acid they recognize. These calculations can be performed separately using "demand" or "supply" or together" by specifying "both".
 
-**Function:** `ComputeAAUsage()`.
+**Function:** `computeAAUsage()`.
 
 Computes the amino acid (AA) demand and/or supply from a given codon or anticodon usage matrix, respectively. It extracts codon and/or anticodon usage matrices and aggregates their contributions based on the standard genetic code, mapping each codon or anticodon to its corresponding amino acid. The resulting values reflect total usage (demand) or availability (supply) of each AA, depending on the input type.
 
@@ -135,17 +135,17 @@ Computes the amino acid (AA) demand and/or supply from a given codon or anticodo
 - `verbose`: Logical; if TRUE, displays information messages.
 
 ```{r}
-tTEscanR_obj <- ComputeAAUsage(object = tTEscanR_obj, level = "demand")
-tTEscanR_obj <- ComputeAAUsage(object = tTEscanR_obj, level = "supply")
+tTEscanR_obj <- computeAAUsage(object = tTEscanR_obj, level = "demand")
+tTEscanR_obj <- computeAAUsage(object = tTEscanR_obj, level = "supply")
 
-tTEscanR_obj <- ComputeAAUsage(object = tTEscanR_obj,  evel = "both", overwrite = TRUE)
+tTEscanR_obj <- computeAAUsage(object = tTEscanR_obj,  evel = "both", overwrite = TRUE)
 ```
 
 ### 1.4. tTE computation
 
 The **Theoretical Translation Efficiency (tTE)** is assessed by calculating Spearman's rank correlation coefficient between amino acid demand, derived from mRNA codon usage, and amino acid supply, determined by tRNA anticodon usage. Ensuring **matching conditions** between both datasets is crucial for this step, as only shared conditions are retained for downstream analysis. Consequently, the assessment is highly sensitive to annotation variability. 
 
-**Function:** `Compute_tTE()`.
+**Function:** `computeTheoreticalTE()`.
 
 Computes the tTE score across matching conditions at the codon-anticodon usage level and/or amino acid demand and supply level.
 
@@ -164,18 +164,18 @@ Computes the tTE score across matching conditions at the codon-anticodon usage l
 **Note:** Here we are not pre-defining a "corr_factor" parameter as it has been previously added to the **tTEscanR**. However, if a different factor is desired, the "corr_factor· metadata should be chaged correspondingly using `Update_tTEscanR_Object()`.
 
 ```{r}
-tTEscanR_obj <- Compute_tTE(object = tTEscanR_obj,
-                            level = "aa",
-                            genetic_code = "Standard",
-                            corr_method = "spearman",
-                            compute.significance = TRUE)
+tTEscanR_obj <- computeTheoreticalTE(object = tTEscanR_obj,
+                                     level = "aa",
+                                     genetic_code = "Standard",
+                                     corr_method = "spearman",
+                                     compute.significance = TRUE)
 ```
 
 ## 2. Helper functions
 
 ### 2.1. Pre-processing module
 
-**Function:** `Get_tRNAMatrix()`.
+**Function:** `tRNAGetMatrix()`.
 
 Extracts tRNA expression data from a Chromatin Assay or a Seurat object and converts it into a structured expression matrix. Optionally, the output can be saved into a specified directory.
 
@@ -198,18 +198,18 @@ Extracts tRNA expression data from a Chromatin Assay or a Seurat object and conv
 # - The output matrix will not be saved
 
 chromatin_object <- readRDS()
-tRNA_expression_matrix <- Get_tRNAMatrix(chrom = chromatin_object,
-                                         assay = "peaks",
-                                         species = "hg38",
-                                         name_sep = c("-", "-"),
-                                         save = FALSE)
+tRNA_expression_matrix <- tRNAGetMatrix(chrom = chromatin_object,
+                                        assay = "peaks",
+                                        species = "hg38",
+                                        name_sep = c("-", "-"),
+                                        save = FALSE)
 
 # The default_tTEscanR_tRNA_data available in tTEscanR is a subset of the generated tRNA_expression_matrix
 ```
 
 <hr>
 
-**Function_** `Set_tRNACutoff()`.
+**Function_** `tRNASetCutoff()`.
 
 Retrieves an optimal dataset-specific threshold to filter the tRNA expression data.
 
@@ -223,17 +223,17 @@ Retrieves an optimal dataset-specific threshold to filter the tRNA expression da
 
 
 ```{r}
-tRNA_optimal_cutoff <- Set_tRNACutoff(data = tRNA_data,
-                                      num_iter = 1000,
-                                      cutoffs_limits = c(50, 1000),
-                                      generate_plot = TRUE,
-                                      slope_threshold = 0.001,
-                                      rho_threshold = 0.5)
+tRNA_optimal_cutoff <- tRNASetCutoff(data = tRNA_data,
+                                     num_iter = 1000,
+                                     cutoffs_limits = c(50, 1000),
+                                     generate_plot = TRUE,
+                                     slope_threshold = 0.001,
+                                     rho_threshold = 0.5)
 ```
 
 <hr>
 
-**Function:** `Filter_tRNACuts()`.
+**Function:** `tRNAFilterCuts()`.
 
 Filters a tRNA expression matrix by removing tRNA genes (rows) that fall below a specific total read count, specified as a cutoff. It is useful to eliminate low-quality or poorly seqeunced conditions that may bias downstream analyses. 
 
@@ -242,12 +242,12 @@ Filters a tRNA expression matrix by removing tRNA genes (rows) that fall below a
 - `cutoff`: Minimum expression level required for a condition to be retained.
 
 ```{r}
-tRNA_data_filtered <- Filter_tRNACuts(tRNA_data = tRNA_data, cutoff = 5000)
+tRNA_data_filtered <- tRNAFilterCuts(tRNA_data = tRNA_data, cutoff = 5000)
 ```
 
 <hr>
 
-**Function:** `FeaturesToAA()`.
+**Function:** `featuresToAA()`.
 
 Verifies and, if necessary, translates gene annotations across multiple vectors or data frames, from Ensembl IDs to gene names, or vice-versa, ensuring **consistent annotation** throughout the analysis. Additionally, it enables bidirectional translation between codon and anticodons using the genetic code table, allowing assingment of their corresponding amino acids and supporting hierrchical annotation across levels.
 
@@ -260,20 +260,20 @@ Verifies and, if necessary, translates gene annotations across multiple vectors 
 - `verbose`: Logical; if TRUE, displays information messages.
 
 ```{r}
-codons <- rownames(tTEscanR_obj@assays$CodonUsage)
-codons_to_AA <- FeaturesToAA(data_to_translate = codons,
+codons <- rownames(getAssay(tTEscanR_obj, "CodonUsage")
+codons_to_AA <- featuresToAA(data_to_translate = codons,
                              notation_from = "codon",
                              notation_to = "aa",
                              genetic_code = "Standard")
 
-codons_to_anticodons <- FeaturesToAA(data_to_translate = codons,
+codons_to_anticodons <- featuresToAA(data_to_translate = codons,
                                      notation_from = "codon",
                                      notation_to = "anticodon")
 ```
 
 ### 2.2 Codon frequency table module
 
-**Function:** `GetCodonFreq()`.
+**Function:** `getCodonFreq()`.
 
 Based on an Ensembl reference genome or a user-provided gene sequence file, this function computes a codon frequency-per-gene matrix. It can optionally subset the analysis to specific transcripts and apply filtering criteria when multiple transcripts are available per gene.
 
@@ -293,7 +293,7 @@ Based on an Ensembl reference genome or a user-provided gene sequence file, this
 datasets <- biomaRt::listDatasets(useEnsembl(biomart = "ensembl"))
 
 # Retrieving the codon frequency per gene matrix from the human reference genome
-human_codon_freq_per_gene_matrix <- GetCodonFreq(dataset_name = "hsapiens_gene_ensembl",
+human_codon_freq_per_gene_matrix <- getCodonFreq(dataset_name = "hsapiens_gene_ensembl",
                                                  filter = "canonical",
                                                  retain.mitochondrial = FALSE,
                                                  out_format = "external_gene_name")
@@ -302,7 +302,7 @@ human_codon_freq_per_gene_matrix <- GetCodonFreq(dataset_name = "hsapiens_gene_e
 targeted_genes <- c("ENSG00000059588", "ENSG00000052841", "ENSG00000173153",
                     "ENSG00000058799", "ENSG00000071203")
 
-targeted_genes_codon_freq_per_gene_matrix <- GetCodonFreq(dataset_name = "hsapiens_gene_ensembl",
+targeted_genes_codon_freq_per_gene_matrix <- getCodonFreq(dataset_name = "hsapiens_gene_ensembl",
                                                           transcripts = targeted_genes,
                                                           retain.mitochondrial = FALSE,
                                                           out_format = "external_gene_name")
@@ -310,7 +310,7 @@ targeted_genes_codon_freq_per_gene_matrix <- GetCodonFreq(dataset_name = "hsapie
 
 <hr>
 
-**Function:** `ExtractCodons()`.
+**Function:** `extractCodons()`.
 
 Analyzes a given set of nucleotide sequences and computes the count of each codon present. 
 
@@ -319,12 +319,12 @@ Analyzes a given set of nucleotide sequences and computes the count of each codo
 - `verbose`: Logical, if TRUE, displays information messages. 
 
 ```{r}
-codon_composition <- ExtractCodons(c("ATGCGTACG", "TTAAGGCCG"))
+codon_composition <- extractCodons(c("ATGCGTACG", "TTAAGGCCG"))
 ```
 
 ### 2.3. Differential expression analysis module
 
-**Function:** `RunDEAnalysis()`.
+**Function:** `runDEAnalysis()`.
 
 Performs differential expression analysis using the DESeq2 framework on a matrix or list of matrices of expression values. It supports both exploratory visualizations (heatmap and PCA) and targeted comparisons (volcano plots) using a custom contrast table.
 
@@ -334,7 +334,7 @@ Performs differential expression analysis using the DESeq2 framework on a matrix
 - `dim_reduct`: Either "PCA", "UMAP" or "tSNE" to specify the dimensionality reduction approach to be executed.
 - `batch`: Name of the categorical variable in `metadata` to correct the data.
 - `reference`: Factor from the `batch` to use as reference for the corrections.
-- `condition`: Factor from the `metadata` to define the comparisons to perform in a targeted analysis. 
+- `target`: Factor from the `metadata` to define the comparisons to perform in a targeted analysis. 
 - `fc_threshold`: Numeric; fold change threshold used for highlighting significant features in the volcano plot.
 - `padj_threshold`: Numeric; p-value threshold used for highlighting significant features in the volcano plot. 
 - `label_significant`: Logical; if TRUE displays the axis of the plots based on `fc_threshold` and `padj_threshold`.
@@ -352,7 +352,7 @@ Performs differential expression analysis using the DESeq2 framework on a matrix
 ```{r}
 codon_anticodon_usage <- list(codon = tTEscanR_obj@assays$CodonUsage,
                               anticodon = tTEscanR_obj@assays$AnticodonUsage)
-dea_codon_analysis <- RunDEAnalysis(list_data = codon_anticodon_usage,
+dea_codon_analysis <- runDEAnalysis(list_data = codon_anticodon_usage,
                                     metadata = default_tTEscanR_metadata,
                                     dim_reduct = "PCA",
                                     numPC = 5,
@@ -364,9 +364,9 @@ dea_codon_analysis <- RunDEAnalysis(list_data = codon_anticodon_usage,
 # Targeted approach
 default_tTEscanR_metadata$targets <- "other"
 default_tTEscanR_metadata$targets[grep("neuron", default_tTEscanR_metadata$cell.type)] <- "neuron"
-dea_codon_analysis_targeted <- RunDEAnalysis(list_data = dea_codon_analysis,
+dea_codon_analysis_targeted <- runDEAnalysis(list_data = dea_codon_analysis,
                                              metadata = default_tTEscanR_metadata,
-                                             condition = "targets",
+                                             target = "targets",
                                              batch = "tissue",
                                              color_factor = "tissue",
                                              fc_threshold = 1,
