@@ -29,7 +29,8 @@ The **input** data for **tTEscanR** should be preprocessed according to the step
 ## 3. Workflow functionalities
 
 The **tTEscanR** package provides a strucutred framework for analyzing codon-anticodon pools in the context of transaltion efficiency.
-<img width="1950" height="2084" alt="schema_tTEscanR_figure1" src="https://github.com/user-attachments/assets/45d40d3e-57be-4f23-b5da-4a6c810d18c1" />
+<img width="1899" height="2021" alt="tTEscnaR_diagram" src="https://github.com/user-attachments/assets/46b4fbac-04ea-46ea-965f-1204ad86b82e" />
+
 
 ### 3.1. Core functions
 
