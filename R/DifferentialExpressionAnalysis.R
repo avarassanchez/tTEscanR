@@ -157,7 +157,7 @@ computeDEResults <- function(list_data, metadata, target = NULL, batch = NULL,
     }
     for (i in seq_along(list_data)) {
         dataset_name <- names(list_data)[i]
-        if (verbose) message("- Processisng dataset: ", names(list_data)[i])
+        if (verbose) message("- Processing dataset: ", names(list_data)[i])
         filter <- filterByMetadata(
             data = list_data[[i]], metadata = metadata, verbose = verbose
         )
