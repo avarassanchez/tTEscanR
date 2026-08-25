@@ -175,7 +175,7 @@ obtainSignificance <- function(dist, value, padj_threshold = 0.05,
     res_value$sig_adj <- res_value$p_val_adj < padj_threshold
     if (verbose) {
         message("3 . COMPLETED")
-        message("--- The significnace has been successfully computed ---")
+        message("--- The significance has been successfully computed ---")
     }
     return(res_value)
 }

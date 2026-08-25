@@ -268,7 +268,6 @@ computeIndividualGeneCorrelation <- function(codon_usage, mean_codon_usage,
 
 analyzeTopGeneImpact <- function(data, codon_freq, pool_contribution,
     mean_codon_usage, N, corr_method) {
-    data_mat <- as.matrix(data)
     pool_mat <- as.matrix(pool_contribution)
     n_rows   <- nrow(pool_mat)
     n_cols   <- ncol(pool_mat)
@@ -294,7 +293,7 @@ analyzeTopGeneImpact <- function(data, codon_freq, pool_contribution,
     sums <- matrixStats::colSums2(top_vals_mat)
 
     ## Calculating correlation without top N genes
-    data_copy <- data_mat
+    data_copy <- as.matrix(data)
     data_copy[row_col_idx] <- 0
     removed_top_N_genes_usage <- as.matrix(codon_freq) %*% data_copy
     col_sums <- matrixStats::colSums2(removed_top_N_genes_usage)
