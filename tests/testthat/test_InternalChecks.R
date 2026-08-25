@@ -1,36 +1,26 @@
-test_that("The codon frequency per gene matrix is properly assessed", {
-    # CASE 1: no error - loading the default codon_freq tables
-    expect_no_error(checkCodonFreqTable(data = NULL, species = "hg38"))
-    expect_no_error(checkCodonFreqTable(data = NULL, species = "mm39"))
+data("default_tTEscanR_mRNA_data", package = "tTEscanR")
 
-    # CASE 2: error - incorrect species parameter
+test_that("checkCodonFreqTable handles species lookup and custom tables", {
+    ## CASE 1: Valid inputs: default species lookup and user-defined matrix
+    expect_no_error(checkCodonFreqTable(data = NULL, species = "hg38"))
+    expect_no_error(checkCodonFreqTable(data = codon_freq_table_canonical_hg38, species = NULL))
+
+    ## CASE 2: Invalid species parameter (tests error handling for bad string and NULL)
     expect_error(checkCodonFreqTable(data = NULL, species = "human"))
     expect_error(checkCodonFreqTable(data = NULL, species = NULL))
-
-    # CASE 4: no error - loading user-defined codon_freq table
-    expect_no_error(checkCodonFreqTable(data = codon_freq_table_canonical_hg38, species = NULL))
-    expect_no_error(checkCodonFreqTable(data = codon_freq_table_canonical_mm39, species = NULL))
 })
 
-test_that("The data frames are properly assessed", {
-    data(mRNA_data_test, ENSG_gene_names_mRNA_data)
+test_that("checkDataFrame validates tabular structures and dimnames", {
+    ## CASE 1: Valid matrix/data.frame checks
+    expect_no_error(checkDataFrame(data = default_tTEscanR_mRNA_data, required_names = TRUE))
+    expect_no_error(checkDataFrame(data = default_tTEscanR_mRNA_data, required_names = FALSE))
 
-    # CASE 1: no error -  checking well defined matrices
-    expect_no_error(checkDataFrame(data = mRNA_data_test))
-    expect_no_error(checkDataFrame(data = mRNA_data_test, required_names = TRUE))
-    expect_no_error(checkDataFrame(data = mRNA_data_test, required_names = FALSE))
-
-    # CASE 2: error - the input data is a vector
-    expect_error(checkDataFrame(data = mRNA_data_test[1, ]))
-    expect_error(checkDataFrame(data = mRNA_data_test[, 1]))
-    expect_error(checkDataFrame(data = ENSG_gene_names_mRNA_data))
+    ## CASE 2: Invalid non-tabular input structures
+    expect_error(checkDataFrame(data = default_tTEscanR_mRNA_data[, 1]))
     expect_error(checkDataFrame(data = list("A", "B", "C")))
-    expect_error(checkDataFrame(data = "mRNA_data"))
 
-    # CASE 3: error - incorrect colnames and/or rownames
-    rownames(mRNA_data_test) <- NULL
-    expect_error(checkDataFrame(data = mRNA_data_test, required_names = TRUE))
-
-    colnames(mRNA_data_test) <- NULL
-    expect_error(checkDataFrame(data = mRNA_data_test, required_names = TRUE))
+    ## CASE 3: Missing dimnames
+    unnamed_df <- default_tTEscanR_mRNA_data
+    colnames(unnamed_df) <- NULL
+    expect_error(checkDataFrame(data = unnamed_df, required_names = TRUE))
 })

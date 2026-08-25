@@ -31,7 +31,8 @@ This function converts a \code{matrix} or \code{data.frame} into a tidy,
 long-format \code{tibble}. Optionally normalizes the values.
 }
 \examples{
-data(default_tTEscanR_tRNA_data)
+data("default_tTEscanR_tRNA_data", package = "tTEscanR")
+
 tRNA_long_format <- transformFormat(
     data = default_tTEscanR_tRNA_data,
     normalize = FALSE,
@@ -45,7 +46,7 @@ tTEobj <- createObject(
 )
 tTEobj <- computeAnticodonUsage(object = tTEobj)
 anticodon_long_format <- transformFormat(
-    data = getAssay(tTEobj, "AnticodonUsage"),
+    data = SummarizedExperiment::assay(tTEobj, "AnticodonUsage"),
     normalize = TRUE,
     rownames_to_column = "anticodons",
     names_to = "condition", values_to = "usage"

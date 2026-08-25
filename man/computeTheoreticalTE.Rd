@@ -15,8 +15,9 @@ computeTheoreticalTE(
 )
 }
 \arguments{
-\item{object}{A \code{tTEscanR_Object} containing a mRNA and a codon usage
-assay and/or a tRNA and an anticodon usage assay.}
+\item{object}{A \code{\link[MultiAssayExperiment]{MultiAssayExperiment}}
+containing a mRNA and a codon usage assay and/or a tRNA and an anticodon
+usage assay.}
 
 \item{level}{Either \code{"codon"}, \code{"aa"} or \code{"both"} to indicate
 which analysis to perform.}
@@ -32,15 +33,15 @@ statistical significance (p-value) of the tTE scores. Defaults
 to \code{TRUE}.}
 
 \item{overwrite}{Logical; if \code{TRUE}, overwrites any existing tTE table
-in the \code{tTEscanR_Object}. Defaults to \code{FALSE}.}
+in the \code{object}. Defaults to \code{FALSE}.}
 
 \item{verbose}{Logical; if \code{TRUE}, displays information messages.
 Defaults to \code{TRUE}.}
 }
 \value{
-An updated \code{tTEscanR_Object} containing a new layer of
-information representing the translation efficiency table for the
-matching conditions in the mRNA and tRNA data.
+An updated \code{\link[MultiAssayExperiment]{MultiAssayExperiment}}
+containing a new layer of information representing the translation
+efficiency table for the matching conditions in the mRNA and tRNA data.
 }
 \description{
 This function calculates the theoretical translation efficiency (tTE) score
@@ -48,16 +49,16 @@ by integrating codon-anticodon usage and/or amino acid demand-supply across
 conditions.
 }
 \examples{
-data(
-    default_tTEscanR_mRNA_data, default_tTEscanR_tRNA_data,
-    default_tTEscanR_metadata
-)
+data("default_tTEscanR_mRNA_data", package = "tTEscanR")
+data("default_tTEscanR_tRNA_data", package = "tTEscanR")
+data("default_tTEscanR_metadata", package = "tTEscanR")
+
 tTEscanR_obj <- createObject(
     counts = list(
         mRNA = default_tTEscanR_mRNA_data, tRNA = default_tTEscanR_tRNA_data
     ),
-    meta.data = list(default_tTEscanR_metadata, "tissue"),
-    meta.data.ids = list("ConditionsLabels", "CorrectionFactor")
+    meta_data = default_tTEscanR_metadata, sample_id = "conditions",
+    params = list("CorrectionFactor" = "tissue")
 )
 tTEscanR_obj <- computeCodonUsage(
     object = tTEscanR_obj, species = "hg38",

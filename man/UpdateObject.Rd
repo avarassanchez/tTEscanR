@@ -2,15 +2,15 @@
 % Please edit documentation in R/tTEscanRObject.R
 \name{updateObject}
 \alias{updateObject}
-\title{tTEscanR Object Update}
+\title{Update Assay in a tTEscanR object}
 \usage{
 updateObject(
   object,
   counts = NULL,
   assay = NULL,
-  main_name = NULL,
-  meta.data = NULL,
-  meta.data.ids = NULL,
+  meta_data = NULL,
+  sample_id = NULL,
+  params = NULL,
   overwrite = FALSE,
   verbose = TRUE
 )
@@ -18,44 +18,40 @@ updateObject(
 \arguments{
 \item{object}{An existing \code{tTEscanR_Object}.}
 
-\item{counts}{Optional; a count matrix (or \code{list} of matrices) that
-will be stored in the \code{assays} slot of the input \code{object}.
-Supported formats: \code{matrix}, \code{data.frame} and \code{list}.}
+\item{counts}{A count matrix or data.frame to append or update.}
 
-\item{assay}{Optional; a \code{character} string (or \code{list} of strings)
-specifying the name of the \code{counts}. Supported
-formats: \code{character} and \code{list}.}
+\item{assay}{Character string specifying the target assay name.}
 
-\item{main_name}{Optional; a \code{character} string specifying the name of
-the \code{meta.data} if dealing with a \code{list} that needs to be
-added as a single element.}
+\item{meta_data}{Optional; a data.frame of sample metadata}
 
-\item{meta.data}{Optional; a \code{list} with additional information that
-will be stored in \code{meta.data} slot of the input \code{object}.}
+\item{sample_id}{Optional; a character string naming the column in
+\code{meta.data} to use as sample row names.}
 
-\item{meta.data.ids}{Optional; a \code{list} with the labels to identify the
-\code{meta.data} (if \code{meta.data} is given).}
+\item{params}{Optional; a list of global run parameters.}
 
-\item{overwrite}{Logical; if \code{TRUE}, overwrites any existing assay or
-metadata in the \code{object} if the \code{assay} or
-\code{meta.data.ids} label coincides. Defaults to \code{FALSE}.}
+\item{overwrite}{Logical; if \code{TRUE}, overwrites existing assays or
+metadata if the label coincides. Defaults to \code{FALSE}.}
 
 \item{verbose}{Logical; if \code{TRUE}, displays information messages.
 Defaults to \code{TRUE}.}
 }
 \value{
-An updated \code{tTEscanR_Object}.
+An updated \code{\link[MultiAssayExperiment]{MultiAssayExperiment}}
+object.
 }
 \description{
-Updates an existing \code{tTEscanR_object} using
-\code{\link{createObject}}. For more details, refer to
-\code{\link{createObject}}.
+Updates an existing \code{\link[MultiAssayExperiment]{MultiAssayExperiment}}
+object by adding or replacing one or more count matrices, sample metadata, or
+global parameters.
 }
 \examples{
-data(default_tTEscanR_mRNA_data, default_tTEscanR_tRNA_data)
+data("default_tTEscanR_mRNA_data", package = "tTEscanR")
+data("default_tTEscanR_tRNA_data", package = "tTEscanR")
+
 tTEscanR_obj <- createObject(
     counts = default_tTEscanR_mRNA_data,
-    assay = "mRNA"
+    assay = "mRNA",
+    sample_id = "conditions"
 )
 tTEscanR_obj <- updateObject(
     object = tTEscanR_obj,

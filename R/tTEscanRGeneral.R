@@ -10,12 +10,14 @@
 #'     (columns).
 #' @param tRNA_data A count matrix of tRNA genes (rows) per conditions
 #'     (columns).
-#' @param metadata A \code{data.frame} with the meta-information related with
+#' @param meta_data A \code{data.frame} with the meta-information related with
 #'     the conditions in \code{mRNA_data} or \code{tRNA_data}. Just the
 #'     intersecting conditions will be considered.
+#' @param sample_id Optional; a character string naming the column in
+#'      \code{meta.data} to use as sample row names.
 #' @param genetic_code A \code{character} string to specify the genetic code
 #'     to be used. Defaults to \code{"Standard"}.
-#' @param batch A factor based on \code{metadata} columns to define the
+#' @param batch A factor based on \code{meta_data} columns to define the
 #'     variable to correct for when size correcting the count matrices.
 #' @param corr_method A correlation method accepted by \code{\link{cor}}.
 #'     Defaults to \code{"spearman"}.
@@ -33,37 +35,35 @@
 #' @param runDESeq Logical; if \code{TRUE}, performs differential expression
 #'     analysis to each assay in the \code{tTEscanR_Object}. Defaults to
 #'     \code{TRUE}
-#' @param dim_reduct Either \code{"PCA"}, \code{"UMAP"} or \code{"tSNE"} to
-#'     specify the dimensionality reduction approach to be executed if
-#'     \code{runDESeq} is \code{TRUE}. Defaults to \code{"PCA"}.
-#' @param color_factor A factor based on \code{metadata} columns to define the
-#'     colors in the plots. Required if \code{runDESeq} is \code{TRUE}.
 #' @param reduce Numeric; a scaling factor used to normalize large expression
 #'     values that exceed R's handling capacity. Defaults to 100.
+#' @param ... Additional arguments passed directly to
+#'     \code{\link{runDEAnalysis}} (e.g., \code{dim_reduct},
+#'     \code{compute_pairwise}, \code{color_factor}).
 #' @param verbose Logical; if \code{TRUE}, displays information messages.
 #'     Defaults to \code{TRUE}.
 #'
-#' @return A \code{tTEscanR_Object} with the assays and metadata computed
-#'     through the tTE pipeline.
+#' @return A \code{\link[MultiAssayExperiment]{MultiAssayExperiment}} with the
+#'     assays and metadata computed through the tTE pipeline.
 #' @export
 #'
 #' @examples
-#' data(
-#'     default_tTEscanR_mRNA_data, default_tTEscanR_tRNA_data,
-#'     default_tTEscanR_metadata
-#' )
+#' data("default_tTEscanR_mRNA_data", package = "tTEscanR")
+#' data("default_tTEscanR_tRNA_data", package = "tTEscanR")
+#' data("default_tTEscanR_metadata", package = "tTEscanR")
+#'
 #' tTEscanR_obj <- runPipeline(
 #'     mRNA_data = default_tTEscanR_mRNA_data,
 #'     tRNA_data = default_tTEscanR_tRNA_data,
-#'     metadata = default_tTEscanR_metadata,
+#'     meta_data = default_tTEscanR_metadata,
 #'     species = "hg38", batch = "tissue", additional_metrics = FALSE,
-#'     compute_significance = FALSE, runDESeq = FALSE
+#'     sample_id = "conditions", compute_significance = FALSE, runDESeq = FALSE
 #' )
-runPipeline <- function(mRNA_data, tRNA_data, metadata, batch,
-    corr_method = "spearman", additional_metrics = TRUE, runDESeq = TRUE,
-    compute_significance = TRUE, codon_freq = NULL, species = NULL,
-    genetic_code = "Standard", dim_reduct = NULL, reduce = 100,
-    color_factor = NULL, verbose = TRUE) {
+runPipeline <- function(mRNA_data, tRNA_data, meta_data, batch,
+    sample_id = NULL, corr_method = "spearman", additional_metrics = TRUE,
+    runDESeq = TRUE, compute_significance = TRUE, codon_freq = NULL,
+    species = NULL, genetic_code = "Standard", reduce = 100, verbose = TRUE,
+    ...) {
     if (verbose) {
         message(
             "\n--- Execution of the tTEscanR pipeline ---",
@@ -77,8 +77,8 @@ runPipeline <- function(mRNA_data, tRNA_data, metadata, batch,
 
     tTEscanR_obj <- createObject(
         counts = list(mRNA = mRNA_data, tRNA = tRNA_data),
-        meta.data = list(metadata, batch), verbose = verbose,
-        meta.data.ids = list("ConditionsLabels", "CorrectionFactor")
+        meta_data = meta_data, sample_id = sample_id, verbose = verbose,
+        params = list("CorrectionFactor" = batch)
     )
     tTEscanR_obj <- computeCodonUsage(
         object = tTEscanR_obj, codon_freq = codon_freq, species = species,
@@ -97,32 +97,31 @@ runPipeline <- function(mRNA_data, tRNA_data, metadata, batch,
     )
     if (isTRUE(runDESeq)) {
         tTEscanR_obj <- runDEpipeline(
-            object = tTEscanR_obj, dim_reduct = dim_reduct, verbose = verbose
-        )
+            object = tTEscanR_obj, verbose = verbose, ...)
     }
     if (verbose) message("--- The pipeline has been properly executed ---\n")
-    return(tTEscanR_obj) # tTEscanR object validated every time it is updated
+    return(tTEscanR_obj)
 }
 
-runDEpipeline <- function(object, dim_reduct, verbose) {
+runDEpipeline <- function(object, verbose, ...) {
     targets <- c(
         "mRNA", "CodonUsage", "AADemand", "tRNA", "AnticodonUsage", "AASupply"
     )
 
-    available_assays <- intersect(names(object@assays), targets)
-    selected_assays_list <- object@assays[available_assays]
+    assays <- intersect(names(object), targets)
+    selected_assays_list <- MultiAssayExperiment::assays(object)[assays]
 
-    meta <- getMetadata(object, "ConditionsLabels")
-    batch <- getMetadata(object, "CorrectionFactor")
+    meta <- MultiAssayExperiment::colData(object)
+    batch <- S4Vectors::metadata(object)[["CorrectionFactor"]]
 
     DESeq2_results <- runDEAnalysis(
         list_data = selected_assays_list, metadata = meta, batch = batch,
-        dim_reduct = dim_reduct, verbose = verbose
+        ..., verbose = verbose
     )
 
     object <- updateObject(
-        object = object, main_name = "Results_runDESeq",
-        meta.data = DESeq2_results, verbose = verbose
+        object = object, params = list("Results_runDESeq" = DESeq2_results),
+        verbose = verbose
     )
 
     return(object)

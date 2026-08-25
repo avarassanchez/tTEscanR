@@ -21,7 +21,8 @@ conditions, used to normalize/compare against observed usage patterns derived
 from expression data.
 }
 \examples{
-data(default_tTEscanR_mRNA_data)
+data("default_tTEscanR_mRNA_data", package = "tTEscanR")
+
 tTEscanR_obj <- createObject(
     counts = default_tTEscanR_mRNA_data,
     assay = "mRNA"
@@ -30,8 +31,6 @@ tTEscanR_obj <- computeCodonUsage(
     object = tTEscanR_obj, species = "hg38",
     additional_metrics = FALSE, reduce = 1000
 )
-exonic_background <- computeExonicBackground(data = getAssay(
-    tTEscanR_obj,
-    "CodonUsage"
-))
+codon_usage <- SummarizedExperiment::assay(tTEscanR_obj, "CodonUsage")
+exonic_background <- computeExonicBackground(data = codon_usage)
 }

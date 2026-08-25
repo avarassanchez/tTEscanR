@@ -2,82 +2,53 @@
 % Please edit documentation in R/tTEscanRObject.R
 \name{createObject}
 \alias{createObject}
-\title{Create a tTEscanR Object}
+\title{Create a tTEscanR object as a MultiAssayExperiment}
 \usage{
 createObject(
   counts,
-  assay = NULL,
-  meta.data = NULL,
-  meta.data.ids = NULL,
+  assay = "mRNA",
+  meta_data = NULL,
+  sample_id = NULL,
+  params = list(),
   verbose = TRUE
 )
 }
 \arguments{
-\item{counts}{A count \code{matrix} (or \code{list} of matrices) that will
-be stored in the \code{assays} slot.}
+\item{counts}{A matrix, data.frame or list of count matrices.}
 
-\item{assay}{Optional; a \code{character} string (or \code{list} of
-characters) to identify the \code{counts}. Required if \code{counts}
-is not a named \code{list}.}
+\item{assay}{Optional; a character string or vector specifying the assay
+name(s) when \code{counts} is a matrix, data.frame or unnamed list.
+Defaults to \code{"mRNA"}.}
 
-\item{meta.data}{Optional; a variable (or \code{list} of variables) with
-additional information that will be stored in \code{meta.data} slot.}
+\item{meta_data}{Optional; a data.frame of sample metadata.}
 
-\item{meta.data.ids}{Optional; a \code{character} string (or \code{list}
-with the labels) to identify the \code{meta.data}. Required if
-\code{meta.data} is not a named \code{list}.}
+\item{sample_id}{Optional; a character string naming the column in
+\code{meta.data} to use as sample row names.}
+
+\item{params}{Optional; a list of global run parameters.}
 
 \item{verbose}{Logical; if \code{TRUE}, displays information messages.
 Defaults to \code{TRUE}.}
 }
 \value{
-A \code{tTEscanR_Object}.
+A \code{\link[MultiAssayExperiment]{MultiAssayExperiment}} object.
 }
 \description{
-This function initializes a \code{tTEscanR_Object}, a structured container
-designed to hold translational efficiency-related data. The object consists
-of two main components; \code{assays}, which stores data matrices
-(e.g. expression, codon usage), and \code{meta.data}, which stores associated
-information and additional intermediate calculations. A
-\code{tTEscanR_Object} can be created using a single dataset, or initialized
-with a list of datasets provided at once. Additional assays and metadata
-layers can be appended later using the \code{\link{updateObject}}
-function.
-}
-\details{
-In order to ensure robustness throughout the pipeline \strong{specific ids}
-have been assigned and should be respected by the user.
-\strong{\code{assays} slot:}
-\itemize{
-\item mRNA and tRNA count matrices as \code{"mRNA"} and \code{"tRNA"}
-\item Codon and anticodon usage count matrices as \code{"CodonUsage"} and
-\code{"AnticodonUsage"}
-\item Amino acid demand and supply count matrices as \code{"AADemand"} and
-\code{"AASupply"}
-\item Size corrected count matrices contain the prefix \code{"SizeCorrected"}
-added to the raw count matrices names (e.g. \code{"SizeCorrected_mRNA} or
-\code{"SizeCorrectedCodonUsage})
-\strong{\code{meta.data} slot:}
-\item Table with the conditions of the mRNA and tRNA data as
-\code{"ConditionsLabels"}
-\item Active correction factor to use when running differential expression
-analyses as \code{"CorrectionFactor"}
-\item Optional; Identifier \code{DataMetadataIndex} to indicate the column in
-\code{"ConditionsLabels"} that contains the labels of the conditions of the
-\code{assay}.
-}
+Initializes a \code{\link[MultiAssayExperiment]{MultiAssayExperiment}} object
+to store translation efficiency data layers.
 }
 \examples{
-data(
-    default_tTEscanR_mRNA_data, default_tTEscanR_tRNA_data,
-    default_tTEscanR_metadata
-)
+data("default_tTEscanR_mRNA_data", package = "tTEscanR")
+data("default_tTEscanR_tRNA_data", package = "tTEscanR")
+data("default_tTEscanR_metadata", package = "tTEscanR")
+
 tTEscanR_obj <- createObject(
     counts = list(
         mRNA = default_tTEscanR_mRNA_data,
         tRNA = default_tTEscanR_tRNA_data
     ),
-    meta.data = default_tTEscanR_metadata,
-    meta.data.ids = "ConditionsLabels"
+    meta_data = default_tTEscanR_metadata,
+    sample_id = "conditions"
 )
+
 }

@@ -62,11 +62,12 @@
 #' @export
 #'
 #' @examples
-#' data(default_tTEscanR_tRNA_data, default_tTEscanR_metadata)
+#' data("default_tTEscanR_tRNA_data", package = "tTEscanR")
+#' data("default_tTEscanR_metadata", package = "tTEscanR")
 #' DE_analysis <- runDEAnalysis(
 #'     list_data = list(tRNA = default_tTEscanR_tRNA_data),
 #'     metadata = default_tTEscanR_metadata, batch = "tissue",
-#'     color_factor = "tissue"
+#'     color_factor = "tissue", compute_pairwise = FALSE
 #' )
 runDEAnalysis <- function(list_data, metadata, batch = NULL,
     reference = NULL, reduce = 100, dim_reduct = NULL, color_factor = batch,
@@ -134,10 +135,13 @@ runDEAnalysis <- function(list_data, metadata, batch = NULL,
 #' @export
 #'
 #' @examples
-#' data(default_tTEscanR_tRNA_data, default_tTEscanR_metadata)
+#' data("default_tTEscanR_tRNA_data", package = "tTEscanR")
+#' data("default_tTEscanR_metadata", package = "tTEscanR")
+#'
 #' DE_analysis <- computeDEResults(
 #'     list_data = list(tRNA = default_tTEscanR_tRNA_data),
-#'     metadata = default_tTEscanR_metadata, batch = "tissue"
+#'     metadata = default_tTEscanR_metadata, batch = "tissue",
+#'     compute_pairwise = FALSE
 #' )
 computeDEResults <- function(list_data, metadata, target = NULL, batch = NULL,
     reference = NULL, reduce = 100, padj_threshold = 0.05, verbose = TRUE,
@@ -147,45 +151,45 @@ computeDEResults <- function(list_data, metadata, target = NULL, batch = NULL,
         stop("Please specify the 'target' or the 'batch'.")
     }
     cf <- if (!is.null(batch)) batch else target
-    if (is.null(names(list_data))) { # Check names of the datasets in list_data
+    ## Standardize dataset names
+    ds_names <- names(list_data)
+    if (is.null(ds_names)) { # Check names of the datasets in list_data
         names(list_data) <- paste0("dataset_", seq_along(list_data))
     } else {
-        empty <- names(list_data) == ""
+        empty <- ds_names == ""
         if (any(empty)) {
             names(list_data)[empty] <- paste0("dataset_", which(empty))
         }
     }
+    ## Pre-allocate output list vector for efficiency
+    DE_results_list <- vector("list", length(list_data))
+    names(DE_results_list) <- names(list_data)
     for (i in seq_along(list_data)) {
         dataset_name <- names(list_data)[i]
-        if (verbose) message("- Processisng dataset: ", names(list_data)[i])
+        if (verbose) message("- Processisng dataset: ", dataset_name)
         filter <- filterByMetadata(
             data = list_data[[i]], metadata = metadata, verbose = verbose
         )
         DESeq2_run <- computeDESeq2(
-            data = filter$data, condition = target, reduce = reduce,
-            metadata = filter$metadata, batch = cf, reference = reference,
-            verbose = verbose
+            data = filter$data, condition = target, reduce = reduce, batch = cf,
+            metadata = filter$metadata, reference = reference, verbose = verbose
         )
-        ## Run all pairwise comparisons
-        if (isTRUE(compute_pairwise)){
-            pairwise_results <- computeAllPairwiseComp(
+        pairwise <- if (isTRUE(compute_pairwise)) {
+            computeAllPairwiseComp( # Run all pairwise comparisons
                 dds = DESeq2_run, factor_name = cf,
                 padj_threshold = padj_threshold, verbose = verbose
             )
         } else {
-            pairwise_results <- NULL
+            NULL
         }
-        ## Extract normalized counts and vst
         size_corrected <- DESeq2::counts(DESeq2_run, normalized = TRUE)
-        vst <- SummarizedExperiment::assay(
+        vst_mat <- SummarizedExperiment::assay(
             DESeq2::varianceStabilizingTransformation(DESeq2_run)
         )
-        ## Store results and metadata
-        DE_results_list[[names(list_data)[i]]] <- list(
-            DESeq2_run = DESeq2_run, pairwise_results = pairwise_results,
-            size_corrected = size_corrected, vst = vst,
-            metadata = filter$metadata
-        )
+        DE_results_list[[dataset_name]] <- list(
+            DESeq2_run = DESeq2_run, pairwise_results = pairwise, vst = vst_mat,
+            size_corrected = size_corrected, metadata = filter$metadata
+        ) # Assign to pre-allocated list index
     }
     return(DE_results_list)
 }
@@ -237,10 +241,13 @@ computeDEResults <- function(list_data, metadata, target = NULL, batch = NULL,
 #' @export
 #'
 #' @examples
-#' data(default_tTEscanR_tRNA_data, default_tTEscanR_metadata)
+#' data("default_tTEscanR_tRNA_data", package = "tTEscanR")
+#' data("default_tTEscanR_metadata", package = "tTEscanR")
+#'
 #' DE_analysis <- computeDEResults(
 #'     list_data = list(tRNA = default_tTEscanR_tRNA_data),
-#'     metadata = default_tTEscanR_metadata, batch = "tissue"
+#'     metadata = default_tTEscanR_metadata, batch = "tissue",
+#'     compute_pairwise = FALSE
 #' )
 #' DE_plots <- plotDEResults(
 #'     DE_results_list = DE_analysis, dataset_name = "tRNA",

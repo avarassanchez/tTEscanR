@@ -13,8 +13,8 @@ computeAAUsage(
 )
 }
 \arguments{
-\item{object}{A \code{tTEscanR_Object} containing codon and/or anticodon
-usage assays to be analyzed.}
+\item{object}{A \code{\link[MultiAssayExperiment]{MultiAssayExperiment}}
+containing codon and/or anticodon usage assays to be analyzed.}
 
 \item{level}{Either \code{"demand"}, \code{"supply"} or \code{"both"} to
 indicate which analysis to perform.}
@@ -29,17 +29,17 @@ the \code{object}. Defaults to \code{FALSE}}
 Defaults to \code{TRUE}}
 }
 \value{
-An updated \code{tTEscanR_Object} containing a new layer of
-information in the \code{assays} slot representing the AA demand and/or
-supply.
+An updated \code{\link[MultiAssayExperiment]{MultiAssayExperiment}}
+containing a new layer of information in the \code{assays}
+representing the \code{"AADemand"} and/or \code{"AASupply"}.
 }
 \description{
-This function calculates the amino acid (AA) demand and/or supply from a
-codon and/or anticodon usage matrices of a \code{tTEscanR_Object}. It
-aggregates the contribution of their features based on the standard genetic
-code (mapping codons/anticodons to AA), The resulting values reflect total
-usage (demand) or availability (supply) of each amino acid, depending on the
-input type.
+Calculates the amino acid (AA) demand and/or supply from a
+codon and/or anticodon usage matrices of a mRNA expression and/or tRNA
+abundance count matrix. It aggregates the contribution of their features
+based on the standard genetic code (mapping codons/anticodons to AA). The
+resulting values reflect total usage (demand) or availability (supply) of
+each amino acid, depending on the input type.
 }
 \details{
 In order to generalize the analysis to any organism available in Ensembl,
@@ -61,8 +61,9 @@ tannophilus Nuclear”, "Karyorelict Nuclear”, "Condylostoma Nuclear”,
 "Balanophoraceae Plastid”, "Cephalodiscidae Mitochondrial"
 }
 \examples{
-data(default_tTEscanR_tRNA_data)
-tTEscanR_obj <-createObject(
+data("default_tTEscanR_tRNA_data", package = "tTEscanR")
+
+tTEscanR_obj <- createObject(
     counts = default_tTEscanR_tRNA_data,
     assay = "tRNA"
 )

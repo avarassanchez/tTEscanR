@@ -55,9 +55,12 @@ A DESeq2 object with the normalized and vst counts.
 Compute the DESeq2 Analysis
 }
 \examples{
-data(default_tTEscanR_tRNA_data, default_tTEscanR_metadata)
+data("default_tTEscanR_tRNA_data", package = "tTEscanR")
+data("default_tTEscanR_metadata", package = "tTEscanR")
+
 DE_analysis <- computeDEResults(
     list_data = list(tRNA = default_tTEscanR_tRNA_data),
-    metadata = default_tTEscanR_metadata, batch = "tissue"
+    metadata = default_tTEscanR_metadata, batch = "tissue",
+    compute_pairwise = FALSE
 )
 }

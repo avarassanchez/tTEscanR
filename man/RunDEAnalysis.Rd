@@ -110,10 +110,11 @@ visualizations (heatmap and PCA) and targeted comparisons using a custom
 contrast table.
 }
 \examples{
-data(default_tTEscanR_tRNA_data, default_tTEscanR_metadata)
+data("default_tTEscanR_tRNA_data", package = "tTEscanR")
+data("default_tTEscanR_metadata", package = "tTEscanR")
 DE_analysis <- runDEAnalysis(
     list_data = list(tRNA = default_tTEscanR_tRNA_data),
     metadata = default_tTEscanR_metadata, batch = "tissue",
-    color_factor = "tissue"
+    color_factor = "tissue", compute_pairwise = FALSE
 )
 }

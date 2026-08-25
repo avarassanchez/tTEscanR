@@ -27,7 +27,8 @@ is useful for eliminating low-quality or poorly sequenced conditions that
 may bias downstream analyses.
 }
 \examples{
-data(default_tTEscanR_tRNA_data)
+data("default_tTEscanR_tRNA_data", package = "tTEscanR")
+
 tRNA_data_filtered <- tRNAFilterCuts(
     data = default_tTEscanR_tRNA_data,
     cutoff = 5000

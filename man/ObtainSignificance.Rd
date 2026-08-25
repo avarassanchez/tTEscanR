@@ -30,7 +30,9 @@ level before (p-value) and after the correction (p-adjusted value).
 Assess Significance (P-value) & Corrects for Multiple Hypothesis Testing
 }
 \examples{
-data(default_tTEscanR_mRNA_data, default_tTEscanR_metadata)
+data("default_tTEscanR_mRNA_data", package = "tTEscanR")
+data("default_tTEscanR_metadata", package = "tTEscanR")
+
 selected_genes <- default_tTEscanR_mRNA_data[1:20, ]
 permutation_test <- getPermutationDist(
     n_permut = 100, target_data = selected_genes, species = "hg38"
@@ -38,15 +40,16 @@ permutation_test <- getPermutationDist(
 tTEscanR_obj <- createObject(
     counts = default_tTEscanR_mRNA_data,
     assay = "mRNA",
-    meta.data = list(default_tTEscanR_metadata, "tissue"),
-    meta.data.ids = list("ConditionsLabels", "CorrectionFactor")
+    meta_data = default_tTEscanR_metadata,
+    sample_id = "conditions",
+    params = list("CorrectionFactor" = "tissue")
 )
 tTEscanR_obj <- computeCodonUsage(
     object = tTEscanR_obj, species = "hg38",
     additional_metrics = FALSE, reduce = 1000
 )
 
-codon_usage <- getAssay(tTEscanR_obj, "CodonUsage")
+codon_usage <- SummarizedExperiment::assay(tTEscanR_obj, "CodonUsage")
 codon_background <- rowSums(codon_usage) / sum(rowSums(codon_usage))
 codons_to_AA <- featuresToAA(
     data = names(codon_background),

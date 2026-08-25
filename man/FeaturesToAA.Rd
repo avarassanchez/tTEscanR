@@ -47,14 +47,15 @@ data(default_tTEscanR_mRNA_data, default_tTEscanR_metadata)
 tTEscanR_obj <- createObject(
     counts = default_tTEscanR_mRNA_data,
     assay = "mRNA",
-    meta.data = list(default_tTEscanR_metadata, "tissue"),
-    meta.data.ids = list("ConditionsLabels", "CorrectionFactor")
+    meta_data = default_tTEscanR_metadata,
+    sample_id = "conditions",
+    params = list("CorrectionFactor" = "tissue")
 )
 tTEscanR_obj <- computeCodonUsage(
     object = tTEscanR_obj, codon_freq = NULL,
     species = "hg38", additional_metrics = FALSE
 )
-codons <- rownames(getAssay(tTEscanR_obj, "CodonUsage"))
+codons <- rownames(SummarizedExperiment::assay(tTEscanR_obj, "CodonUsage"))
 codons_to_AA <- featuresToAA(
     data = codons, notation_from = "codon", notation_to = "aa"
 )

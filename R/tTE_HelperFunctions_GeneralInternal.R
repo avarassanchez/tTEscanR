@@ -47,6 +47,7 @@ checkDataFrame <- function(data, required_names = TRUE) {
     if (required_names) {
         row_names <- rownames(data)
         col_names <- colnames(data)
+
         if (is.null(row_names) || is.null(col_names)) {
             stop(
                 "Dataset labels missing. ",
@@ -88,7 +89,8 @@ checkGeneAnnotation <- function(vector1, vector2, verbose = TRUE) {
 }
 
 checkIntegerLength <- function(data, reduce, verbose) {
-    if (any(data > .Machine$integer.max)) { # R limit in the integer length
+    # R limit in integer length
+    if (any(data > .Machine$integer.max)) {
 
         data <- round(data / reduce)
         checkDataFrame(data = data)
@@ -141,33 +143,30 @@ selectDefaultData <- function(species, action = "codon_freq", verbose = TRUE) {
     return(data) # Return the retrieved data
 }
 
+isTableLike <- function(x) {
+    is.data.frame(x) || is.matrix(x) || inherits(x, "dgCMatrix")
+}
+
 identifyInputFormat <- function(data, mode = c("fix", "flexible")) {
     mode <- match.arg(mode) # Validate the string arguments
 
-    is_table_like <- function(x) {
-        is.data.frame(x) || is.matrix(x) || inherits(x, "dgCMatrix")
-    }
-
     if (is.list(data) && !is.data.frame(data)) {
         if (mode == "fix") {
-            valid_types <- vapply(data, is_table_like, logical(1))
-            if (!all(valid_types)) {
-                stop(
-                    "Incorrect 'data' format.\nSupported formats: ",
-                    "list of dataframes or matrices."
-                )
+            for (item in data) {
+                if (!isTableLike(item)) {
+                    stop(
+                        "Incorrect 'data' format.\nSupported formats: ",
+                        "list of dataframes or matrices."
+                    )
+                }
             }
         }
         return("list")
     }
 
-    if (is_table_like(data)) {
-        return("single")
-    }
-    if (is.character(data)) {
-        return("single")
-    }
-    if (is.numeric(data) && mode == "flexible") {
+    ## Single-object check
+    if (isTableLike(data) || is.character(data) ||
+        is.numeric(data) && mode == "flexible") {
         return("single")
     }
 
@@ -184,22 +183,18 @@ identifyInputFormat <- function(data, mode = c("fix", "flexible")) {
     }
 }
 
-filterByMetadata <- function(data, metadata, id_col = NULL, verbose = TRUE) {
+filterByMetadata <- function(data, metadata, verbose = FALSE) {
     conditions <- colnames(data)
 
-    if (is.null(id_col)) {
-        matching_counts <- vapply(
-            metadata, function(col) sum(conditions %in% col), numeric(1)
-        )
-        matching_col <- names(which.max(matching_counts))
-        if (matching_counts[matching_col] == 0) {
-            stop("No matching Sample IDs found between 'data' and 'metadata'.")
-        }
-        if (verbose) {
-            message(sprintf("- Detected metadata column: '%s'", matching_col))
-        }
-    } else {
-        matching_col <- id_col
+    matching_counts <- vapply(
+        metadata, function(col) sum(conditions %in% col), numeric(1)
+    )
+    matching_col <- names(which.max(matching_counts))
+    if (matching_counts[matching_col] == 0) {
+        stop("No matching Sample IDs found between 'data' and 'metadata'.")
+    }
+    if (verbose) {
+        message(sprintf("- Detected metadata column: '%s'", matching_col))
     }
 
     target_col <- metadata[[matching_col]]
@@ -239,7 +234,7 @@ filterByMetadata <- function(data, metadata, id_col = NULL, verbose = TRUE) {
 
 performTranslation <- function(data, notation_from, notation_to,
     genetic_code, verbose) {
-    data <- gsub("U", "T", data)
+    data <- gsub("U", "T", data, fixed = TRUE)
 
     col_from <- switch(notation_from,
         "codon" = "Codon",
@@ -342,14 +337,15 @@ retrieveTranslation <- function(format_input, position, translated_features,
 #' tTEscanR_obj <- createObject(
 #'     counts = default_tTEscanR_mRNA_data,
 #'     assay = "mRNA",
-#'     meta.data = list(default_tTEscanR_metadata, "tissue"),
-#'     meta.data.ids = list("ConditionsLabels", "CorrectionFactor")
+#'     meta_data = default_tTEscanR_metadata,
+#'     sample_id = "conditions",
+#'     params = list("CorrectionFactor" = "tissue")
 #' )
 #' tTEscanR_obj <- computeCodonUsage(
 #'     object = tTEscanR_obj, codon_freq = NULL,
 #'     species = "hg38", additional_metrics = FALSE
 #' )
-#' codons <- rownames(getAssay(tTEscanR_obj, "CodonUsage"))
+#' codons <- rownames(SummarizedExperiment::assay(tTEscanR_obj, "CodonUsage"))
 #' codons_to_AA <- featuresToAA(
 #'     data = codons, notation_from = "codon", notation_to = "aa"
 #' )
@@ -416,7 +412,7 @@ isEnsemblID <- function(gene_vector, verbose) {
 
     ## Evaluates if the Ensembl format contains the gene version
     if (any(matches)) {
-        if (any(grepl("\\.", gene_vector[matches]))) {
+        if (any(grepl("\\.", gene_vector[matches], fixed = TRUE))) {
             if (verbose) message("- Gene versions detected.")
         }
     }

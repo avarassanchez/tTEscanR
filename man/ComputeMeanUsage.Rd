@@ -8,7 +8,6 @@ computeMeanUsage(
   data,
   assay = NULL,
   metadata = NULL,
-  id_col = NULL,
   batch = NULL,
   mode = c("raw", "size-corrected", "long_format"),
   verbose = TRUE
@@ -24,10 +23,6 @@ to retrieve from the \code{tTEscanR_Object}.}
 \item{metadata}{Optional; a \code{data.frame} with the meta-information
 related with the conditions in \code{data}. There has to be one column
 with the same labels as the column names.}
-
-\item{id_col}{Optional; a factor based on \code{metadata} columns to define
-the variable to use to link it with the \code{data}. If \code{NULL} the
-column with the highest agreement will be automatically selected.}
 
 \item{batch}{Optional; a factor based on \code{metadata} columns to define
 the variable to correct for. Required if \code{mode} is \code{"raw"}
@@ -57,15 +52,15 @@ Therefore, variables \code{assay} and \code{metadata} need to be coherent
 with the rules described in \code{\link{createObject}}.
 }
 \examples{
-data(default_tTEscanR_tRNA_data, default_tTEscanR_metadata)
+data("default_tTEscanR_tRNA_data", package = "tTEscanR")
+data("default_tTEscanR_metadata", package = "tTEscanR")
+
 tTEscanR_obj <- createObject(
     counts = default_tTEscanR_tRNA_data,
     assay = "tRNA",
-    meta.data = list(default_tTEscanR_metadata, "tissue"),
-    meta.data.ids = list(
-        "ConditionsLabels",
-        "CorrectionFactor"
-    )
+    meta_data = default_tTEscanR_metadata,
+    sample_id = "conditions",
+    params = list("CorrectionFactor" = "tissue")
 )
 # Input: tTEscanR object containing metadata and batch parameters
 tTEscanR_obj <- computeAnticodonUsage(object = tTEscanR_obj)

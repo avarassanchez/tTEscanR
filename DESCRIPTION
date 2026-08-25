@@ -1,11 +1,35 @@
 Package: tTEscanR
-Title: An advanced R-based package to quantify and visualize translation efficiency from sequencing data
-Version: 0.99.0
+Title: A user-friendly integrative R package for quantifying and visualizing 
+    translation efficiency from sequencing data in diverse biological systems
+Version: 0.99.1
 Authors@R: 
+    c(
     person("Ana", "Varas-Sánchez", 
         email = "ana.varas@scilifelab.se", 
         role = c("aut", "cre"),
-        comment = c(ORCID = "0009-0006-0187-8968"))
+        comment = c(ORCID = "0009-0006-0187-8968")),
+    person("Carlos", "Gallardo-Dodd",
+        email = "carlos.gallardo@scilifelab.se",
+        role = c("aut"),
+        comment = c(ORCID = "0000-0002-6086-0550")),
+    person("William", "Gao",
+        email = "william.gao@pennmedicine.upenn.edu",
+        role = c("aut"),
+        comment = c(ORCID = "0000-0002-9415-331X")),
+    person("Claudia", "Kutter",
+        email = "claudia.kutter@ki.se",
+        role = c("ths"),
+        comment = c(ORCID = "0000-0002-8047-0058")),
+    person("Karolinska Institutet",
+        role = c("fnd"),
+        comment = c(grant_id = "KID-2021-00308, KID-2023-01298")),
+    person("Swedish Research Council",
+        role = c("fnd"),
+        comment = c(grant_id = "2023-02780")),
+    person("Cancerfonden",
+        role = c("fnd"),
+        comment = c(grant_id = "22 2246 Pj, 25 4703 Pj"))
+    )
 Description: Translation elongation is dependent on codon-anticodon interactions, 
     with suitable nucleotide pairing being essential for efficient translation. 
     To quantify this relationship, we previously developed a computational pipeline 
@@ -18,16 +42,36 @@ Description: Translation elongation is dependent on codon-anticodon interactions
     module to generate high-quality plots, enhancing result interpretation and communication.
 License: MIT + file LICENSE
 Imports:
-    methods,
-    dplyr,
-    Matrix,
     stats,
-    tibble,
-    rlang,
+    SummarizedExperiment,
     Biostrings,
-    magrittr,
+    S4Vectors,
+    MultiAssayExperiment,
+    Matrix,
+    DESeq2,
+    matrixStats,
+    tibble,
+    dplyr,
+    tRNAscanImport,
+    GenomicRanges,
+    Signac,
+    utils,
+    biomaRt,
+    stringr,
+    ggplot2,
+    ggrepel,
+    uwot,
+    Rtsne,
+    dendsort,
+    grid,
+    ComplexHeatmap,
+    viridis,
+    tidyr,
+    ggpubr,
+    patchwork,
     purrr,
-    tidyr
+    magrittr,
+    rlang
 Encoding: UTF-8
 Depends: 
     R (>= 4.6.0)
@@ -41,33 +85,14 @@ Suggests:
     knitr,
     rmarkdown,
     BiocStyle,
-    stringr,
-    DESeq2,
     devtools,
-    SummarizedExperiment,
-    matrixStats,
     pheatmap,
-    ggplot2,
-    ggrepel,
-    viridis,
-    dendsort,
-    biomaRt,
-    tRNAscanImport,
-    GenomicRanges,
-    ggradar,
-    S4Vectors,
     Seurat,
-    Signac, 
-    Rtsne,
-    ggpubr,
     IRanges,
     GenomeInfoDb,
-    uwot,
-    ComplexHeatmap,
-    patchwork,
     Rsamtools
 Config/testthat/edition: 3
-biocViews: Software, Epitranscriptomics, Transcriptomics, GeneExpression, GeneRegulation, Sequencing, SingleCell
+biocViews: Software, Epitranscriptomics, Transcriptomics, GeneExpression, GeneRegulation, Sequencing, SingleCell, CellBasedAssays
 Roxygen: list(markdown = TRUE, r6 = FALSE)
 RoxygenNote: 8.0.0
 Config/roxygen2/version: 8.0.0

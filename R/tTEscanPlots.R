@@ -28,14 +28,11 @@
 #' @param ncols Numeric; number of columns for arranging panels. Defaults to 1.
 #' @param facet_col Optional; name of the categorical variable to divide the
 #'     plot into different panels. Required if \code{ncols} bigger than 1.
+#' @param free_scale Logical; if \code{TRUE}, enables the scales of the plot to
+#'     have get different scales. Defaults to \code{TRUE}.
 #' @param add_stats Logical; if \code{TRUE}, performs a statistical analysis
 #'     based on the available parameters. Defaults to \code{FALSE}.
-#' @param save_format Optional; either \code{"png"} or \code{"pdf"} to specify
-#'     the format to save the plot.
-#' @param out_name Optional; name for the saved plot (if \code{save_format}
-#'     specified).
-#' @param out_directory Optional; path to the directory where the plot will
-#'     be saved (if \code{save_format} specified).
+#' @param filename Optional; name for the plot to be saved.
 #' @param show_legend Either \code{"none"} (default), \code{"top"},
 #'     \code{"bottom"}, \code{"right"} or \code{"left"} to specify the
 #'     position of the legend.
@@ -50,23 +47,26 @@
 #' @export
 #'
 #' @examples
-#' data(default_tTEscanR_mRNA_data, default_tTEscanR_metadata)
+#' data("default_tTEscanR_mRNA_data", package = "tTEscanR")
+#' data("default_tTEscanR_metadata", package = "tTEscanR")
 #'
 #' # Define the object and compute the codon usage
 #' tTEscanR_obj <- createObject(
 #'     counts = default_tTEscanR_mRNA_data,
 #'     assay = "mRNA",
-#'     meta.data = list(default_tTEscanR_metadata, "tissue"),
-#'     meta.data.ids = list("ConditionsLabels", "CorrectionFactor")
+#'     meta_data = default_tTEscanR_metadata,
+#'     sample_id = "conditions",
+#'     params = list("CorrectionFactor" = "tissue")
 #' )
 #' tTEscanR_obj <- computeCodonUsage(
 #'     object = tTEscanR_obj, species = "hg38",
 #'     additional_metrics = FALSE, reduce = 1000
 #' )
+#' codon_usage <- SummarizedExperiment::assay(tTEscanR_obj, "CodonUsage")
 #'
 #' # Transform the data
 #' long_cu <- transformFormat(
-#'     data = getAssay(tTEscanR_obj, "CodonUsage"), normalize = TRUE,
+#'     data = codon_usage, normalize = TRUE,
 #'     rownames_to_column = "codon", names_to = "condition", values_to = "usage"
 #' )
 #' long_cu <- long_cu |>
@@ -80,9 +80,8 @@
 #' )
 plotDistribution <- function(data, plot = "jitter", bar_position = "dodge",
     x_axis_col, y_axis_col, condition_col, color_palette = NULL, ncols = 1,
-    facet_col = NULL, add_stats = FALSE, targeted_arg = NULL,
-    save_format = NULL, out_name = NULL, out_directory = NULL,
-    show_legend = "none", add_titles = TRUE, verbose = TRUE) {
+    facet_col = NULL, add_stats = FALSE, targeted_arg = NULL, free_scale = TRUE,
+    filename = NULL, show_legend = "none", add_titles = TRUE, verbose = TRUE) {
     generalChecksDistPlot( # Checking the input parameters
         data = data, x_axis_col = x_axis_col, y_axis_col = y_axis_col,
         condition_col = condition_col, facet_col = facet_col,
@@ -114,13 +113,10 @@ plotDistribution <- function(data, plot = "jitter", bar_position = "dodge",
         level = plot, add_titles = add_titles, facet = facet_col, data = data,
         add_stats = add_stats, x_axis = x_axis_col, y_axis = y_axis_col,
         color = color_palette, target = condition_col, ncols = ncols,
-        show_legend = show_legend, bar = bar_position
+        show_legend = show_legend, bar = bar_position, free_scale = free_scale
     )
-    if (!(is.null(save_format))) {
-        savePlot(
-            plot = plot$plot, save_format = save_format, out_name = out_name,
-            out_directory = out_directory, verbose = verbose
-        )
+    if (!is.null(filename)) {
+        ggplot2::ggsave(filename = filename, plot = plot)
     }
     return(plot$plot) # Returns the generated plot & exports a file if enabled
 }
@@ -199,12 +195,7 @@ generalChecksDistPlot <- function(data, plot, x_axis_col, y_axis_col,
 #' @param color_palette Optional; a vector of color codes (min. 2 codes and max.
 #'     3 codes) to customize plot appearance. Colors for (i) data, (ii) target
 #'     value, and (iii) difference bar.
-#' @param save_format Optional; either \code{"png"} or \code{"pdf"} to specify
-#'     the format to save the plot.
-#' @param out_name Optional; name for the saved plot (if \code{save_format}
-#'     specified).
-#' @param out_directory Optional; path to the directory where the plot will
-#'     be saved (if \code{save_format} specified).
+#' @param filename Optional; name for the plot to be saved.
 #' @param show_legend Either \code{"none"} (default), \code{"top"},
 #'     \code{"bottom"}, \code{"right"} or \code{"left"} to specify the
 #'     position of the legend.
@@ -219,8 +210,7 @@ generalChecksDistPlot <- function(data, plot, x_axis_col, y_axis_col,
 #' @export
 plotTargetComparison <- function(target_data, overall_data, x_axis_col,
     y_axis_col, color_palette = NULL, show_difference = TRUE,
-    save_format = NULL, out_name = NULL, add_titles = TRUE,
-    out_directory = NULL, show_legend = "none", verbose = TRUE) {
+    add_titles = TRUE, filename = NULL, show_legend = "none", verbose = TRUE) {
     generalChecksPlotTargetComp( # Check names correspond to column names
         x_axis = x_axis_col, y_axis = y_axis_col,
         target = target_data, data = overall_data
@@ -256,12 +246,9 @@ plotTargetComparison <- function(target_data, overall_data, x_axis_col,
         ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90),
             legend.position = show_legend
         ) # Arrange elements in the plot
-    if (!(is.null(save_format))) {
-        savePlot(
-            plot = plot, save_format = save_format, out_name = out_name,
-            out_directory = out_directory, verbose = verbose
-        )
-    } # Save the ggplot
+    if (!is.null(filename)) { # Saves the ggplot
+        ggplot2::ggsave(filename = filename, plot = plot)
+    }
     return(plot) # Returns the generated plot and exports a file if enabled.
 }
 
@@ -356,12 +343,7 @@ generalChecksPlotTargetComp <- function(x_axis, y_axis, target, data) {
 #'     Defaults to \code{TRUE}.
 #' @param zoom Logical; if \code{TRUE}, centers the plot display to the values
 #'     in \code{data}.Defaults to \code{TRUE}.
-#' @param save_format Optional; either \code{"png"} or \code{"pdf"} to specify
-#'     the format to save the plot.
-#' @param out_name Optional; name for the saved plot (if \code{save_format}
-#'     specified).
-#' @param out_directory Optional; path to the directory where the plot will be
-#'     saved (if \code{save_format} specified).
+#' @param filename Optional; name for the plot to be saved.
 #' @param show_legend Either \code{"none"} (default), \code{"top"},
 #'     \code{"bottom"}, \code{"right"} or \code{"left"} to specify the
 #'     position of the legend.
@@ -376,13 +358,15 @@ generalChecksPlotTargetComp <- function(x_axis, y_axis, target, data) {
 #' @export
 #'
 #' @examples
-#' data(default_tTEscanR_mRNA_data, default_tTEscanR_metadata)
+#' data("default_tTEscanR_mRNA_data", package = "tTEscanR")
+#' data("default_tTEscanR_metadata", package = "tTEscanR")
 #'
 #' # Define the object and compute the codon usage
 #' tTEscanR_obj <- createObject(
 #'     counts = default_tTEscanR_mRNA_data, assay = "mRNA",
-#'     meta.data = list(default_tTEscanR_metadata, "tissue"),
-#'     meta.data.ids = list("ConditionsLabels", "CorrectionFactor")
+#'     meta_data = default_tTEscanR_metadata,
+#'     sample_id = "conditions",
+#'     params = list("CorrectionFactor" = "tissue")
 #' )
 #' tTEscanR_obj <- computeCodonUsage(
 #'     object = tTEscanR_obj, species = "hg38",
@@ -390,9 +374,8 @@ generalChecksPlotTargetComp <- function(x_axis, y_axis, target, data) {
 #' )
 #'
 #' # Compute and extract the mean codon usage
-#' additional_metrics <- getMetadata(
-#'     tTEscanR_obj, "CodonUsage_AdditionalMetrics"
-#' )
+#' meta <- S4Vectors::metadata(tTEscanR_obj)
+#' additional_metrics <- meta[["CodonUsage_AdditionalMetrics"]]
 #' mean_codon_usage <- additional_metrics$MeanCodonUsage
 #' mean_codon_usage$codon <- mean_codon_usage$feature
 #'
@@ -410,8 +393,7 @@ generalChecksPlotTargetComp <- function(x_axis, y_axis, target, data) {
 #' )
 plotProportion <- function(data, plot = "bar", var_numerical, var_categorical,
     var_color = NULL, facet_col = NULL, color_palette = NULL, num_limits = NULL,
-    num_rings = 5, save_format = NULL, out_name = NULL,
-    out_directory = NULL, zoom = FALSE, show_legend = "none",
+    num_rings = 5, filename = NULL, zoom = FALSE, show_legend = "none",
     add_titles = TRUE, order = NULL, normalize = TRUE, verbose = TRUE) {
     ## Checking the type of plot and the input variables
     if (is.null(var_color)) var_color <- var_categorical
@@ -430,11 +412,8 @@ plotProportion <- function(data, plot = "bar", var_numerical, var_categorical,
     )
 
     ## Save the ggplot
-    if (!is.null(save_format)) {
-        savePlot(
-            plot = plot$plot, save_format = save_format, out_name = out_name,
-            out_directory = out_directory, verbose = verbose
-        )
+    if (!is.null(filename)) {
+        ggplot2::ggsave(filename = filename, plot = plot)
     }
 
     return(plot) # Returns the generated plot and exports a file if enabled.
@@ -507,12 +486,7 @@ generalChecksProportionPlot <- function(plot, data, var_color, var_categorical,
 #'     plot into different panels.
 #' @param color_palette Optional; a vector of color codes to customize plot
 #'     appearance.
-#' @param save_format Optional; either \code{"png"} or \code{"pdf"} to specify
-#'     the format to save the plot.
-#' @param out_name Optional; name for the saved plot (if \code{save_format}
-#'     specified).
-#' @param out_directory Optional; path to the directory where the plot will be
-#'     saved (if \code{save_format} specified).
+#' @param filename Optional; name for the plot to be saved.
 #' @param show_legend Either \code{"none"} (default), \code{"top"},
 #'     \code{"bottom"}, \code{"right"} or \code{"left"} to specify the
 #'     position of the legend in the plot.
@@ -526,22 +500,22 @@ generalChecksProportionPlot <- function(plot, data, var_color, var_categorical,
 #' @return A \code{ggplot} object representing the tTE scores. If
 #'     \code{save_format} is provided, the plot will also be saved to the
 #'     specified location. If \code{add_stats} reports a table with the
-#'     statitical measures summarized.
+#'     statistical measures summarized.
 #' @export
 #'
 #' @examples
-#' data(
-#'     default_tTEscanR_mRNA_data, default_tTEscanR_tRNA_data,
-#'     default_tTEscanR_metadata
-#' )
+#' data("default_tTEscanR_mRNA_data", package = "tTEscanR")
+#' data("default_tTEscanR_tRNA_data", package = "tTEscanR")
+#' data("default_tTEscanR_metadata", package = "tTEscanR")
 #'
 #' # Define the tTEscanR object
 #' tTEscanR_obj <- createObject(
 #'     counts = list(
 #'         mRNA = default_tTEscanR_mRNA_data, tRNA = default_tTEscanR_tRNA_data
 #'     ),
-#'     meta.data = list(default_tTEscanR_metadata, "tissue"),
-#'     meta.data.ids = list("ConditionsLabels", "CorrectionFactor")
+#'     meta_data = default_tTEscanR_metadata,
+#'     sample_id = "conditions",
+#'     params = list("CorrectionFactor" = "tissue")
 #' )
 #'
 #' # Compute the codon and anticodon usage
@@ -555,8 +529,11 @@ generalChecksProportionPlot <- function(plot, data, var_color, var_categorical,
 #' tTEscanR_obj <- computeTheoreticalTE(
 #'     object = tTEscanR_obj, level = "codon", compute_significance = TRUE
 #' )
-#' tTEresults_codon <- getMetadata(tTEscanR_obj, "tTEresults_codon")
-#' conditions_metadata <- getMetadata(tTEscanR_obj, "ConditionsLabels")
+#' tTE_results <- S4Vectors::metadata(tTEscanR_obj)[["tTE_results"]]
+#' tTEresults_codon <- tTE_results[["tTEresults_codon"]]
+#' conditions_metadata <- as.data.frame(
+#'     SummarizedExperiment::colData(tTEscanR_obj)
+#' )
 #'
 #' # Visualize the tTE scores
 #' plotTEscore(
@@ -565,9 +542,9 @@ generalChecksProportionPlot <- function(plot, data, var_color, var_categorical,
 #' )
 plotTEscore <- function(data, metadata, class_col, index_col, target_col = NULL,
     score_col = "tTE", cond_col = "condition", pval_col = "p_value",
-    facet_col = NULL, color_palette = NULL, save_format = NULL,
-    out_name = NULL, add_stats = TRUE, out_directory = NULL, verbose = TRUE,
-    show_legend = "none", add_titles = TRUE, show_outliers = FALSE) {
+    facet_col = NULL, color_palette = NULL, add_stats = TRUE, filename = NULL,
+    verbose = TRUE, show_legend = "none", add_titles = TRUE,
+    show_outliers = FALSE) {
     generalChecksScoresPlot(
         data = data, meta = metadata, stats = add_stats, facet = facet_col,
         class = class_col, target = target_col, index = index_col,
@@ -604,11 +581,8 @@ plotTEscore <- function(data, metadata, class_col, index_col, target_col = NULL,
         plot <- results_stat$plot
         sig_table <- results_stat$sig_table
     }
-    if (!is.null(save_format)) {
-        savePlot(
-            plot = plot, save_format = save_format, out_name = out_name,
-            out_directory = out_directory, verbose = verbose
-        )
+    if (!is.null(filename)) { # Saves the plot
+        ggplot2::ggsave(filename = filename, plot = plot)
     }
     return(list(plot = plot, stats = sig_table))
 }
@@ -821,12 +795,7 @@ addStats <- function(plot, add_stats, target, class, score,
 #'     appearance.
 #' @param targeted_arg Optional; a vector defining key feature clusters to
 #'     highlight or label.
-#' @param save_format Optional; either \code{"png"} or \code{"pdf"} to specify
-#'     the format to save the plot.
-#' @param out_name Optional; name for the saved plot (if \code{save_format}
-#'     specified).
-#' @param out_directory Optional; path to the directory where the plot will
-#'     be saved (if \code{save_format} specified).
+#' @param filename Optional; name for the plot to be saved.
 #' @param show_legend Either \code{"none"} (default), \code{"top"},
 #'     \code{"bottom"}, \code{"right"} or \code{"left"} to specify the
 #'     position of the legend.
@@ -841,13 +810,15 @@ addStats <- function(plot, add_stats, target, class, score,
 #' @export
 #'
 #' @examples
-#' data(default_tTEscanR_mRNA_data, default_tTEscanR_metadata)
+#' data("default_tTEscanR_mRNA_data", package = "tTEscanR")
+#' data("default_tTEscanR_metadata", package = "tTEscanR")
 #'
 #' # Define the object and compute the codon usage
 #' tTEscanR_obj <- createObject(
 #'     counts = default_tTEscanR_mRNA_data, assay = "mRNA",
-#'     meta.data = list(default_tTEscanR_metadata, "tissue"),
-#'     meta.data.ids = list("ConditionsLabels", "CorrectionFactor")
+#'     meta_data = default_tTEscanR_metadata,
+#'     sample_id = "conditions",
+#'     params = list("CorrectionFactor" = "tissue")
 #' )
 #' tTEscanR_obj <- computeCodonUsage(
 #'     object = tTEscanR_obj, species = "hg38",
@@ -855,10 +826,8 @@ addStats <- function(plot, add_stats, target, class, score,
 #' )
 #'
 #' # Compute and extract the mean codon usage
-#' additional_metrics <- getMetadata(
-#'     tTEscanR_obj,
-#'     "CodonUsage_AdditionalMetrics"
-#' )
+#' meta <- S4Vectors::metadata(tTEscanR_obj)
+#' additional_metrics <- meta[["CodonUsage_AdditionalMetrics"]]
 #' mean_codon_usage <- additional_metrics$MeanCodonUsage
 #' exonic_background <- additional_metrics$CodonExonicBackground
 #' exonic_background <- as.data.frame(exonic_background)
@@ -873,8 +842,8 @@ addStats <- function(plot, add_stats, target, class, score,
 #' )
 plotCorrelation <- function(data, plot = "MeanCodonUsage", x_axis_col,
     y_axis_col, condition_col, extra_val = NULL, label_col = NULL,
-    color_palette = NULL, out_name = NULL, show_legend = "none",
-    targeted_arg = NULL, save_format = NULL, out_directory = NULL,
+    color_palette = NULL, filename = NULL, show_legend = "none",
+    targeted_arg = NULL,
     add_titles = TRUE, verbose = TRUE) {
     generalChecksCorrelationPlot( # Checking the input parameters
         plot = plot, x_axis_col = x_axis_col, y_axis_col = y_axis_col,
@@ -913,11 +882,8 @@ plotCorrelation <- function(data, plot = "MeanCodonUsage", x_axis_col,
         )
     }
     p <- p + ggplot2::theme(legend.position = show_legend)
-    if (!is.null(save_format)) {
-        savePlot( # Save the ggplot
-            plot = p, save_format = save_format, out_name = out_name,
-            out_directory = out_directory, verbose = verbose
-        )
+    if (!is.null(filename)) { # Saves the plot
+        ggplot2::ggsave(filename = filename, plot = p)
     }
     return(p) # Returns the generated plot and exports a file if enabled
 }
@@ -1009,12 +975,7 @@ generalChecksCorrelationPlot <- function(plot, data, x_axis_col, y_axis_col,
 #'     value). Output from \code{\link{obtainSignificance}}
 #' @param color_palette Optional; a vector of color codes to customize plot
 #'     appearance.
-#' @param save_format Optional; either \code{"png"} or \code{"pdf"} to specify
-#'     the format to save the plot.
-#' @param out_name Optional; name for the saved plot (if \code{save_format}
-#'     specified).
-#' @param out_directory Optional; path to the directory where the plot will be
-#'     saved (if \code{save_format} specified).
+#' @param filename Optional; name for the plot to be saved.
 #' @param show_legend Either \code{"none"} (default), \code{"top"},
 #'     \code{"bottom"}, \code{"right"} or \code{"left"} to specify the
 #'     position of the legend in the plot.
@@ -1027,22 +988,25 @@ generalChecksCorrelationPlot <- function(plot, data, x_axis_col, y_axis_col,
 #' @export
 #'
 #' @examples
-#' data(default_tTEscanR_mRNA_data, default_tTEscanR_metadata)
+#' data("default_tTEscanR_mRNA_data", package = "tTEscanR")
+#' data("default_tTEscanR_metadata", package = "tTEscanR")
+#'
 #' selected_genes <- default_tTEscanR_mRNA_data[1:20, ]
 #' permutation_test <- getPermutationDist(
 #'     n_permut = 100, target_data = selected_genes, species = "hg38"
 #' ) # Generate table with codon and freq
 #' tTEscanR_obj <- createObject(
 #'     counts = default_tTEscanR_mRNA_data, assay = "mRNA",
-#'     meta.data = list(default_tTEscanR_metadata, "tissue"),
-#'     meta.data.ids = list("ConditionsLabels", "CorrectionFactor")
+#'     meta_data = default_tTEscanR_metadata,
+#'     sample_id = "conditions",
+#'     params = list("CorrectionFactor" = "tissue")
 #' )
 #' tTEscanR_obj <- computeCodonUsage(
 #'     object = tTEscanR_obj, species = "hg38",
 #'     additional_metrics = FALSE, reduce = 1000
 #' )
 #'
-#' codon_usage <- getAssay(tTEscanR_obj, "CodonUsage")
+#' codon_usage <- SummarizedExperiment::assay(tTEscanR_obj, "CodonUsage")
 #' codon_background <- rowSums(codon_usage) / sum(rowSums(codon_usage))
 #' codons_to_AA <- featuresToAA(
 #'     data = names(codon_background),
@@ -1058,8 +1022,7 @@ generalChecksCorrelationPlot <- function(plot, data, x_axis_col, y_axis_col,
 #'
 #' plotPermutation(permut_data = permutation_test, sig_data = significance)
 plotPermutation <- function(permut_data, sig_data, color_palette = NULL,
-    save_format = NULL, out_name = NULL, out_directory = NULL,
-    show_legend = "none", add_titles = TRUE, verbose = TRUE) {
+    filename = NULL, show_legend = "none", add_titles = TRUE, verbose = TRUE) {
     annot_results <- getAnnotData(permut_data, sig_data)
     observed_data <- annot_results$sig_data
     label_data <- annot_results$annot_data_labels
@@ -1099,11 +1062,8 @@ plotPermutation <- function(permut_data, sig_data, color_palette = NULL,
             x = "Frequency", y = "Count"
         )
     }
-    if (!is.null(save_format)) { # Save the ggplot
-        savePlot(
-            plot = plot, save_format = save_format, out_name = out_name,
-            out_directory = out_directory, verbose = verbose
-        )
+    if (!is.null(filename)) { # Saves the plot
+        ggplot2::ggsave(filename = filename, plot = plot)
     }
     return(plot)
 }

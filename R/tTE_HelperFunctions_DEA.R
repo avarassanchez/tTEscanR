@@ -1,5 +1,5 @@
 computeSizeCorrection <- function(data, metadata, batch = NULL, reduce = 100,
-    verbose = TRUE) {
+    verbose = FALSE) {
     checkDataFrame(data = data) # Evaluate the input parameter: 'data'
     checkDataFrame(data = metadata) # Evaluate parameters: 'metadata' & 'batch'
 
@@ -118,7 +118,7 @@ getDesignFormula <- function(batch, condition, verbose) {
 }
 
 computeDESeq2 <- function(data, metadata, condition = NULL, batch = NULL,
-    reference = NULL, reduce, verbose = TRUE) {
+    reference = NULL, reduce = 100, verbose = TRUE) {
     data <- as.matrix(data)
     data <- checkIntegerLength(data = data, reduce = reduce, verbose = verbose)
     storage.mode(data) <- "integer" # Force data as integer

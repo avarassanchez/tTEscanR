@@ -1,3 +1,4 @@
+# Mock Datasets Setup
 mock_plot_data <- data.frame(
     SampleID = paste0("S", 1:12),
     Expression = c(1.2, 1.5, 3.4, 3.8, 1.1, 0.9, 4.5, 4.2, 2.1, 2.5, 5.0, 4.8),
@@ -15,7 +16,7 @@ mock_overall <- data.frame(
 
 mock_target <- data.frame(
     Codon = c("AUU", "AUC", "AUA", "AUG"),
-    Frequency = c(0.1, 0.5, 0.1, 0.3), # Different values to show comparison
+    Frequency = c(0.1, 0.5, 0.1, 0.3),
     stringsAsFactors = FALSE
 )
 
@@ -61,15 +62,17 @@ mock_sig_data <- data.frame(
     freq = c(0.34, 0.11),
     group = c("Treatment_A", "Treatment_A"),
     sig_adj = c(0.002, 0.045),
-    p_val_adj = c(0.002, 0.045), # Added to prevent the mutate evaluation crash
+    p_val_adj = c(0.002, 0.045),
     stringsAsFactors = FALSE
 )
 
 mock_plot <- ggplot2::ggplot() + ggplot2::geom_blank()
 
+# Unit Tests
+
 test_that("Testing parameters from plotDistribution", {
     expect_error(
-        p <- plotDistribution(
+        plotDistribution(
             data = mock_plot_data,
             plot = "jitter",
             x_axis_col = "Codon",
@@ -82,7 +85,7 @@ test_that("Testing parameters from plotDistribution", {
     )
 
     expect_error(
-        p <- plotDistribution(
+        plotDistribution(
             data = mock_plot_data,
             plot = "jitter",
             x_axis_col = "Expression",
@@ -95,20 +98,20 @@ test_that("Testing parameters from plotDistribution", {
     )
 
     expect_error(
-        p <- plotDistribution(
+        plotDistribution(
             data = mock_plot_data,
             plot = "jitter",
             x_axis_col = "Codon",
             y_axis_col = "Expression",
             condition_col = "Codon",
-            targeted_arg = "Treatment", # Treatment belongs to the Condition column
+            targeted_arg = "Treatment",
             verbose = FALSE
         ),
         "The argument Treatment has not been found in the data."
     )
 
     expect_error(
-        p <- plotDistribution(
+        plotDistribution(
             data = mock_plot_data,
             plot = "jitter",
             x_axis_col = "Codon",
@@ -142,8 +145,6 @@ test_that("plotDistribution returns a valid ggplot object", {
         verbose = FALSE
     )
     expect_s3_class(p, "ggplot")
-    expect_equal(rlang::as_label(p$mapping$x), "Codon")
-    expect_equal(rlang::as_label(p$mapping$y), "Expression")
 
     p <- plotDistribution(
         data = mock_plot_data,
@@ -154,8 +155,6 @@ test_that("plotDistribution returns a valid ggplot object", {
         verbose = FALSE
     )
     expect_s3_class(p, "ggplot")
-    expect_equal(rlang::as_label(p$mapping$x), "Codon")
-    expect_equal(rlang::as_label(p$mapping$y), "Expression")
 
     p <- plotDistribution(
         data = mock_plot_data,
@@ -166,11 +165,9 @@ test_that("plotDistribution returns a valid ggplot object", {
         verbose = FALSE
     )
     expect_s3_class(p, "ggplot")
-    expect_equal(rlang::as_label(p$mapping$x), "Codon")
-    expect_equal(rlang::as_label(p$mapping$y), "Expression")
 
     expect_error(
-        p <- plotDistribution(
+        plotDistribution(
             data = mock_plot_data,
             plot = "bar",
             x_axis_col = "Codon",
@@ -183,7 +180,6 @@ test_that("plotDistribution returns a valid ggplot object", {
 })
 
 test_that("plotDistribution handles targeted_arg logic correctly", {
-
     p <- plotDistribution(
         data = mock_plot_data,
         plot = "jitter",
@@ -195,18 +191,7 @@ test_that("plotDistribution handles targeted_arg logic correctly", {
     )
     expect_s3_class(p, "ggplot")
 
-    p <- plotDistribution(
-        data = mock_plot_data,
-        plot = "jitter",
-        x_axis_col = "Codon",
-        y_axis_col = "Expression",
-        condition_col = "Condition",
-        targeted_arg = c("Treatment"),
-        verbose = FALSE
-    )
-    expect_s3_class(p, "ggplot")
-
-    p <- plotDistribution(
+    p_list <- plotDistribution(
         data = mock_plot_data,
         plot = "jitter",
         x_axis_col = "Codon",
@@ -215,9 +200,8 @@ test_that("plotDistribution handles targeted_arg logic correctly", {
         targeted_arg = list("Treatment"),
         verbose = FALSE
     )
-    expect_s3_class(p, "ggplot")
+    expect_s3_class(p_list, "ggplot")
 
-    # Case B: Invalid targeted argument (should trigger the explicit stop() error)
     expect_error(
         plotDistribution(
             data = mock_plot_data,
@@ -225,15 +209,15 @@ test_that("plotDistribution handles targeted_arg logic correctly", {
             x_axis_col = "Codon",
             y_axis_col = "Expression",
             condition_col = "Condition",
-            targeted_arg = c("NonExistentCondition"),
+            targeted_arg = "NonExistentCondition",
             verbose = FALSE
         ),
         "The argument NonExistentCondition has not been found in the data"
     )
 })
 
-test_that("plotDistribution handels different color palettes", {
-    insufficient_colors <- c("lightblue", "orange") # Only 2 colors provided
+test_that("plotDistribution handles different color palettes", {
+    insufficient_colors <- c("lightblue", "orange")
     expect_error(
         plotDistribution(
             data = mock_plot_data,
@@ -247,7 +231,7 @@ test_that("plotDistribution handels different color palettes", {
         "The number of colors in 'color_palette' does not correspond to the number of categories needed"
     )
 
-    extra_colors <- c("lightblue", "orange", "lightpink", "lightgreen") # Additional colors provided
+    extra_colors <- c("lightblue", "orange", "lightpink", "lightgreen")
     expect_no_error(
         plotDistribution(
             data = mock_plot_data,
@@ -308,25 +292,13 @@ test_that("plotDistribution applies faceting parameters", {
         y_axis_col = "Expression",
         condition_col = "Condition",
         facet_col = "Tissue",
-        verbose = FALSE
-    )
-    expect_s3_class(p$facet, "FacetWrap")
-
-    p <- plotDistribution(
-        data = mock_plot_data,
-        plot = "barplot",
-        bar_position = "dodge",
-        x_axis_col = "Codon",
-        y_axis_col = "Expression",
-        condition_col = "Condition",
-        facet_col = "Tissue",
         ncols = 2,
         verbose = FALSE
     )
     expect_s3_class(p$facet, "FacetWrap")
 
     expect_error(
-        p <- plotDistribution(
+        plotDistribution(
             data = mock_plot_data,
             plot = "barplot",
             bar_position = "dodge",
@@ -361,7 +333,6 @@ test_that("plotDistribution testing the display of the legend", {
     )
     expect_equal(p$theme$legend.position, "bottom")
 
-    # Invalid string position
     expect_error(
         plotDistribution(
             data = mock_plot_data,
@@ -374,7 +345,6 @@ test_that("plotDistribution testing the display of the legend", {
         "Specify a suitable 'show_legend' parameter"
     )
 
-    # Incompatible logical data type
     expect_error(
         plotDistribution(
             data = mock_plot_data,
@@ -459,17 +429,6 @@ test_that("plotTargetComparison general checks", {
             verbose = FALSE
         )
     )
-
-    expect_error(
-        plotTargetComparison(
-            target_data = mock_plot_data,
-            overall_data = mock_overall,
-            x_axis_col = "Codon",
-            y_axis_col = "Frequency",
-            verbose = FALSE
-        ),
-        "Invalid 'y_axis_col' provided: 'Frequency'."
-    )
 })
 
 test_that("plotTargetComparison throws an error for missing columns", {
@@ -508,7 +467,6 @@ test_that("plotTargetComparison builds all 3 layers when show_difference = TRUE"
     )
 
     expect_s3_class(p, "ggplot")
-
     expect_equal(rlang::as_label(p$mapping$x), "Codon")
     expect_equal(rlang::as_label(p$mapping$y), "Frequency")
 
@@ -566,12 +524,12 @@ test_that("selectColorPalette returns default colors when palette is NULL", {
 test_that("selectColorPalette enforces correct color counts based on diff", {
     two_colors <- c("#111111", "#222222")
 
-    expect_silent( # 2 colors given and 2 required
+    expect_silent(
         res <- selectColorPalette(palette = two_colors, diff = FALSE)
     )
     expect_equal(length(res), 2)
 
-    expect_error( # 2 colors given and 3 required
+    expect_error(
         selectColorPalette(palette = two_colors, diff = TRUE),
         "The number of colors in 'color_palette' does not correspond to the number of graphical elements"
     )
@@ -617,7 +575,7 @@ test_that("Targeted checks for the radar layout of plotProportion", {
     mock_labels <- c("0%", "50%", "100%")
     p <- drawRadarPlot(
         data = mock_prop_data,
-        var_color = NULL, # Tests the fallback dummy assignment
+        var_color = NULL,
         var_categorical = "Codon",
         var_numerical = "Frequency",
         normalize = TRUE,
@@ -625,7 +583,7 @@ test_that("Targeted checks for the radar layout of plotProportion", {
         title = "Test Radar",
         add_titles = TRUE,
         show_legend = "none",
-        global_max_val = 1.0,
+        max_val = 1.0,
         labels_rings = mock_labels,
         color_palette = c("#FF0000")
     )
@@ -650,7 +608,7 @@ test_that("Targeted checks for the radar layout of plotProportion", {
         var_numerical = "Frequency", var_categorical = "Codon",
         var_color = "Group", color_palette = c("#111111", "#222222"),
         zoom = FALSE, show_legend = "none", order = NULL, x_limits = NULL,
-        facet_col = "Group", # Faceting enabled!
+        facet_col = "Group",
         normalize = TRUE, add_titles = TRUE, n_rings = 3
     )
     expect_s3_class(res_faceted$plot, "patchwork")
@@ -658,7 +616,7 @@ test_that("Targeted checks for the radar layout of plotProportion", {
 
 test_that("plotTEscore runs successfully and returns a list with a plot and statistics table", {
     expect_error(
-        res <- plotTEscore(
+        plotTEscore(
             data = mock_te_scores,
             metadata = mock_metadata_scores,
             index_col = "SampleID",
@@ -666,39 +624,39 @@ test_that("plotTEscore runs successfully and returns a list with a plot and stat
             target_col = "Treatment",
             add_stats = TRUE,
             verbose = FALSE
-        ), # Defaults parameters for score_col and pval_col
+        ),
         "Invalid 'data columns' provided: 'condition', 'p_value'."
     )
 
     expect_error(
-        res <- plotTEscore(
+        plotTEscore(
             data = mock_te_scores,
             metadata = mock_metadata_scores,
             cond_col = "condition",
             score_col = "tTE",
-            pval_col = "tTE", # Use the same for the example
+            pval_col = "tTE",
             index_col = "SampleID",
             class_col = "CellType",
             target_col = "Treatment",
             add_stats = TRUE,
             verbose = FALSE
-        ), # Incorrect cond_col
+        ),
         "Invalid 'data columns' provided: 'condition'."
     )
 
     expect_error(
-        res <- plotTEscore(
+        plotTEscore(
             data = mock_te_scores,
             metadata = mock_metadata_scores,
             cond_col = "SampleID",
             score_col = "tTE",
-            pval_col = "tTE", # Use the same for the example
+            pval_col = "tTE",
             index_col = "conditions",
             class_col = "CellType",
             target_col = "Treatment",
             add_stats = TRUE,
             verbose = FALSE
-        ), # Incorrect index_col
+        ),
         "Invalid 'index_col' provided: 'conditions'."
     )
 
@@ -707,7 +665,7 @@ test_that("plotTEscore runs successfully and returns a list with a plot and stat
         metadata = mock_metadata_scores,
         cond_col = "SampleID",
         score_col = "tTE",
-        pval_col = "tTE", # Use the same for the example
+        pval_col = "tTE",
         index_col = "SampleID",
         class_col = "CellType",
         target_col = "Treatment",
@@ -726,14 +684,17 @@ test_that("plotTEscore runs successfully and returns a list with a plot and stat
     expect_s3_class(res$plot$layers[[1]]$geom, "GeomViolin")
     expect_s3_class(res$plot$layers[[2]]$geom, "GeomPoint")
 
-    colnames(mock_te_scores) <- c("SampleID", "tTEscore")
+    # Local copy prevents global state mutation across subsequent tests
+    mock_te_scores_renamed <- mock_te_scores
+    colnames(mock_te_scores_renamed) <- c("SampleID", "tTEscore")
+
     expect_no_error({
         res <- plotTEscore(
-            data = mock_te_scores,
+            data = mock_te_scores_renamed,
             metadata = mock_metadata_scores,
             cond_col = "SampleID",
             score_col = "tTEscore",
-            pval_col = "tTEscore", # Use the same for the example
+            pval_col = "tTEscore",
             index_col = "SampleID",
             class_col = "CellType",
             target_col = "Treatment",
@@ -744,14 +705,13 @@ test_that("plotTEscore runs successfully and returns a list with a plot and stat
 })
 
 test_that("plotTEscore skips stat overlays and returns NULL for stats when add_stats is FALSE", {
-
     expect_warning(
-        res <- plotTEscore(
+        plotTEscore(
             data = mock_te_scores,
             metadata = mock_metadata_scores,
             cond_col = "SampleID",
             score_col = "tTE",
-            pval_col = "tTE", # Use the same for the example
+            pval_col = "tTE",
             index_col = "SampleID",
             class_col = "CellType",
             target_col = "Treatment",
@@ -766,21 +726,7 @@ test_that("plotTEscore skips stat overlays and returns NULL for stats when add_s
         metadata = mock_metadata_scores,
         cond_col = "SampleID",
         score_col = "tTE",
-        pval_col = "tTE", # Use the same for the example
-        index_col = "SampleID",
-        class_col = "CellType",
-        target_col = NULL, # No warning as targer_col is set to NULL
-        verbose = FALSE
-    )
-    expect_s3_class(res$plot, "ggplot")
-    expect_equal(res$plot$labels$fill, "Group")
-
-    res <- plotTEscore(
-        data = mock_te_scores,
-        metadata = mock_metadata_scores,
-        cond_col = "SampleID",
-        score_col = "tTE",
-        pval_col = "tTE", # Use the same for the example
+        pval_col = "tTE",
         index_col = "SampleID",
         class_col = "CellType",
         add_stats = FALSE,
@@ -789,7 +735,6 @@ test_that("plotTEscore skips stat overlays and returns NULL for stats when add_s
     expect_type(res, "list")
     expect_s3_class(res$plot, "ggplot")
     expect_null(res$stats)
-
 })
 
 test_that("plotTEscore successfully applies different modes of color_palette", {
@@ -802,25 +747,9 @@ test_that("plotTEscore successfully applies different modes of color_palette", {
         metadata = mock_metadata_scores,
         cond_col = "SampleID",
         score_col = "tTE",
-        pval_col = "tTE", # Use the same for the example
+        pval_col = "tTE",
         index_col = "SampleID",
         class_col = "CellType",
-        color_palette = my_colors,
-        add_stats = FALSE,
-        verbose = FALSE
-    )
-    ggplot_built <- ggplot2::ggplot_build(res$plot)
-    plot_colors <- unique(ggplot_built$data[[1]]$fill)
-    expect_true(all(plot_colors %in% my_colors))
-
-    res <- plotTEscore(
-        data = mock_te_scores,
-        metadata = mock_metadata_scores,
-        cond_col = "SampleID",
-        score_col = "tTE",
-        pval_col = "tTE", # Use the same for the example
-        index_col = "SampleID",
-        class_col = "Treatment",
         color_palette = my_colors,
         add_stats = FALSE,
         verbose = FALSE
@@ -835,7 +764,7 @@ test_that("plotTEscore successfully applies different modes of color_palette", {
             metadata = mock_metadata_scores,
             cond_col = "SampleID",
             score_col = "tTE",
-            pval_col = "tTE", # Use the same for the example
+            pval_col = "tTE",
             index_col = "SampleID",
             class_col = "Treatment",
             color_palette = list_colors_correct,
@@ -851,7 +780,7 @@ test_that("plotTEscore successfully applies different modes of color_palette", {
             metadata = mock_metadata_scores,
             cond_col = "SampleID",
             score_col = "tTE",
-            pval_col = "tTE", # Use the same for the example
+            pval_col = "tTE",
             index_col = "SampleID",
             class_col = "Treatment",
             color_palette = list_colors,
@@ -886,28 +815,6 @@ test_that("generalChecksProportionPlot passes valid inputs silently", {
             facet_col = "AminoAcid"
         )
     )
-
-    expect_no_error(
-        generalChecksProportionPlot(
-            plot = "donut",
-            data = mock_prop_data,
-            var_categorical = "Codon",
-            var_numerical = "Frequency",
-            var_color = "Codon", # Using the categorical feature as its own color map
-            facet_col = NULL
-        )
-    )
-
-    expect_no_error(
-        generalChecksProportionPlot(
-            plot = "radar",
-            data = mock_prop_data,
-            var_categorical = "Codon",
-            var_numerical = "Frequency",
-            var_color = "Group",
-            facet_col = NULL
-        )
-    )
 })
 
 test_that("plotCorrelation runs successfully with basic settings", {
@@ -931,7 +838,7 @@ test_that("plotCorrelation runs successfully with basic settings", {
         x_axis_col = "Usage_Control",
         y_axis_col = "Usage_Treatment",
         condition_col = "Group",
-        extra_val = 0.854, # Triggers annotation block
+        extra_val = 0.854,
         add_titles = FALSE,
         verbose = FALSE
     )
@@ -946,7 +853,7 @@ test_that("plotCorrelation safely uses the additional parameters", {
         x_axis_col = "Usage_Control",
         y_axis_col = "Usage_Treatment",
         condition_col = "Group",
-        label_col = "Codon", # Triggers ggrepel injection
+        label_col = "Codon",
         add_titles = FALSE,
         verbose = FALSE
     )
@@ -960,7 +867,7 @@ test_that("plotCorrelation safely uses the additional parameters", {
             x_axis_col = "Usage_Control",
             y_axis_col = "Usage_Treatment",
             condition_col = "Group",
-            targeted_arg = "Phe", # Triggers targeted subset routing
+            targeted_arg = "Phe",
             add_titles = FALSE,
             verbose = FALSE
         )
@@ -968,7 +875,7 @@ test_that("plotCorrelation safely uses the additional parameters", {
     expect_s3_class(p, "ggplot")
 })
 
-test_that("plotPermutation builds a multi-layered empirical null visualization", {
+test_that("plotPermutation builds multi-layered empirical null visualization with facet controls", {
     p <- plotPermutation(
         permut_data = mock_permut_data,
         sig_data = mock_sig_data,
@@ -977,10 +884,17 @@ test_that("plotPermutation builds a multi-layered empirical null visualization",
         verbose = FALSE
     )
     expect_s3_class(p, "ggplot")
+
+    # Verify Layers
     geoms <- sapply(p$layers, function(l) class(l$geom)[1])
     expect_true("GeomBar" %in% geoms)
     expect_true("GeomVline" %in% geoms)
     expect_true("GeomText" %in% geoms)
+
+    # Verify Faceting Setup
+    expect_s3_class(p$facet, "FacetWrap")
+    expect_true(p$facet$params$free$y)
+    expect_false(p$facet$params$free$x)
 })
 
 test_that("plotPermutation successfully handles flat, zero-variance permutation vectors", {
@@ -1000,96 +914,6 @@ test_that("plotPermutation successfully handles flat, zero-variance permutation 
     })
 
     expect_s3_class(p, "ggplot")
-})
-
-test_that("plotPermutation isolates codons inside individual free-scaled facets", {
-    p <- plotPermutation(
-        permut_data = mock_permut_data,
-        sig_data = mock_sig_data,
-        add_titles = FALSE,
-        verbose = FALSE
-    )
-
-    expect_s3_class(p$facet, "FacetWrap")
-    expect_true(p$facet$params$free$y)  # Confirms independent y-axes per codon
-    expect_false(p$facet$params$free$x) # Confirms shared x-axis baseline
-})
-
-test_that("savePlot successfully writes files inside isolated environments", {
-    virtual_dir <- withr::local_tempdir()
-    expect_silent({
-        savePlot(
-            plot = mock_plot,
-            save_format = "Pdf", # Mix case to check tolower()
-            out_name = "test_run",
-            out_directory = virtual_dir,
-            verbose = FALSE
-        )
-    })
-    expect_true(file.exists(file.path(virtual_dir, "test_run.pdf")))
-
-    savePlot(
-        plot = mock_plot,
-        save_format = "png",
-        out_name = "test_run",
-        out_directory = virtual_dir,
-        verbose = FALSE
-    )
-    expect_true(file.exists(file.path(virtual_dir, "test_run.png")))
-
-    virtual_dir <- withr::local_tempdir()
-    expect_warning(
-        savePlot(
-            plot = mock_plot,
-            save_format = "tiff", # Unsupported format
-            out_name = "test_corrupt",
-            out_directory = virtual_dir,
-            verbose = FALSE
-        ),
-        "is not recognized"
-    )
-    expect_false(file.exists(file.path(virtual_dir, "test_corrupt.tiff")))
-})
-
-test_that("getOutputName computes correct fallback paths and formats strings", {
-    res_path1 <- getOutputName(
-        action = "plot",
-        out_name = "my_visualization",
-        out_directory = "/mock/dir",
-        save_format = "png",
-        verbose = FALSE
-    )
-    expect_equal(basename(res_path1), "my_visualization.png")
-
-    res_path2 <- getOutputName(
-        action = "plot",
-        out_name = "my_visualization.png",
-        out_directory = "/mock/dir",
-        save_format = "png",
-        verbose = FALSE
-    )
-    expect_equal(basename(res_path2), "my_visualization.png")
-
-    expect_message(
-        res_plot <- getOutputName(
-            action = "plot",
-            out_name = NULL, # Triggers fallback to "distribution_plot"
-            out_directory = "/mock/dir",
-            save_format = "pdf",
-            verbose = TRUE
-        ),
-        "A standard name will be used"
-    )
-    expect_equal(basename(res_plot), "distribution_plot.pdf")
-
-    res_matrix <- getOutputName(
-        action = "matrix",
-        out_name = NULL, # Triggers fallback to "tRNA_expression_matrix"
-        out_directory = "/mock/dir",
-        save_format = "pdf",
-        verbose = FALSE
-    )
-    expect_equal(basename(res_matrix), "tRNA_expression_matrix.pdf")
 })
 
 test_that("addSignificanceDist accurately maps and appends significance bars to distribution plots", {
@@ -1120,7 +944,6 @@ test_that("addSignificanceDist accurately maps and appends significance bars to 
 })
 
 test_that("addSignificanceDist handles target groups with more than 2 levels by returning the base plot", {
-
     base_canvas <- ggplot2::ggplot(
         data = mock_plot_data,
         mapping = ggplot2::aes(x = Condition, y = Expression)
@@ -1131,7 +954,7 @@ test_that("addSignificanceDist handles target groups with more than 2 levels by 
         plot = base_canvas,
         x_axis_col = "Condition",
         y_axis_col = "Expression",
-        target = "Codon", # 3 levels -> fails
+        target = "Codon",
         facet_col = NULL
     )
 

@@ -16,9 +16,8 @@ plotDistribution(
   facet_col = NULL,
   add_stats = FALSE,
   targeted_arg = NULL,
-  save_format = NULL,
-  out_name = NULL,
-  out_directory = NULL,
+  free_scale = TRUE,
+  filename = NULL,
   show_legend = "none",
   add_titles = TRUE,
   verbose = TRUE
@@ -57,14 +56,10 @@ based on the available parameters. Defaults to \code{FALSE}.}
 \item{targeted_arg}{Optional; a vector defining key feature clusters to
 highlight or label.}
 
-\item{save_format}{Optional; either \code{"png"} or \code{"pdf"} to specify
-the format to save the plot.}
+\item{free_scale}{Logical; if \code{TRUE}, enables the scales of the plot to
+have get different scales. Defaults to \code{TRUE}.}
 
-\item{out_name}{Optional; name for the saved plot (if \code{save_format}
-specified).}
-
-\item{out_directory}{Optional; path to the directory where the plot will
-be saved (if \code{save_format} specified).}
+\item{filename}{Optional; name for the plot to be saved.}
 
 \item{show_legend}{Either \code{"none"} (default), \code{"top"},
 \code{"bottom"}, \code{"right"} or \code{"left"} to specify the
@@ -92,23 +87,26 @@ ensure consistency between the name of the columns in \code{data} and the
 parameters \code{x_axis_col}, \code{y_axis_col} and \code{condition_col}.
 }
 \examples{
-data(default_tTEscanR_mRNA_data, default_tTEscanR_metadata)
+data("default_tTEscanR_mRNA_data", package = "tTEscanR")
+data("default_tTEscanR_metadata", package = "tTEscanR")
 
 # Define the object and compute the codon usage
 tTEscanR_obj <- createObject(
     counts = default_tTEscanR_mRNA_data,
     assay = "mRNA",
-    meta.data = list(default_tTEscanR_metadata, "tissue"),
-    meta.data.ids = list("ConditionsLabels", "CorrectionFactor")
+    meta_data = default_tTEscanR_metadata,
+    sample_id = "conditions",
+    params = list("CorrectionFactor" = "tissue")
 )
 tTEscanR_obj <- computeCodonUsage(
     object = tTEscanR_obj, species = "hg38",
     additional_metrics = FALSE, reduce = 1000
 )
+codon_usage <- SummarizedExperiment::assay(tTEscanR_obj, "CodonUsage")
 
 # Transform the data
 long_cu <- transformFormat(
-    data = getAssay(tTEscanR_obj, "CodonUsage"), normalize = TRUE,
+    data = codon_usage, normalize = TRUE,
     rownames_to_column = "codon", names_to = "condition", values_to = "usage"
 )
 long_cu <- long_cu |>

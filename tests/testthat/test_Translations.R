@@ -1,107 +1,73 @@
-test_that("featuresToAA stops when no overlapping features are found", {
-    non_matching_codons <- c("XXX", "YYY", "ZZZ")
-    expect_error(featuresToAA(data = non_matching_codons, notation_from = "codon", notation_to = "aa"), "No overlapping features identified")
-})
+test_that("featuresToAA fails when no overlapping features exist", {
+    ## CASE 1: Non-matching vector input
+    expect_error(featuresToAA(data = c("XXX", "YYY", "ZZZ"), notation_from = "codon", notation_to = "aa"), "No overlapping features identified")
 
-test_that("featuresToAA correctly handles a data.frame with non-matching row names", {
-    non_matching_df <- data.frame("value" = 1:5, row.names = c("XYZ", "ABC", "DEF", "GHI", "JKL"))
+    ## CASE 2: Non-matching data frame row names
+    non_matching_df <- data.frame(value = 1:5, row.names = c("XYZ", "ABC", "DEF", "GHI", "JKL"))
     expect_error(featuresToAA(data = non_matching_df, position = "row", notation_from = "codon", notation_to = "aa"), "No overlapping features identified")
 })
 
-test_that("featuresToAA correctly handles a data.frame with some matching row names", {
-    partial_match_df <- data.frame("value" = 1:5, row.names = c("UUU", "GCA", "CGC", "XYZ", "ABC"))
-    expect_no_error(translated_df <- featuresToAA(data = partial_match_df, position = "row", notation_from = "codon", notation_to = "aa"))
+test_that("featuresToAA translates partial matching vectors and data frames", {
+    ## CASE 1: Partial match data frame
+    partial_df <- data.frame(value = 1:5, row.names = c("UUU", "GCA", "CGC", "XYZ", "ABC"))
+    expect_no_error(translated_df <- featuresToAA(data = partial_df, position = "row", notation_from = "codon", notation_to = "aa"))
+    expect_equal(nrow(translated_df), nrow(partial_df))
+    expect_true(all(c("F", "A", "R") %in% rownames(translated_df)))
 
-    expect_equal(nrow(translated_df), nrow(partial_match_df)) # Check that the number of rows is the same
-
-    # Check if the row names have been translated for the matching features
-    expect_true("F" %in% rownames(translated_df))
-    expect_true("A" %in% rownames(translated_df))
-    expect_true("R" %in% rownames(translated_df))
+    ## CASE 2: Partial match vector
+    partial_vec <- c("TCT", "CGC", "GGC", "XYZ", "ABC")
+    expect_no_error(translated_vec <- featuresToAA(data = partial_vec, notation_from = "codon", notation_to = "aa"))
+    expect_equal(length(translated_vec), length(partial_vec))
+    expect_true(all(c("S", "R", "G", "XYZ") %in% translated_vec))
 })
 
-test_that("featuresToAA correctly handles a vector with some matching codons", {
-    partial_match_vector <- c("TCT", "CGC", "GGC", "XYZ", "ABC")
-    expect_no_error(translated_vector <- featuresToAA(data = partial_match_vector, notation_from = "codon", notation_to = "aa"))
+test_that("featuresToAA handles specific data frame column and anticodon inputs", {
+    ## CASE 1: Column-based translation (codon to anticodon)
+    codon_df <- data.frame(gene_name = paste0("gene_", 1:3), codon = c("GGC", "TCT", "CGC"), value = 1:3)
+    expect_no_error(translated_col <- featuresToAA(data = codon_df, position = "codon", notation_from = "codon", notation_to = "anticodon"))
+    expect_equal(translated_col$codon, c("GCC", "AGA", "GCG"))
+    expect_equal(translated_col$gene_name, codon_df$gene_name)
 
-    expect_equal(length(translated_vector), length(partial_match_vector)) # Check that the number of elements is the same
-
-    # Check if the codons were translated correctly
-    expect_true("S" %in% translated_vector)
-    expect_true("R" %in% translated_vector)
-    expect_true("G" %in% translated_vector)
-
-    expect_true("XYZ" %in% translated_vector) # Check that the non-matching values were preserved
+    ## CASE 2: Anticodon to codon translation on row names
+    anticodon_df <- data.frame(value = 1:2, row.names = c("UUC", "CCG"))
+    expect_no_error(translated_ac <- featuresToAA(data = anticodon_df, position = "row", notation_from = "anticodon", notation_to = "codon"))
+    expect_true(all(c("GAA", "CGG") %in% rownames(translated_ac)))
 })
 
-test_that("featuresToAA translates a data.frame column from codon to anticodon", {
-    codon_df <- data.frame("gene_name" = paste0("gene_", 1:3), "codon" = c("GGC", "TCT", "CGC"), "value" = 1:3)
-    expect_no_error(translated_df <- featuresToAA(data = codon_df, position = "codon", notation_from = "codon", notation_to = "anticodon"))
+test_that("featuresToAA handles valid notation conversions across matrix formats", {
+    mock_codons <- c("UUU", "GCA", "CGC", "AUG")
+    mock_matrix <- matrix(1, nrow = 4, ncol = 2, dimnames = list(mock_codons, c("S1", "S2")))
 
-    expect_equal(nrow(translated_df), nrow(codon_df))
-    expect_equal(translated_df$codon, c("GCC", "AGA", "GCG")) # Check that the 'codon' column has been correctly translated to anticodons
-    expect_equal(translated_df$gene_name, codon_df$gene_name) # Ensure other columns remain unchanged
+    valid_pairs <- list(
+        c("codon", "aa"),
+        c("anticodon", "aa"),
+        c("codon", "anticodon"),
+        c("anticodon", "codon")
+    )
+
+    for (pair in valid_pairs) {
+        ## CASE 1: Vector input
+        expect_no_error(featuresToAA(data = mock_codons, notation_from = pair[1], notation_to = pair[2]))
+
+        ## CASE 2: Matrix row input
+        expect_no_error(featuresToAA(data = mock_matrix, position = "row", notation_from = pair[1], notation_to = pair[2]))
+
+        ## CASE 3: Matrix column input (transposed)
+        expect_no_error(featuresToAA(data = t(mock_matrix), position = "column", notation_from = pair[1], notation_to = pair[2]))
+    }
 })
 
-test_that("featuresToAA translates a data.frame from anticodon to codon", {
-    anticodon_df <- data.frame("value" = 1:2, row.names = c("UUC", "CCG"))
-    expect_no_error(translated_df <- featuresToAA(data = anticodon_df, position = "row", notation_from = "anticodon", notation_to = "codon"))
+test_that("featuresToAA validates position parameters and notation constraints", {
+    mock_codons <- c("UUU", "GCA", "CGC")
+    mock_matrix <- matrix(1, nrow = 3, ncol = 2, dimnames = list(mock_codons, c("S1", "S2")))
 
-    expect_true("GAA" %in% rownames(translated_df))
-    expect_true("CGG" %in% rownames(translated_df))
-})
+    ## CASE 1: Missing required position parameter for tabular data
+    expect_error(featuresToAA(data = mock_matrix, notation_from = "codon", notation_to = "aa"))
 
-test_that("The features translation works - featuresToAA()", {
-    data(default_tTEscanR_mRNA_data)
-    tTEobject <- createObject(counts = default_tTEscanR_mRNA_data, assay = "mRNA")
-    tTEobject <- computeCodonUsage(object = tTEobject, species = "hg38", additional_metrics = FALSE)
-    codon_usage <- tTEobject@assays$CodonUsage
+    ## CASE 2: Identical notation_from and notation_to arguments
+    expect_error(featuresToAA(data = mock_codons, notation_from = "codon", notation_to = "codon"))
+    expect_error(featuresToAA(data = mock_matrix, position = "row", notation_from = "anticodon", notation_to = "anticodon"))
 
-    # CASE 1: no error - base case using a vector of genes
-    expect_no_error(featuresToAA(data = rownames(codon_usage), notation_from = "codon", notation_to = "aa"))
-    expect_no_error(featuresToAA(data = rownames(codon_usage), notation_from = "anticodon", notation_to = "aa"))
-    expect_no_error(featuresToAA(data = rownames(codon_usage), notation_from = "codon", notation_to = "anticodon"))
-    expect_no_error(featuresToAA(data = rownames(codon_usage), notation_from = "anticodon", notation_to = "codon"))
-
-    expect_no_error(featuresToAA(data = colnames(t(codon_usage)), notation_from = "codon", notation_to = "aa"))
-    expect_no_error(featuresToAA(data = colnames(t(codon_usage)), notation_from = "anticodon", notation_to = "aa"))
-    expect_no_error(featuresToAA(data = colnames(t(codon_usage)), notation_from = "codon", notation_to = "anticodon"))
-    expect_no_error(featuresToAA(data = colnames(t(codon_usage)), notation_from = "anticodon", notation_to = "codon"))
-
-    # CASE 1.1: no error - base case using a data table
-    expect_no_error(featuresToAA(data = codon_usage, position = "row", notation_from = "codon", notation_to = "aa"))
-    expect_no_error(featuresToAA(data = codon_usage, position = "row", notation_from = "anticodon", notation_to = "aa"))
-    expect_no_error(featuresToAA(data = codon_usage, position = "row", notation_from = "codon", notation_to = "anticodon"))
-    expect_no_error(featuresToAA(data = codon_usage, position = "row", notation_from = "anticodon", notation_to = "codon"))
-
-    expect_no_error(featuresToAA(data = t(codon_usage), position = "column", notation_from = "codon", notation_to = "aa"))
-    expect_no_error(featuresToAA(data = t(codon_usage), position = "column", notation_from = "anticodon", notation_to = "aa"))
-    expect_no_error(featuresToAA(data = t(codon_usage), position = "column", notation_from = "codon", notation_to = "anticodon"))
-    expect_no_error(featuresToAA(data = t(codon_usage), position = "column", notation_from = "anticodon", notation_to = "codon"))
-
-    # CASE 1.2: error - base case using a data table (missing position parameter)
-    expect_error(featuresToAA(data = codon_usage, notation_from = "codon", notation_to = "aa"))
-    expect_error(featuresToAA(data = codon_usage, notation_from = "anticodon", notation_to = "aa"))
-    expect_error(featuresToAA(data = codon_usage, notation_from = "codon", notation_to = "anticodon"))
-    expect_error(featuresToAA(data = codon_usage, notation_from = "anticodon", notation_to = "codon"))
-
-    expect_error(featuresToAA(data = t(codon_usage), notation_from = "codon", notation_to = "aa"))
-    expect_error(featuresToAA(data = t(codon_usage), notation_from = "anticodon", notation_to = "aa"))
-    expect_error(featuresToAA(data = t(codon_usage), notation_from = "codon", notation_to = "anticodon"))
-    expect_error(featuresToAA(data = t(codon_usage), notation_from = "anticodon", notation_to = "codon"))
-
-    # CASE 2: error - same input and output format using a vector of genes
-    expect_error(featuresToAA(data = rownames(codon_usage), notation_from = "codon", notation_to = "codon"))
-    expect_error(featuresToAA(data = rownames(codon_usage), notation_from = "anticodon", notation_to = "anticodon"))
-    expect_error(featuresToAA(data = colnames(t(codon_usage)), notation_from = "codon", notation_to = "codon"))
-    expect_error(featuresToAA(data = colnames(t(codon_usage)), notation_from = "anticodon", notation_to = "anticodon"))
-
-    # CASE 2.1: error - same input and output format using a data table
-    expect_error(featuresToAA(data = codon_usage, position = "row", notation_from = "codon", notation_to = "codon"))
-    expect_error(featuresToAA(data = codon_usage, position = "row", notation_from = "anticodon", notation_to = "anticodon"))
-    expect_error(featuresToAA(data = t(codon_usage), position = "column", notation_from = "codon", notation_to = "codon"))
-    expect_error(featuresToAA(data = t(codon_usage), position = "column", notation_from = "anticodon", notation_to = "anticodon"))
-
-    # CASE 3: error - wrong usage of the parameters using a vector of genes
-    expect_error(featuresToAA(data = codon_usage, position = "row", notation_from = "aa", notation_to = "codon")) # wrong notation_to parameter
+    ## CASE 3: Unsupported notation argument
+    expect_error(featuresToAA(data = mock_matrix, position = "row", notation_from = "aa", notation_to = "codon"))
 })

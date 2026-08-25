@@ -1,7 +1,0 @@
-CHANGES IN VERSION 0.99.0
--------------------------
-
-    * Initial submission to Bioconductor.
-    * Added core functionality for the computation of translation efficiency
-    from sequencing data.
-    * Included vignettes and documentation.

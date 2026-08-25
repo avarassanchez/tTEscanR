@@ -89,10 +89,13 @@ Visualization of the DEA results.
 Generates Visualizations from the DEA data
 }
 \examples{
-data(default_tTEscanR_tRNA_data, default_tTEscanR_metadata)
+data("default_tTEscanR_tRNA_data", package = "tTEscanR")
+data("default_tTEscanR_metadata", package = "tTEscanR")
+
 DE_analysis <- computeDEResults(
     list_data = list(tRNA = default_tTEscanR_tRNA_data),
-    metadata = default_tTEscanR_metadata, batch = "tissue"
+    metadata = default_tTEscanR_metadata, batch = "tissue",
+    compute_pairwise = FALSE
 )
 DE_plots <- plotDEResults(
     DE_results_list = DE_analysis, dataset_name = "tRNA",

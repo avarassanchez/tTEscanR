@@ -44,12 +44,14 @@ referenceObject <- function(data, compute_aa) {
 
     ## Compute anticodon usage
     ref <- computeAnticodonUsage(object = ref, verbose = FALSE)
-    anticodon <- getReference(getAssay(ref, "AnticodonUsage"))
+    anticodon <- getReference(
+            SummarizedExperiment::assay(ref, "AnticodonUsage")
+        )
 
     ## Compute amino acid supply if applicable
     if (isTRUE(compute_aa)) {
         ref <- computeAAUsage(object = ref, level = "supply", verbose = FALSE)
-        supply <- getReference(getAssay(ref, "AASupply"))
+        supply <- getReference(SummarizedExperiment::assay(ref, "AASupply"))
     } else {
         supply <- NULL
     }
@@ -88,14 +90,18 @@ filteringCutoffs <- function(data, cutoff, aa_supply) {
         object = object_above, verbose = FALSE
     )
 
-    total_anticodon <- rowSums(getAssay(object_above, "AnticodonUsage"))
+    total_anticodon <- rowSums(
+            SummarizedExperiment::assay(object_above, "AnticodonUsage")
+        )
     total_anticodon <- total_anticodon / sum(total_anticodon)
 
     if (!is.null(aa_supply)) {
         object_above <- computeAAUsage(
             object = object_above, level = "supply", verbose = FALSE
         )
-        total_supply <- rowSums(getAssay(object_above, "AASupply"))
+        total_supply <- rowSums(
+                SummarizedExperiment::assay(object_above, "AASupply")
+            )
         total_supply <- total_supply / sum(total_supply)
     } else {
         total_supply <- NULL
@@ -217,8 +223,8 @@ iterateCutofftRNA <- function(data, anticodon, supply, cutoffs,
     return(optimal_cutoff)
 }
 
-correlationCutoffPlot <- function(data, add_titles = TRUE, save_format = NULL,
-    out_name = NULL, out_directory = NULL, show_legend = "bottom") {
+correlationCutoffPlot <- function(data, add_titles = TRUE, filename = NULL,
+    show_legend = "bottom") {
     cor_long <- data %>%
         tidyr::pivot_longer(
             cols = c("anticodon_spearman", "supply_spearman"),
@@ -247,18 +253,15 @@ correlationCutoffPlot <- function(data, add_titles = TRUE, save_format = NULL,
         )
     }
 
-    if (!is.null(save_format)) { # Save the ggplot
-        savePlot(
-            plot = plot, save_format = save_format, out_name = out_name,
-            out_directory = out_directory
-        )
+    if (!is.null(filename)) { # Saves the ggplot
+        ggplot2::ggsave(filename = filename, plot = plot)
     }
 
     return(plot)
 }
 
-selectionCutoffPlot <- function(data, add_titles = TRUE, save_format = NULL,
-    out_name = NULL, out_directory = NULL, show_legend = "bottom") {
+selectionCutoffPlot <- function(data, add_titles = TRUE, filename = NULL,
+    show_legend = "bottom") {
     plot <- ggplot2::ggplot(data, ggplot2::aes(
         x = .data$optimal_cutoff, fill = .data$type
     )) +
@@ -276,11 +279,8 @@ selectionCutoffPlot <- function(data, add_titles = TRUE, save_format = NULL,
         )
     }
 
-    if (!is.null(save_format)) { # Save the ggplot
-        savePlot(
-            plot = plot, save_format = save_format, out_name = out_name,
-            out_directory = out_directory
-        )
+    if (!is.null(filename)) { # Saves the ggplot
+        ggplot2::ggsave(filename = filename, plot = plot)
     }
 
     return(plot)

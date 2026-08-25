@@ -12,10 +12,8 @@ plotTargetComparison(
   y_axis_col,
   color_palette = NULL,
   show_difference = TRUE,
-  save_format = NULL,
-  out_name = NULL,
   add_titles = TRUE,
-  out_directory = NULL,
+  filename = NULL,
   show_legend = "none",
   verbose = TRUE
 )
@@ -39,17 +37,10 @@ value, and (iii) difference bar.}
 \item{show_difference}{Logical; if \code{TRUE}, displays the difference
 between \code{overall_data} and \code{target_data}.}
 
-\item{save_format}{Optional; either \code{"png"} or \code{"pdf"} to specify
-the format to save the plot.}
-
-\item{out_name}{Optional; name for the saved plot (if \code{save_format}
-specified).}
-
 \item{add_titles}{Logical; if \code{TRUE}, includes titles in the plot.
 Defaults to \code{TRUE}.}
 
-\item{out_directory}{Optional; path to the directory where the plot will
-be saved (if \code{save_format} specified).}
+\item{filename}{Optional; name for the plot to be saved.}
 
 \item{show_legend}{Either \code{"none"} (default), \code{"top"},
 \code{"bottom"}, \code{"right"} or \code{"left"} to specify the

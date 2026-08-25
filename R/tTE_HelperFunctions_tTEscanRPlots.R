@@ -19,70 +19,27 @@ getSafeColorScale <- function(n_colors, color_palette = NULL,
     aes_type = "fill") {
     if (is.list(color_palette)) color_palette <- unlist(color_palette)
 
-    use_custom <- !is.null(color_palette) && (length(color_palette) >= n_colors)
-    use_internal <- n_colors <= length(gradual_groups_35)
-
-    if (use_custom) {
-        if (aes_type == "fill") {
-            return(ggplot2::scale_fill_manual(values = color_palette))
-        }
-        if (aes_type == "color") {
-            return(ggplot2::scale_color_manual(values = color_palette))
-        }
-    }
-
-    if (use_internal) {
-        if (!is.null(color_palette)) {
-            warning(
-                "The provided 'color_palette' does not have enough colors for ",
-                n_colors, " categories. Defaulting to internal palette."
-            )
-        }
-        selected_colors <- unname(gradual_groups_35[seq_len(n_colors)])
-        if (aes_type == "fill") {
-            return(ggplot2::scale_fill_manual(values = selected_colors))
-        }
-        if (aes_type == "color") {
-            return(ggplot2::scale_color_manual(values = selected_colors))
-        }
+    if (aes_type == "fill"){
+        scale_manual <- ggplot2::scale_fill_manual
+        scale_viridis <- ggplot2::scale_fill_viridis_d
+    } else {
+        scale_manual <- ggplot2::scale_color_manual
+        scale_viridis <- ggplot2::scale_color_viridis_d
     }
 
     if (!is.null(color_palette)) {
-        warning(
-            "The provided 'color_palette' does not have enough colors for ",
-            n_colors, " categories. Defaulting to viridis palette."
-        )
-    }
-    if (aes_type == "fill") {
-        return(ggplot2::scale_fill_viridis_d(option = "viridis"))
-    }
-    if (aes_type == "color") {
-        return(ggplot2::scale_color_viridis_d(option = "viridis"))
-    }
-}
+        if (length(color_palette) >= n_colors) {
+            return(scale_manual(values = color_palette[seq_len(n_colors)]))
+        }
 
-savePlot <- function(plot, save_format, out_name, out_directory, width = 8,
-    height = 6, verbose) {
-    save_format <- tolower(save_format)
-
-    if (save_format %in% c("png", "pdf")) {
-        output_file <- getOutputName(
-            action = "plot", out_name = out_name,
-            out_directory = out_directory,
-            save_format = save_format,
-            verbose = verbose
-        )
-        ggplot2::ggsave(
-            filename = output_file, plot = plot,
-            width = width, height = height
-        )
-    } else {
         warning(
-            "The input 'save_format' ('", save_format,
-            "') is not recognized.\n", "Supported formats: png or pdf.\n",
-            "The plot was generated but not stored."
+            "The provided 'color_palette' contains ", length(color_palette),
+            " colors, but ", n_colors, " are required. Defaulting to viridis ",
+            "palette."
         )
     }
+
+    return(scale_viridis(option = "viridis"))
 }
 
 getOutputName <- function(action, out_name, out_directory, save_format,
@@ -179,28 +136,26 @@ checkDataInLongFormat <- function(data) {
         stop("The input 'data' must be a data.frame or tibble.")
     }
 
-    ## One numeric column
-    num_cols <- vapply(data, is.numeric, FUN.VALUE = logical(1))
+    has_num <- FALSE # Numerical column
+    has_cat <- FALSE # Categorical column
 
-    ## One categorical column
-    cat_cols <- vapply(
-        data, function(x) is.character(x) || is.factor(x),
-        FUN.VALUE = logical(1)
-    )
+    # Loop over columns with early exit
+    for (col in data) {
+        if (!has_num && is.numeric(col)) has_num <- TRUE
+        if (!has_cat && (is.character(col) || is.factor(col))) has_cat <- TRUE
+        if (has_num && has_cat) break
+    }
 
-    ## Will return TRUE if the data is in long format
-    is_long <- any(cat_cols) & any(num_cols)
-
-    if (!is_long) {
+    if (!(has_num && has_cat)) {
         stop(
             "The input data needs to be in long format, ",
-            "containing at least one numeric and one categorical colummn."
+            "containing at least one numeric and one categorical column."
         )
     }
 }
 
 generateDistPlot <- function(level, target, data, x_axis, y_axis, color,
-    add_titles, show_legend, ncols, bar, facet, add_stats) {
+    add_titles, show_legend, ncols, bar, facet, add_stats, free_scale = TRUE) {
     if (level %in% c("jitter", "dot")) {
         p <- ggplot2::ggplot(data = data, mapping = ggplot2::aes(
             x = .data[[x_axis]], y = .data[[y_axis]], color = .data[[target]]
@@ -223,17 +178,17 @@ generateDistPlot <- function(level, target, data, x_axis, y_axis, color,
         legend.position = show_legend
     )
     if (!is.null(facet)) {
-        p <-p + ggplot2::facet_wrap(ggplot2::vars(.data[[facet]]), ncol = ncols)
+        scale_option <- if (free_scale) "free_x" else "fixed"
+        p <- p + ggplot2::facet_wrap(facets = facet, ncol = ncols, scales = scale_option)
     }
     if (level == "dot") {
         p <- p + ggplot2::theme(strip.text = ggplot2::element_blank())
     }
-    current_aes <- if (level %in% c("jitter", "dot")) "color" else "fill"
     unique_cat <- unique(data[[target]])
     palette <- checkPaletteNames(color, unique_cat)
     p <- p + getSafeColorScale(
-        n_colors = length(unique_cat),
-        color_palette = palette, aes_type = current_aes
+        n_colors = length(unique_cat), color_palette = palette,
+        aes_type = if (level %in% c("jitter", "dot")) "color" else "fill"
     )
     if (isTRUE(add_titles)) {
         p <- p + ggplot2::labs(x = x_axis, y = paste(x_axis, "usage counts"))
@@ -295,7 +250,9 @@ drawBarCountsPlot <- function(data, var_numerical, var_categorical, var_color,
     }
 
     if (!is.null(facet_col)) {
-        plot <- plot + ggplot2::facet_wrap(ggplot2::vars(.data[[facet_col]]))
+        plot <- plot + ggplot2::facet_wrap(
+            facets = facet_col, scales = "free_y"
+        )
     }
 
     n_colors <- length(unique(data[[var_color]]))
@@ -360,7 +317,10 @@ drawDonutPlot <- function(data, var_numerical, var_categorical, color_palette,
 }
 
 computeRings <- function(data, var_color, var_cat, var_num,
-    norm, n_rings, zoom) {
+    norm, n_rings, zoom, cond) {
+    ## Use indexed values
+    condition_index <- stats::setNames(seq_along(cond), cond)
+    data[[var_cat]] <- condition_index[as.character(data[[var_cat]])]
     ## Standardize dummy groups if needed
     if (is.null(var_color) || var_color == var_cat) {
         data$.__dummy_group__ <- "all"
@@ -369,7 +329,6 @@ computeRings <- function(data, var_color, var_cat, var_num,
     if (!is.numeric(data[[var_num]])) { # Ensure column is numeric
         data[[var_num]] <- as.numeric(as.character(data[[var_num]]))
     }
-
     tmp <- data %>% # Pivot data to get wide format for ggradar
         dplyr::select(dplyr::all_of(c(
             var_color, var_cat, var_num
@@ -380,7 +339,6 @@ computeRings <- function(data, var_color, var_cat, var_num,
             values_fn = sum, values_fill = 0
         )
     num_cols <- setdiff(colnames(tmp), var_color)
-
     if (isTRUE(norm)) { # Apply normalization if requested
         ## Ensure is a vector for division
         row_totals <- rowSums(tmp[, num_cols, drop = FALSE], na.rm = TRUE)
@@ -408,8 +366,137 @@ computeRings <- function(data, var_color, var_cat, var_num,
     return(list(max_val = max_val, labels_rings = labels_rings))
 }
 
+customizeRadar <- function(radar, color_palette, n_groups, add_titles, title,
+    data, show_legend) {
+    if (!is.null(color_palette)) {
+        if (length(color_palette) < n_groups) {
+            warning("Uncomplete 'color_palette', using internal palette.")
+            color_palette <- NULL
+        } else {
+            color_palette <- color_palette[seq_len(n_groups)]
+        }
+    }
+
+    if (!is.null(color_palette)) {
+        radar <- radar +
+            ggplot2::scale_colour_manual(values = stats::setNames(
+                color_palette, unique(data$group)
+            ))
+    } else {
+        radar <- radar + ggplot2::scale_colour_discrete()
+    }
+
+    if (isTRUE(show_legend)) {
+        radar <- radar + ggplot2::theme(legend.position = "right")
+    } else {
+        radar <- radar + ggplot2::theme(legend.position = "none")
+    }
+
+    if (isTRUE(add_titles)) radar <- radar + ggplot2::ggtitle(title)
+
+    return(radar)
+}
+displayRadar <- function(list_data, max_val) {
+    radar_plot <- ggplot2::ggplot() +
+        ggplot2::geom_path( # Circular grid
+            data = list_data$ring_data,
+            ggplot2::aes(x = .data$x, y = .data$y, group = .data$ring),
+            colour = "grey70", linewidth = 0.5, linetype = 1
+        ) +
+        ggplot2::geom_segment( # Radial axes
+            data = list_data$axis_data,
+            ggplot2::aes(
+                x = .data$x, y = .data$y, xend = .data$xend, yend = .data$yend
+            ),
+            colour = "grey70", linewidth = 0.5
+        ) +
+        ggplot2::geom_polygon( # Radar polygons
+            data = list_data$radar_closed,
+            ggplot2::aes(
+                x = .data$x, y = .data$y, group = .data$group,
+                colour = .data$group
+            ), fill = NA, linewidth = 0.8
+        ) +
+        ggplot2::geom_point( # Points
+            data = list_data$radar_data,
+            ggplot2::aes(
+                x = .data$x, y = .data$y, colour = .data$group
+            ), size = 2
+        ) +
+        ggplot2::geom_text(
+            data = list_data$label_data,
+            ggplot2::aes(
+                x = .data$x, y = .data$y, label = .data$feature_name
+            ), size = 4
+        ) +
+        ggplot2::geom_text(
+            data = list_data$ring_label_data,
+            ggplot2::aes(x = .data$x, y = .data$y, label = .data$label),
+            hjust = 1, size = 3
+        ) +
+        ggplot2::coord_fixed(
+            xlim = c(-max_val * 1.25, max_val * 1.25),
+            ylim = c(-max_val * 1.25, max_val * 1.25)
+        ) +
+
+        ggplot2::theme_void()
+
+    return(radar_plot)
+}
+
+defineDataRadar <- function(radar_list, n_vars, max_val, feature_names,
+    labels_rings) {
+    radar_data <- dplyr::bind_rows(radar_list) # radar_data
+    radar_data$angle <- pi / 2 - 2 * pi * (radar_data$feature_id - 1) / n_vars
+    radar_data$x <- radar_data$value * cos(radar_data$angle)
+    radar_data$y <- radar_data$value * sin(radar_data$angle)
+    radar_closed <- radar_data %>% dplyr::group_by(.data$group) %>%
+        dplyr::arrange(.data$feature_id, .by_group = TRUE) %>%
+        dplyr::group_modify(~ dplyr::bind_rows(.x,.x[1, , drop = FALSE])) %>%
+        dplyr::ungroup() # radar_closed
+    angles <- pi / 2 - 2 * pi * (seq_len(n_vars) - 1) / n_vars
+    axis_data <- data.frame(
+        x = 0, y = 0, xend = max_val * cos(angles), yend = max_val * sin(angles)
+    ) # axis_data
+    ring_values <- c(0, max_val / 2, max_val)
+    ring_data <- do.call(rbind,
+        lapply(ring_values,
+            function(r) {
+                theta <- seq(0, 2 * pi, length.out = 361)
+                data.frame(ring = r, x = r * cos(theta), y = r * sin(theta))
+            }
+        )
+    ) # ring_data
+    label_radius <- max_val * 1.12
+    label_data <- data.frame(
+        feature_id = seq_len(n_vars), feature_name = feature_names,
+        x = label_radius * cos(angles),
+        y = label_radius * sin(angles), stringsAsFactors = FALSE
+    ) # label_data
+    if (is.null(labels_rings)) {
+        ring_labels <- as.character(ring_values)
+    } else {
+        ring_labels <- as.character(labels_rings)
+        if (length(ring_labels) < 3) {
+            ring_labels <- c(ring_labels, rep("", 3 - length(ring_labels)))
+        }
+        ring_labels <- ring_labels[seq_len(3)]
+    }
+    ring_label_data <- data.frame(
+        x = rep(-max_val * 0.03, 3), y = ring_values,
+        label = ring_labels, stringsAsFactors = FALSE
+    ) # ring_label_data
+    return(
+        list(
+            radar_data = radar_data, radar_closed = radar_closed,
+            axis_data = axis_data, ring_data = ring_data,
+            label_data = label_data, ring_label_data = ring_label_data
+        )
+    )
+}
+
 drawRadarPlot <- function(data, var_color, var_categorical, var_numerical,
-    normalize, zoom, title, add_titles, show_legend, global_max_val = NULL,
+    normalize, zoom, title, add_titles, show_legend, max_val = NULL,
     labels_rings = NULL, color_palette) {
     if (is.null(var_color) || var_color == var_categorical) {
         data$.__dummy_group__. <- "all"
@@ -418,44 +505,45 @@ drawRadarPlot <- function(data, var_color, var_categorical, var_numerical,
     if (!is.numeric(data[[var_numerical]])) {
         data[[var_numerical]] <- as.numeric(as.character(data[[var_numerical]]))
     }
-    p <- data %>%
-        dplyr::select(dplyr::all_of(
-            c(var_color, var_categorical, var_numerical)
-        )) %>%
-        tidyr::pivot_wider(
-            id_cols = dplyr::all_of(var_color), names_from =
-                dplyr::all_of(var_categorical), values_from = dplyr::all_of(
-                var_numerical
-            ), values_fn = sum, values_fill = 0
+    p <- data %>% dplyr::select(
+            dplyr::all_of(c(var_color, var_categorical, var_numerical))
+        ) %>% tidyr::pivot_wider(
+            id_cols = dplyr::all_of(var_color),
+            names_from = dplyr::all_of(var_categorical), values_fn = sum,
+            values_from = dplyr::all_of(var_numerical), values_fill = 0
         )
+    names <- colnames(p)[colnames(p) != var_color]
+    n_vars <- length(names)
+    if (n_vars < 3) stop("A radar plot requires at least 3 features.")
     if (isTRUE(normalize)) {
-        num_cols <- setdiff(colnames(p), var_color)
-        p[num_cols] <- p[num_cols] / rowSums(p[num_cols], na.rm = TRUE)
+        totals <- rowSums(p[names], na.rm = TRUE)
+        p[names] <- lapply(
+            p[names], function(x) ifelse(totals == 0, 0, x / totals)
+        )
     }
-    num_cols <- setdiff(colnames(p), var_color)
-    p[num_cols] <- lapply(p[num_cols], function(x) {
-        ifelse(x > global_max_val, global_max_val, x)
+    if (is.null(max_val)) max_val <- max(unlist(p[names]), na.rm = TRUE)
+    if (!is.finite(max_val) || max_val <= 0) {
+        stop("'max_val' must be a positive finite number.")
+    }
+    p[names] <- lapply(p[names], function(x) pmin(x, max_val))
+    radar_list <- lapply(seq_len(nrow(p)), function(i) {
+        values <- as.numeric(p[i, names, drop = TRUE])
+        data.frame(
+            group = p[[var_color]][i], feature_id = seq_along(names),
+            feature_name = names, value = values, stringsAsFactors = FALSE
+        )
     })
-    if (!is.null(color_palette)) {
-        n_groups <- nrow(p)
-        if (length(color_palette) < n_groups) {
-            warning("Uncomplete 'color_palette', using internal palette.")
-            color_palette <- NULL
-        } else {
-            color_palette <- color_palette[seq_len(n_groups)]
-        }
-    }
-    radar_plot <- ggradar::ggradar(
-        p,
-        background.circle.colour = "white", group.colours = color_palette,
-        grid.min = 0, values.radar = labels_rings, grid.max = global_max_val,
-        grid.mid = global_max_val / 2, gridline.min.linetype = 1,
-        gridline.mid.linetype = 1, gridline.max.linetype = 1,
-        group.line.width = 0.8, group.point.size = 2,
-        legend.position = show_legend
+    list_data <- defineDataRadar(
+        radar_list = radar_list, n_vars = n_vars, max_val = max_val,
+        feature_names = names, labels_rings = labels_rings
     )
-    if (isTRUE(add_titles)) radar_plot <- radar_plot + ggplot2::ggtitle(title)
-    return(radar_plot)
+    radar <- displayRadar(list_data = list_data, max_val = max_val)
+    radar <- customizeRadar(
+        radar = radar, color_palette = color_palette, n_groups = nrow(p),
+        add_titles = add_titles, title = title, data = list_data$radar_data,
+        show_legend = show_legend
+    )
+    return(radar)
 }
 
 generateProportionPlot <- function(level, data, var_numerical, var_categorical,
@@ -475,38 +563,38 @@ generateProportionPlot <- function(level, data, var_numerical, var_categorical,
         res$plot <- do.call(drawBarCountsPlot, bar_args)
     }
     if (level == "radar") {
+        data_radar <- data
         cond <- sort(unique(data[[var_categorical]]))
-        condition_index <- stats::setNames(seq_along(cond), cond)
-        data[[var_categorical]] <- condition_index[data[[var_categorical]]]
         res$legend <- data.frame(Index = seq_along(cond), Condition = cond)
         rings_info <- computeRings(
-            data = data, var_color = var_color, n_rings = n_rings, zoom = zoom,
-            norm = normalize, var_cat = var_categorical, var_num = var_numerical
+            data = data, var_color = var_color, n_rings = n_rings,
+            zoom = zoom, norm = normalize, var_cat = var_categorical,
+            var_num = var_numerical, cond = cond
         )
-        radar_args <- c(base_args[names(base_args) != "data"], list(
-            var_color = var_color, add_titles = add_titles,
-            labels_rings = rings_info$labels_rings, normalize = normalize,
-            zoom = zoom, global_max_val = rings_info$max_val
-        ))
+        radar_args <- c(
+            base_args[names(base_args) != "data"],
+            list(
+                var_color = var_color, add_titles = add_titles,
+                labels_rings = rings_info$labels_rings, normalize = normalize,
+                zoom = zoom, max_val = rings_info$max_val
+            )
+        )
         if (is.null(facet_col)) {
-            res$plot <- do.call(drawRadarPlot, c(list(
-                data = data, title = paste("Radar plot by", var_categorical)
-            ), radar_args))
+            res$plot <- do.call(drawRadarPlot,
+                c(list(data = data_radar, title = paste("Radar plot by", var_categorical)), radar_args)
+            )
         } else {
-            data_split <- split(data, data[[facet_col]])
-            plots_list <- lapply(names(data_split), function(name) {
-                do.call(drawRadarPlot, c(
-                    list(data = data_split[[name]], title = name), radar_args
-                ))
-            })
+            data_split <- split(data_radar, data_radar[[facet_col]])
+            plots_list <- lapply(
+                names(data_split),
+                function(name) {
+                    do.call(drawRadarPlot, c(list(data = data_split[[name]], title = name), radar_args))
+                }
+            )
             res$plot <- patchwork::wrap_plots(plots_list)
         }
     }
-    if (is.null(res$legend)) {
-        return(list(plot = res$plot))
-    } else {
-        return(res)
-    }
+    if (is.null(res$legend)) return(list(plot = res$plot)) else return(res)
 }
 
 significanceSymbol <- function(pvalue) {

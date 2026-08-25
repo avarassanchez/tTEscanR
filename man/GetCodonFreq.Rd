@@ -58,3 +58,12 @@ are available for the same gene. Consequently, no \code{filter} parameter
 will be considered if parameters \code{transcripts} and \code{genes_file}
 are given.
 }
+\examples{
+\donttest{
+codon_freq_results_canonical_hg38 <- getCodonFreq(
+    dataset_name = "hsapiens_gene_ensembl", filter = "canonical",
+    retain_geneversion = TRUE, retain_mitochondrial = FALSE,
+    out_format = "external_gene_name"
+)
+}
+}

@@ -48,10 +48,11 @@ amino acid isotype.
 Selection of the Optimal tRNA Cut Cutoff
 }
 \examples{
-data(default_tTEscanR_tRNA_data)
+data("default_tTEscanR_tRNA_data", package = "tTEscanR")
+
 optimal_tRNA_cutoffs <- tRNASetCutoff(
     data = default_tTEscanR_tRNA_data,
-    generate_plot = FALSE, num_iter = 50,
+    generate_plot = FALSE, num_iter = 10,
     cutoffs_limits = c(3500, 4000)
 )
 }

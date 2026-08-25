@@ -12,9 +12,7 @@ tRNAGetMatrix(
   species = NULL,
   flanking_region = 100,
   name_sep = c("-", "-"),
-  save = TRUE,
-  out_name = NULL,
-  out_directory = NULL,
+  filename = NULL,
   verbose = TRUE
 )
 }
@@ -43,13 +41,7 @@ region of each tRNA. Defaults to 100.}
 \item{name_sep}{A string delimiter to format the tRNA gene names in the
 output matrix. Defaults to \code{c("-", "-")}.}
 
-\item{save}{Logical; if \code{TRUE} stores the generated tRNA matrix into a
-file.}
-
-\item{out_name}{Optional; name for the saved plot (if \code{save} specified).}
-
-\item{out_directory}{Optional; path to the directory where the plot will be
-saved (if \code{save} specified).}
+\item{filename}{Optional; name for the tRNA matrix to be saved.}
 
 \item{verbose}{Logical; if \code{TRUE}, displays information messages.
 Defaults to \code{TRUE}.}

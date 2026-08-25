@@ -15,8 +15,8 @@ showPoolContribution(
 )
 }
 \arguments{
-\item{object}{A \code{tTEscanR_Object} containing a mRNA and CodonUsage
-assay.}
+\item{object}{A \code{\link[MultiAssayExperiment]{MultiAssayExperiment}}
+containing a \code{"mRNA"} and \code{"CodonUsage"} assay.}
 
 \item{codon_freq}{Optional; a user-provided codon frequency per gene table.
 If necessary, it can be computed using \code{\link{getCodonFreq}}.}
@@ -33,16 +33,16 @@ contribution. Defaults to 10.}
 Defaults to \code{"spearman"}.}
 
 \item{overwrite}{Logical; if \code{TRUE}, overwrites any existing anticodon
-usage assay and metadata in the \code{tTEscanR_Object}. Defaults to
-\code{FALSE}.}
+usage assay and metadata in the \code{object}. Defaults to \code{FALSE}.}
 
 \item{verbose}{Logical; if \code{TRUE}, displays information messages.
 Defaults to \code{TRUE}.}
 }
 \value{
-An updated \code{tTEscanR_Object} containing new layers of
-information in the \code{meta.data} slot, representing the codon pool
-contribution.
+An updated \code{\link[MultiAssayExperiment]{MultiAssayExperiment}}
+containing new layers of information in the \code{params} slot,
+representing the codon pool contribution,
+\code{"CodonPoolContribution_Results"}.
 }
 \description{
 This function analyzes the contribution of the most highly expressed genes
@@ -56,8 +56,8 @@ and internal species-specific for human (\code{"hg38"}) and mouse
 data(default_tTEscanR_mRNA_data, default_tTEscanR_metadata)
 tTEscanR_obj <- createObject(
     counts = list(mRNA = default_tTEscanR_mRNA_data),
-    meta.data = list(default_tTEscanR_metadata, "tissue"),
-    meta.data.ids = list("ConditionsLabels", "CorrectionFactor")
+    meta_data = default_tTEscanR_metadata, sample_id = "conditions",
+    params = list("CorrectionFactor" = "tissue")
 )
 tTEscanR_obj <- computeCodonUsage(
     object = tTEscanR_obj, species = "hg38", additional_metrics = FALSE

@@ -15,7 +15,14 @@ bibliography: references.bib
 ---
 
 ```{r file_settings, include = FALSE}
-knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+knitr::opts_chunk$set(
+    collapse = TRUE,
+    comment = "#>",
+    fig.width = 6,
+    fig.height = 4,
+    dpi = 96,
+    dev = "png"
+)
 ```
 
 ```{r notes_format, echo = FALSE, results = 'asis'}
@@ -49,12 +56,19 @@ goal of this module is to facilitate the transformation from (sc)ATAC-seq count
 matrices to tRNA abundance count matrices where tRNA genes are the rows and the 
 conditions the columns. Additionally, it helps annotating the tRNA genes.
 
-```{r setup, message = FALSE, warning = FALSE}
-# install.packages("/avarassanchez/tTEscanR")
+```{r setup, message = FALSE, warning = FALSE, eval = FALSE}
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+    install.packages("BiocManager")
+}
+
+BiocManager::install("tTEscanR")
+```
+
+```{r load_setup, message = FALSE, warning = FALSE}
 library(tTEscanR)
 ```
 
-To illustrate the functionality of the tRNA speciic preprocessing module we 
+To illustrate the functionality of the tRNA specific preprocessing module we 
 generated a toy example dataset representing a peak count matrix where the 
 fragment regions are placed as rows and the samples as columns. We have also
 defined the corresponding metadata.
@@ -67,13 +81,13 @@ num_peaks <- 100
 num_cells <- 20 # Increased to pass min.cells = 10
 set.seed(42)
 
-# Create peak names with "-" separator as required by your code
+# Create peak names with "-" separator 
 chroms <- sample(paste0("chr", 1:3), num_peaks, replace = TRUE)
 starts <- seq(1000, by = 5000, length.out = num_peaks)
 ends <- starts + 300
 peak_names <- paste(chroms, starts, ends, sep = "-")
 
-# Create a sparse matrix (more memory efficient for Seurat/Signac)
+# Create a sparse matrix 
 counts <- Matrix(
     rpois(num_peaks * num_cells, lambda = 5),
     nrow = num_peaks,
@@ -98,7 +112,7 @@ for (i in 1:ncol(counts)) {
     for (j in 1:nrow(counts)) {
         cnt <- counts[j, i]
         if (cnt > 0) {
-            parts <- strsplit(rownames(counts)[j], "-")[[1]]
+            parts <- strsplit(rownames(counts)[j], "-", fixed = TRUE)[[1]]
             for (k in 1:cnt) {
                 fragment_list[[length(fragment_list) + 1]] <- data.frame(
                     chr = parts[1],
@@ -136,7 +150,6 @@ file.remove(temp_txt)
 library(Signac)
 library(Seurat)
 
-# Now your provided code should work:
 counts_loaded <- readRDS("foo.RDS")
 fragment_file <- "foo.fragments.txt.gz"
 

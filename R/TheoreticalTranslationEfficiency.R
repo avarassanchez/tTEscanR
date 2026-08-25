@@ -4,8 +4,9 @@
 #' by integrating codon-anticodon usage and/or amino acid demand-supply across
 #' conditions.
 #'
-#' @param object A \code{tTEscanR_Object} containing a mRNA and a codon usage
-#'     assay and/or a tRNA and an anticodon usage assay.
+#' @param object A \code{\link[MultiAssayExperiment]{MultiAssayExperiment}}
+#'     containing a mRNA and a codon usage assay and/or a tRNA and an anticodon
+#'     usage assay.
 #' @param level Either \code{"codon"}, \code{"aa"} or \code{"both"} to indicate
 #'     which analysis to perform.
 #' @param genetic_code A \code{character} string to specify the genetic code to
@@ -16,26 +17,26 @@
 #'     statistical significance (p-value) of the tTE scores. Defaults
 #'     to \code{TRUE}.
 #' @param overwrite Logical; if \code{TRUE}, overwrites any existing tTE table
-#'     in the \code{tTEscanR_Object}. Defaults to \code{FALSE}.
+#'     in the \code{object}. Defaults to \code{FALSE}.
 #' @param verbose Logical; if \code{TRUE}, displays information messages.
 #'     Defaults to \code{TRUE}.
 #'
-#' @return An updated \code{tTEscanR_Object} containing a new layer of
-#'     information representing the translation efficiency table for the
-#'     matching conditions in the mRNA and tRNA data.
+#' @return An updated \code{\link[MultiAssayExperiment]{MultiAssayExperiment}}
+#'     containing a new layer of information representing the translation
+#'     efficiency table for the matching conditions in the mRNA and tRNA data.
 #' @export
 #'
 #' @examples
-#' data(
-#'     default_tTEscanR_mRNA_data, default_tTEscanR_tRNA_data,
-#'     default_tTEscanR_metadata
-#' )
+#' data("default_tTEscanR_mRNA_data", package = "tTEscanR")
+#' data("default_tTEscanR_tRNA_data", package = "tTEscanR")
+#' data("default_tTEscanR_metadata", package = "tTEscanR")
+#'
 #' tTEscanR_obj <- createObject(
 #'     counts = list(
 #'         mRNA = default_tTEscanR_mRNA_data, tRNA = default_tTEscanR_tRNA_data
 #'     ),
-#'     meta.data = list(default_tTEscanR_metadata, "tissue"),
-#'     meta.data.ids = list("ConditionsLabels", "CorrectionFactor")
+#'     meta_data = default_tTEscanR_metadata, sample_id = "conditions",
+#'     params = list("CorrectionFactor" = "tissue")
 #' )
 #' tTEscanR_obj <- computeCodonUsage(
 #'     object = tTEscanR_obj, species = "hg38",
@@ -78,34 +79,26 @@ computeTheoreticalTE <- function(object, level = c("codon", "aa", "both"),
         message("\n2 . COMPLETED\n", "--- The tTE was properly computed ---\n")
         message("- Updating the tTEscanR object.")
     }
+    tTE_results <- names(results)
     object <- updateObject(
-        object = object, meta.data = results, verbose = FALSE,
-        meta.data.ids = names(results), overwrite = overwrite
+        object = object, verbose = FALSE,
+        params = list(tTE_results = results), overwrite = overwrite
     )
-    return(object) # tTEscanR object was validated in updateObject()
+    return(object)
 }
 
 generalChecksComputetTE <- function(object, verbose) {
     if (verbose) message("1 . Checking the format of the input data.")
-    if (!(inherits(object, "tTEscanR_Object"))) {
-        stop("'object' must be a tTEscanR object.")
-    }
-    if (verbose) message("- The input contains a proper tTEscanR object.")
+    checkObject(object = object, verbose = verbose)
 
     ## Evaluate that the required data and metadata are present in the object
-    isInObject(
-        object = object, slot = "assays", section = "tRNA",
-        update_assay = FALSE, overwrite = FALSE, verbose = FALSE
-    )
-    isInObject(
-        object = object, slot = "meta.data", section = "ConditionsLabels"
-    )
-    isInObject(
-        object = object, slot = "meta.data", section = "CorrectionFactor"
-    )
-
-    meta <- getMetadata(object, "ConditionsLabels")
-    batch <- getMetadata(object, "CorrectionFactor")
+    checkAssayPresent(object = object, assay_name = "tRNA")
+    meta <- MultiAssayExperiment::colData(object)
+    if (S4Vectors::isEmpty(meta)) {
+        stop("The 'object' does not contain metadata.")
+    }
+    checkParamPresent(object = object, param_name = "CorrectionFactor")
+    batch <- S4Vectors::metadata(object)[["CorrectionFactor"]]
     if (!(batch %in% colnames(meta))) {
         stop("The correction factor was not found in the metadata.")
     }
@@ -117,40 +110,41 @@ helperComputetTE <- function(results, level, verbose, object, meta, batch,
     corr, sig, genetic_code) {
     if (verbose) message("\nProcessing level: ", level)
     config <- assay_map_TE[[level]]
-    mRNA <- getAssay(object, config$mRNA)
-    tRNA <- getAssay(object, config$tRNA)
-    checkDataFrame(data = mRNA)
-    checkDataFrame(data = tRNA)
+    if (config$mRNA %in% names(object)) {
+        mRNA <- SummarizedExperiment::assay(object, config$mRNA)
+        checkDataFrame(data = mRNA)
+    } else {
+        stop("The '", config$mRNA, "' was not found in the 'object'.")
+    }
+    if (config$tRNA %in% names(object)) {
+        tRNA <-  SummarizedExperiment::assay(object, config$tRNA)
+        checkDataFrame(data = tRNA)
+    } else {
+        stop("The '", config$tRNA, "' was not found in the 'object'.")
+    }
     filt1 <- filterMatrix( # Retain matching conditions
         data_mRNA = mRNA, data_tRNA = tRNA, level = level, verbose = verbose
     )
     if (verbose) message("- Filtering the metadata by intersecting conditions.")
-    filt2 <- filterByMetadata( # The metadata was previously matched
-        data = filt1$mRNA, metadata = meta, verbose = FALSE
-    )
+    filt2 <- filterByMetadata(data = filt1$mRNA, metadata = meta)
     if (verbose) message("- Size-correcting the data.")
     mRNA_filt <- computeSizeCorrection(
-        data = filt2$data, metadata = filt2$metadata,
-        batch = batch, verbose = FALSE
+        data = filt2$data, metadata = filt2$metadata, batch = batch
     )
     tRNA_filt <- computeSizeCorrection(
-        data = filt1$tRNA, metadata = filt2$metadata,
-        batch = batch, verbose = FALSE
+        data = filt1$tRNA, metadata = filt2$metadata, batch = batch
     )
     tTE_res <- computeCorrelation( # Correlation mRNA and the tRNA data
         data_mRNA = mRNA_filt, data_tRNA = tRNA_filt, corr_method = corr,
         verbose = verbose
     )
     if (isTRUE(sig)) {
-        if (verbose) {
-            message("- Computing statistical significance (may take time)...")
-        }
-        ## Filter tRNA by shared cond.- tRNA used to increase num. ft shuffling
-        tRNA <- getAssay(object, "tRNA")[, colnames(filt1$mRNA), drop = FALSE]
-        checkDataFrame(data = tRNA)
+        if (verbose) message("- Computing statistical significance (may take time)...")
+        tRNA <-  SummarizedExperiment::assay(object, "tRNA")
+        tRNA <- tRNA[, colnames(filt1$mRNA), drop = FALSE]
+        checkDataFrame(data = tRNA) # tRNA used to increase num. ft shuffling
         tRNA <- computeSizeCorrection(
-            data = tRNA, metadata = filt2$metadata, batch = batch,
-            verbose = FALSE
+            data = tRNA, metadata = filt2$metadata, batch = batch
         )
         tTE_res <- computeStatisticalSignificance(
             level = level, tTE_scores = tTE_res, data_mRNA = mRNA_filt,
@@ -168,7 +162,7 @@ assignMapLevel <- function(level, tRNA_exp, data_mRNA, genetic_code) {
 
     ## Extract the anticodons from the tRNA data
     tRNAsAnticodons <- vapply(
-        strsplit(tRNA_names, "-"), "[[", 3,
+        strsplit(tRNA_names, "-", fixed = TRUE), "[[", 3,
         FUN.VALUE = character(1)
     )
 

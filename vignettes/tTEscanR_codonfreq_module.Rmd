@@ -17,29 +17,12 @@ bibliography: references.bib
 ```{r file_settings, include = FALSE}
 knitr::opts_chunk$set(
     collapse = TRUE,
-    comment = "#>"
+    comment = "#>",
+    fig.width = 6,
+    fig.height = 4,
+    dpi = 96,
+    dev = "png"
 )
-```
-
-```{r notes_format, echo = FALSE, results = 'asis'}
-cat("
-<style>
-.note {
-    background-color: #f6e8c3;
-    border-left: 5px solid #dfc27d;
-    padding: 1em;
-    margin: 1em 0;
-    border-radius: 4px;
-}
-.warning {
-    background-color: #fff3cd;
-    border-left: 5px solid #ff9800;
-    padding: 1em;
-    margin: 1em 0;
-    border-radius: 4px;
-}
-</style>
-")
 ```
 
 <hr>
@@ -49,8 +32,15 @@ cat("
 In this document, we present all the functionalities that the codon 
 frequency-per-gene module incorporates.
 
-```{r setup, message = FALSE, warning = FALSE}
-# install.packages("/avarassanchez/tTEscanR")
+```{r setup, message = FALSE, warning = FALSE, eval = FALSE}
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+    install.packages("BiocManager")
+}
+
+BiocManager::install("tTEscanR")
+```
+
+```{r load_setup, message = FALSE, warning = FALSE}
 library(tTEscanR)
 ```
 

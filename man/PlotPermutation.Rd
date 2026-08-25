@@ -8,9 +8,7 @@ plotPermutation(
   permut_data,
   sig_data,
   color_palette = NULL,
-  save_format = NULL,
-  out_name = NULL,
-  out_directory = NULL,
+  filename = NULL,
   show_legend = "none",
   add_titles = TRUE,
   verbose = TRUE
@@ -28,14 +26,7 @@ value). Output from \code{\link{obtainSignificance}}}
 \item{color_palette}{Optional; a vector of color codes to customize plot
 appearance.}
 
-\item{save_format}{Optional; either \code{"png"} or \code{"pdf"} to specify
-the format to save the plot.}
-
-\item{out_name}{Optional; name for the saved plot (if \code{save_format}
-specified).}
-
-\item{out_directory}{Optional; path to the directory where the plot will be
-saved (if \code{save_format} specified).}
+\item{filename}{Optional; name for the plot to be saved.}
 
 \item{show_legend}{Either \code{"none"} (default), \code{"top"},
 \code{"bottom"}, \code{"right"} or \code{"left"} to specify the
@@ -56,22 +47,25 @@ background against the current codon usage. For a better interpretation, the
 codons are colored by amino acid.
 }
 \examples{
-data(default_tTEscanR_mRNA_data, default_tTEscanR_metadata)
+data("default_tTEscanR_mRNA_data", package = "tTEscanR")
+data("default_tTEscanR_metadata", package = "tTEscanR")
+
 selected_genes <- default_tTEscanR_mRNA_data[1:20, ]
 permutation_test <- getPermutationDist(
     n_permut = 100, target_data = selected_genes, species = "hg38"
 ) # Generate table with codon and freq
 tTEscanR_obj <- createObject(
     counts = default_tTEscanR_mRNA_data, assay = "mRNA",
-    meta.data = list(default_tTEscanR_metadata, "tissue"),
-    meta.data.ids = list("ConditionsLabels", "CorrectionFactor")
+    meta_data = default_tTEscanR_metadata,
+    sample_id = "conditions",
+    params = list("CorrectionFactor" = "tissue")
 )
 tTEscanR_obj <- computeCodonUsage(
     object = tTEscanR_obj, species = "hg38",
     additional_metrics = FALSE, reduce = 1000
 )
 
-codon_usage <- getAssay(tTEscanR_obj, "CodonUsage")
+codon_usage <- SummarizedExperiment::assay(tTEscanR_obj, "CodonUsage")
 codon_background <- rowSums(codon_usage) / sum(rowSums(codon_usage))
 codons_to_AA <- featuresToAA(
     data = names(codon_background),

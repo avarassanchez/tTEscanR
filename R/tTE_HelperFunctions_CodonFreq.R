@@ -93,8 +93,7 @@ callingEnsembl <- function(dataset_name, transcripts, filter,
     }
     if (verbose) message("2 . COMPLETED\n3 . Extracting the genomic sequences.")
     seq <- extractSequences( # Based on id, retrieve sequence
-        transcripts = transcripts, ensembl = ensembl,
-        retain_geneversion = retain_geneversion
+        transcripts = transcripts, ensembl = ensembl, retain_geneversion = retain_geneversion
     )
     if (nrow(seq) == 0) {
         stop("No transcripts found.\nCheck 'transcripts' if applicable.")
@@ -102,11 +101,7 @@ callingEnsembl <- function(dataset_name, transcripts, filter,
     unavailable <- which(seq$coding == "Sequence unavailable")
     len <- length(unavailable)
     if (len != 0) {
-        if (verbose) {
-            message(
-                "- Removed ", len, " transcripts with unavailable sequence."
-            )
-        }
+        if (verbose) message("- Removed ", len, " transcripts with unavailable sequence.")
         if (len == length(seq)) {
             stop(
                 "No transcripts with available sequence. ",
@@ -154,7 +149,9 @@ fromFASTAtoTable <- function(data, transcripts, retain_mitochondrial, verbose) {
         message("2. Extracting the genomic sequence of each transcript.")
         message("- Retrieving the protein-coding transcripts.")
     }
-    prot_data <- data[grep("transcript_biotype:protein_coding", names(data))]
+    prot_data <- data[grep(
+            "transcript_biotype:protein_coding", names(data), fixed = TRUE
+        )]
     tran_seq <- data.frame( # Generate table: ids & nucleotide sequences
         coding = unname(as.character(prot_data)),
         ensembl_transcript_id = names(prot_data), stringsAsFactors = FALSE
@@ -162,14 +159,12 @@ fromFASTAtoTable <- function(data, transcripts, retain_mitochondrial, verbose) {
     if (nrow(tran_seq) == 0) stop("There are no protein-coding transcripts.")
     if (isFALSE(retain_mitochondrial)) { # Filter out mitochondrial genes
         if (verbose) message("- Mitochondrial genes will be removed.")
-        mitochondrial_index <- grepl(
+        mito_index <- grepl(
             "chromosome:[^:]+:MT|gene_symbol:MT-|mitochondrial",
             tran_seq$ensembl_transcript_id, ignore.case = TRUE
         )
-        if (all(mitochondrial_index)) {
-            stop("All protein-coding transcripts are mitochondrial.")
-        }
-        tran_seq <- tran_seq[!mitochondrial_index, ]
+        if (all(mito_index)) stop("All protein-coding transcripts are mitochondrial.")
+        tran_seq <- tran_seq[!mito_index, ]
     }
     tran_seq <- extractFromFASTA(transcript_seq = tran_seq)
     if (!is.null(transcripts)) { # Targeted approach based on the transcripts
@@ -183,9 +178,8 @@ fromFASTAtoTable <- function(data, transcripts, retain_mitochondrial, verbose) {
         )
         if (sum(lengths(targeted_indx)) == 0) {
             stop(
-                "None of the ids given in 'transcripts' have been found.\n",
-                "Supported formats: Ensembl transcript id, Ensembl gene id ",
-                "and external gene name."
+                "None of the ids in 'transcripts' have been found.\nSupported",
+                " formats: Ensembl transcript/gene id or external gene name."
             )
         } # Select column of ids with a higher match with the input ids list
         best_format_idx <- which.max(lengths(targeted_indx))

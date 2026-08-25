@@ -15,7 +15,14 @@ bibliography: references.bib
 ---
 
 ```{r file_settings, include = FALSE}
-knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+knitr::opts_chunk$set(
+    collapse = TRUE,
+    comment = "#>",
+    fig.width = 6,
+    fig.height = 4,
+    dpi = 96,
+    dev = "png"
+)
 ```
 
 ```{r notes_format, echo = FALSE, results = 'asis'}
@@ -52,8 +59,15 @@ elongation efficiency, hereafter referred to as translation efficiency.
 In this document, we present a case example to demonstrate the potential of 
 **tTEscanR**.
 
-```{r setup, message = FALSE, warning = FALSE}
-# install.packages("/avarassanchez/tTEscanR")
+```{r setup, message = FALSE, warning = FALSE, eval = FALSE}
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+    install.packages("BiocManager")
+}
+
+BiocManager::install("tTEscanR")
+```
+
+```{r load_setup, message = FALSE, warning = FALSE}
 library(tTEscanR)
 ```
 
@@ -127,9 +141,9 @@ filtered_tRNA_data <- tRNAFilterCuts(
 ### 2.2. Defining the tTEscanR object
 
 ::: {.note}
-The **tTEscanR object** is a centralized data structure that stores input 
-matrices, metadata, and results, continuously updated to ensure consistency 
-across the pipeline.
+The **tTEscanR object** is a centralized data structure (`MultiAssayExperiment`) 
+that stores input matrices, metadata, and results, continuously updated to 
+ensure consistency across the pipeline.
 In order to ensure robustness throughout the pipeline **specific ids** have 
 been assigned and should be respected by the user (see the documentation for 
 more details).
@@ -140,8 +154,7 @@ object to store and organize analysis data. The input can be either a
 **single matrix** or a **list of matrices** (to support multiple datasets), and 
 may optionally include **metadata**. For proper functionality, all input 
 matrices must be appropriately named. To modify, extend, or update an existing 
-**tTEscanR** object with new data or metadata, use 
-**`updateObject()`**. 
+**tTEscanR** object with new data or metadata, use **`updateObject()`**. 
 
 ```{r metadata_definition, message = FALSE, warning = FALSE}
 data(default_tTEscanR_metadata)
@@ -152,7 +165,7 @@ data(default_tTEscanR_metadata)
 tTEobject <- createObject(
     counts = list(default_tTEscanR_mRNA_data, filtered_tRNA_data),
     assay = list("mRNA", "tRNA"),
-    meta.data = default_tTEscanR_metadata, meta.data.ids = "ConditionsLabels"
+    meta_data = default_tTEscanR_metadata, sample_id = "conditions"
 )
 ```
 
@@ -163,14 +176,14 @@ matching_celltypes <- intersect(
 )
 
 tTEobject <- updateObject(
-    object = tTEobject, meta.data = matching_celltypes,
-    meta.data.ids = "matching_celltypes", overwrite = TRUE
+    object = tTEobject, 
+    params = list("matching_celltypes" = matching_celltypes)
 )
 ```
 
-Each component of a **tTEscanR** object can be accessed using the `getAssays()` 
-or `getMetadata()` functions that requires the object and the name of the slot 
-that wants to be retrieved. 
+Each component of a **tTEscanR** object can be accessed using the 
+`SummarizedExperiment::asay()` or `S4Vectors::metadata()` functions that 
+requires the object and the name of the slot that wants to be retrieved. 
 
 ## 3. Standard workflow
 
@@ -183,7 +196,7 @@ efficiency.
 
 Codon usage is computed by performing a **matrix multiplication** between the 
 mRNA expression data and a **codon frequency-per-gene reference matrix**. This 
-reference matrix can be generated using **`obtainCodonComposition()`** or 
+reference matrix can be generated using **`getCodonFreq()`** or 
 alternatively,  a **user-defined** codon frequency matrix can be supplied 
 directly, providing flexibility for custom analyses.
 
@@ -200,7 +213,7 @@ The resulting matrix contains codons as rows and samples or conditions as
 columns. 
 
 The codon frequency table can either be: (i) provided directly (e.g. computed 
-previously using **`obtainCodonComposition()`**), or (ii) loaded from the 
+previously using **`getCodonFreq()`**), or (ii) loaded from the 
 built-in defaults available for human and mouse.
 
 In addition to generating the codon usage matrix, **`computeCodonUsage()`** can 
@@ -218,7 +231,7 @@ in codon usage relative to the underlying genomic codon composition.
 # We first need to add the correction factor to the tTEscanR object
 # It has to be stored as CorrectionFactor
 tTEobject <- updateObject(
-    object = tTEobject, meta.data = "tissue", meta.data.ids = "CorrectionFactor"
+    object = tTEobject, params = list("CorrectionFactor" = "tissue")
 )
 
 tTEobject <- computeCodonUsage(
@@ -227,9 +240,13 @@ tTEobject <- computeCodonUsage(
 )
 ```
 
+```{r extract_meta, message = FALSE, warning = FALSE}
+tTEobject_meta <- S4Vectors::metadata(tTEobject)
+```
+
 ```{r correlation_plot_mean, message = FALSE, warning = FALSE}
 # Transforming the data
-additional_metrics <- getMetadata(tTEobject, "CodonUsage_AdditionalMetrics")
+additional_metrics <- tTEobject_meta[["CodonUsage_AdditionalMetrics"]]
 mean_codon_usage <- additional_metrics$MeanCodonUsage
 exonic_background <- additional_metrics$CodonExonicBackground
 exonic_background <- as.data.frame(exonic_background)
@@ -256,11 +273,13 @@ transcriptome.
 tTEobject <- showPoolContribution(
     object = tTEobject, N = 10, species = "hg38", overwrite = TRUE
 )
+
+tTEobject_meta <- S4Vectors::metadata(tTEobject)
 ```
 
 ```{r correlation_plot_diversity, message = FALSE, warning = FALSE}
 # Transforming the data
-codon_pool_contr <- getMetadata(tTEobject, "CodonPoolContribution_Results")
+codon_pool_contr <- tTEobject_meta[["CodonPoolContribution_Results"]]
 codon_pool_diversity <- codon_pool_contr$top10GenesCodonPoolDiversity
 colnames(codon_pool_diversity) <- c(
     "condition", "original_top_contribution", "baseline_correlation"
@@ -299,7 +318,7 @@ samples or conditions as columns.
 tTEobject <- computeAnticodonUsage(object = tTEobject)
 ```
 
-### 3.3. Amio acid level assessment
+### 3.3. Amino acid level assessment
 
 The **`computeAAUsage()`** function computes **amino acid demand** and 
 **supply** by integrating codon and anticodon usage data, respectively. Users 
@@ -351,12 +370,14 @@ tTEobject <- computeTheoreticalTE(
 ```
 
 ```{r extract_metadata}
-conditions_metadata <- getMetadata(tTEobject, "ConditionsLabels")
+conditions_metadata <- as.data.frame(SummarizedExperiment::colData(tTEobject))
 ```
 
 ```{r tTE_score_plots, fig.width =  6, fig.height = 4, fig.align = 'center'}
-tTEresults_codon <- getMetadata(tTEobject, "tTEresults_codon")
-tTEresults_AA <- getMetadata(tTEobject, "tTEresults_AA")
+tTEobject_meta <- S4Vectors::metadata(tTEobject)
+tTEresults <- tTEobject_meta[["tTE_results"]]
+tTEresults_codon <- tTEresults[["tTEresults_codon"]]
+tTEresults_AA <- tTEresults[["tTEresults_AA"]]
 
 plotTEscore(
     data = tTEresults_codon, metadata = conditions_metadata,
@@ -378,10 +399,10 @@ to refine the analysis.
 ```{r targeted_metadata_neurons}
 conditions_metadata$group <- "other"
 conditions_metadata$group[grep(
-    "neuron", conditions_metadata$conditions
+    "neuron", conditions_metadata$conditions, fixed = TRUE
 )] <- "neurons"
 conditions_metadata$group[grep(
-    "ENS neuron", conditions_metadata$conditions
+    "ENS neuron", conditions_metadata$conditions, fixed = TRUE
 )] <- "other"
 ```
 
@@ -402,14 +423,14 @@ together in a single run. The input to this function must be a list of matrices.
 
 ```{r assays_list}
 # Other outputs that could be analyzed:
-# mRNA <- getAssay(tTEobject, "mRNA")
-# CodonUsage <- getAssay(tTEobject, "CodonUsage")
-# tRNA <- getAssay(tTEobject, "tRNA")
-# AnticodonUsage <- getAssay(tTEobject, "AnticodonUsage")
+# mRNA <- SummarizedExperiment::assay(tTEobject, "mRNA")
+# CodonUsage <- SummarizedExperiment::assay(tTEobject, "CodonUsage")
+# tRNA <- SummarizedExperiment::assay(tTEobject, "tRNA")
+# AnticodonUsage <- SummarizedExperiment::assay(tTEobject, "AnticodonUsage")
 
 AA_results <- list(
-    AADemand = getAssay(tTEobject, "AADemand"),
-    AASupply = getAssay(tTEobject, "AASupply")
+    AADemand = SummarizedExperiment::assay(tTEobject, "AADemand"),
+    AASupply = SummarizedExperiment::assay(tTEobject, "AASupply")
 )
 ```
 
@@ -421,14 +442,15 @@ matrix included in the input list.
 
 ```{r run_dea, message = FALSE, warning = FALSE, eval = FALSE}
 all_DESeq2_results <- runDEAnalysis(
-    list_data = AA_results, metadata = metadata, heatmap = TRUE,
-    dim_reduct = "PCA", numPC = 2, batch = "tissue",
+    list_data = AA_results, metadata = default_tTEscanR_metadata, 
+    heatmap = TRUE, dim_reduct = "PCA", numPC = 2, batch = "tissue",
     color_factor = "tissue", show_legend = "right", label_factor = "cell.type"
 )
 
-grid.draw(all_DESeq2_results$plots$AADemand$heatmap) # Visualize heatmap plot
-all_DESeq2_results$plots$AADemand$exploratory$ElbowPlot # Visualize elbow plot
-all_DESeq2_results$plots$AADemand$exploratory$PC1_vs_PC2 # Visualize PCA plot
+# Visualization of the plots
+grid::grid.draw(all_DESeq2_results$plots$AADemand$heatmap) # Heatmap plot
+all_DESeq2_results$plots$AADemand$exploratory$ElbowPlot # Elbow plot
+all_DESeq2_results$plots$AADemand$exploratory$PC1_vs_PC2 # PCA plot
 ```
 
 ## 5. References

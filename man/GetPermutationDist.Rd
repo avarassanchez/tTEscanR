@@ -43,7 +43,8 @@ This function performs a \strong{permutation test} to compare a mRNA dataset
 to the reference codon frequency-per-gene matrix.
 }
 \examples{
-data(default_tTEscanR_mRNA_data)
+data("default_tTEscanR_mRNA_data", package = "tTEscanR")
+
 genes <- default_tTEscanR_mRNA_data[1:20, ]
 permut <- getPermutationDist(
     n_permut = 100, target_data = genes,

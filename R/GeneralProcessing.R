@@ -22,10 +22,11 @@
 #' @export
 #'
 #' @examples
-#' data(default_tTEscanR_tRNA_data)
+#' data("default_tTEscanR_tRNA_data", package = "tTEscanR")
+#'
 #' optimal_tRNA_cutoffs <- tRNASetCutoff(
 #'     data = default_tTEscanR_tRNA_data,
-#'     generate_plot = FALSE, num_iter = 50,
+#'     generate_plot = FALSE, num_iter = 10,
 #'     cutoffs_limits = c(3500, 4000)
 #' )
 tRNASetCutoff <- function(data, num_iter = 1000, cutoffs_limits = c(50, 10000),
@@ -96,11 +97,7 @@ tRNASetCutoff <- function(data, num_iter = 1000, cutoffs_limits = c(50, 10000),
 #'      \code{"peaks"}.
 #' @param name_sep A string delimiter to format the tRNA gene names in the
 #'      output matrix. Defaults to \code{c("-", "-")}.
-#' @param save Logical; if \code{TRUE} stores the generated tRNA matrix into a
-#'      file.
-#' @param out_name Optional; name for the saved plot (if \code{save} specified).
-#' @param out_directory Optional; path to the directory where the plot will be
-#'      saved (if \code{save} specified).
+#' @param filename Optional; name for the tRNA matrix to be saved.
 #' @param verbose Logical; if \code{TRUE}, displays information messages.
 #'      Defaults to \code{TRUE}.
 #'
@@ -109,8 +106,7 @@ tRNASetCutoff <- function(data, num_iter = 1000, cutoffs_limits = c(50, 10000),
 #'
 tRNAGetMatrix <- function(data, assay = "peaks", confidence_set = NULL,
     tRNA_name_map = NULL, species = NULL, flanking_region = 100,
-    name_sep = c("-", "-"), save = TRUE, out_name = NULL, out_directory = NULL,
-    verbose = TRUE) {
+    name_sep = c("-", "-"), filename = NULL, verbose = TRUE) {
     if (verbose) message("1 . Importing the high-confidence tRNA annotations.")
     tRNA_granges <- getRangestRNA(
         conf = confidence_set, flanking_region = flanking_region,
@@ -135,13 +131,9 @@ tRNAGetMatrix <- function(data, assay = "peaks", confidence_set = NULL,
         name_sep = name_sep, verbose = verbose
     )
     if (verbose) message("3 . COMPLETED\n")
-    if (isTRUE(save)) {
+    if (!is.null(filename)) {
         if (verbose) message("4 . Exporting tRNA expression matrix.")
-        output_file <- getOutputName(
-            action = "file", out_name = out_name, out_directory = out_directory,
-            save_format = "rds", verbose = verbose
-        )
-        saveRDS(tRNA_matrix, output_file)
+        saveRDS(tRNA_matrix, filename)
         if (verbose) message("4 . COMPLETED\n")
     }
     return(tRNA_matrix) # tRNA gene matrix to us as input in tTEscanR
@@ -266,7 +258,8 @@ generateMatrix <- function(data, tRNA_granges, assay, name_sep, verbose) {
 #' @export
 #'
 #' @examples
-#' data(default_tTEscanR_tRNA_data)
+#' data("default_tTEscanR_tRNA_data", package = "tTEscanR")
+#'
 #' tRNA_data_filtered <- tRNAFilterCuts(
 #'     data = default_tTEscanR_tRNA_data,
 #'     cutoff = 5000
@@ -449,7 +442,7 @@ groupConditions <- function(data, group_labels) {
         res <- as.matrix(res)
     } else {
         if (!is.matrix(data)) mat_data <- as.matrix(data) else mat_data <- data
-        res <- t(rowsum(t(mat_data), group = groups, reorder = FALSE))
+        res <- t(rowsum(t(mat_data), group = groups, reorder = TRUE))
     }
 
     rownames(res) <- rownames(data)
@@ -479,7 +472,8 @@ groupConditions <- function(data, group_labels) {
 #' @export
 #'
 #' @examples
-#' data(default_tTEscanR_tRNA_data)
+#' data("default_tTEscanR_tRNA_data", package = "tTEscanR")
+#'
 #' tRNA_long_format <- transformFormat(
 #'     data = default_tTEscanR_tRNA_data,
 #'     normalize = FALSE,
@@ -493,7 +487,7 @@ groupConditions <- function(data, group_labels) {
 #' )
 #' tTEobj <- computeAnticodonUsage(object = tTEobj)
 #' anticodon_long_format <- transformFormat(
-#'     data = getAssay(tTEobj, "AnticodonUsage"),
+#'     data = SummarizedExperiment::assay(tTEobj, "AnticodonUsage"),
 #'     normalize = TRUE,
 #'     rownames_to_column = "anticodons",
 #'     names_to = "condition", values_to = "usage"

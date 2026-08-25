@@ -13,11 +13,9 @@ plotCorrelation(
   extra_val = NULL,
   label_col = NULL,
   color_palette = NULL,
-  out_name = NULL,
+  filename = NULL,
   show_legend = "none",
   targeted_arg = NULL,
-  save_format = NULL,
-  out_directory = NULL,
   add_titles = TRUE,
   verbose = TRUE
 )
@@ -44,8 +42,7 @@ in the plot (e.g. correlation value).}
 \item{color_palette}{Optional; a vector of color codes to customize plot
 appearance.}
 
-\item{out_name}{Optional; name for the saved plot (if \code{save_format}
-specified).}
+\item{filename}{Optional; name for the plot to be saved.}
 
 \item{show_legend}{Either \code{"none"} (default), \code{"top"},
 \code{"bottom"}, \code{"right"} or \code{"left"} to specify the
@@ -53,12 +50,6 @@ position of the legend.}
 
 \item{targeted_arg}{Optional; a vector defining key feature clusters to
 highlight or label.}
-
-\item{save_format}{Optional; either \code{"png"} or \code{"pdf"} to specify
-the format to save the plot.}
-
-\item{out_directory}{Optional; path to the directory where the plot will
-be saved (if \code{save_format} specified).}
 
 \item{add_titles}{Logical; if \code{TRUE}, includes titles in the plot.
 Defaults to \code{TRUE}.}
@@ -84,13 +75,15 @@ the columns in \code{data} and the parameters \code{x_axis_col},
 \code{y_axis_col} and \code{condition_col}.
 }
 \examples{
-data(default_tTEscanR_mRNA_data, default_tTEscanR_metadata)
+data("default_tTEscanR_mRNA_data", package = "tTEscanR")
+data("default_tTEscanR_metadata", package = "tTEscanR")
 
 # Define the object and compute the codon usage
 tTEscanR_obj <- createObject(
     counts = default_tTEscanR_mRNA_data, assay = "mRNA",
-    meta.data = list(default_tTEscanR_metadata, "tissue"),
-    meta.data.ids = list("ConditionsLabels", "CorrectionFactor")
+    meta_data = default_tTEscanR_metadata,
+    sample_id = "conditions",
+    params = list("CorrectionFactor" = "tissue")
 )
 tTEscanR_obj <- computeCodonUsage(
     object = tTEscanR_obj, species = "hg38",
@@ -98,10 +91,8 @@ tTEscanR_obj <- computeCodonUsage(
 )
 
 # Compute and extract the mean codon usage
-additional_metrics <- getMetadata(
-    tTEscanR_obj,
-    "CodonUsage_AdditionalMetrics"
-)
+meta <- S4Vectors::metadata(tTEscanR_obj)
+additional_metrics <- meta[["CodonUsage_AdditionalMetrics"]]
 mean_codon_usage <- additional_metrics$MeanCodonUsage
 exonic_background <- additional_metrics$CodonExonicBackground
 exonic_background <- as.data.frame(exonic_background)

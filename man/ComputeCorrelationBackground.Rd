@@ -36,7 +36,9 @@ for evaluating how much usage is driven by underlying sequence composition
 versus condition-specific expression.
 }
 \examples{
-data(default_tTEscanR_mRNA_data, default_tTEscanR_metadata)
+data("default_tTEscanR_mRNA_data", package = "tTEscanR")
+data("default_tTEscanR_metadata", package = "tTEscanR")
+
 tTEscanR_obj <- createObject(
     counts = default_tTEscanR_mRNA_data,
     assay = "mRNA"
@@ -45,7 +47,7 @@ tTEscanR_obj <- computeCodonUsage(
     object = tTEscanR_obj, species = "hg38",
     additional_metrics = FALSE, reduce = 1000
 )
-codon_usage <- getAssay(tTEscanR_obj, "CodonUsage")
+codon_usage <- SummarizedExperiment::assay(tTEscanR_obj, "CodonUsage")
 exonic_background <- computeExonicBackground(data = codon_usage)
 # Input: expression count matrix, need to provide metadata & batch parameters
 mean_codon_usage <- computeMeanUsage(

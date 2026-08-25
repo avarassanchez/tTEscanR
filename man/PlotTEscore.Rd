@@ -15,10 +15,8 @@ plotTEscore(
   pval_col = "p_value",
   facet_col = NULL,
   color_palette = NULL,
-  save_format = NULL,
-  out_name = NULL,
   add_stats = TRUE,
-  out_directory = NULL,
+  filename = NULL,
   verbose = TRUE,
   show_legend = "none",
   add_titles = TRUE,
@@ -56,17 +54,10 @@ plot into different panels.}
 \item{color_palette}{Optional; a vector of color codes to customize plot
 appearance.}
 
-\item{save_format}{Optional; either \code{"png"} or \code{"pdf"} to specify
-the format to save the plot.}
-
-\item{out_name}{Optional; name for the saved plot (if \code{save_format}
-specified).}
-
 \item{add_stats}{Logical; if \code{TRUE}, performs a statistical analysis
 based on the available parameters. Defaults to \code{TRUE}.}
 
-\item{out_directory}{Optional; path to the directory where the plot will be
-saved (if \code{save_format} specified).}
+\item{filename}{Optional; name for the plot to be saved.}
 
 \item{verbose}{Logical; if \code{TRUE}, displays information messages.
 Defaults to \code{TRUE}.}
@@ -85,7 +76,7 @@ based on \code{index_col}.}
 A \code{ggplot} object representing the tTE scores. If
 \code{save_format} is provided, the plot will also be saved to the
 specified location. If \code{add_stats} reports a table with the
-statitical measures summarized.
+statistical measures summarized.
 }
 \description{
 This function generates a violin plot to visualize the distribution of tTE
@@ -95,18 +86,18 @@ compare the tTE distribution between different conditions, with the option
 to highlight specific feature clusters based on the provided \code{targets}.
 }
 \examples{
-data(
-    default_tTEscanR_mRNA_data, default_tTEscanR_tRNA_data,
-    default_tTEscanR_metadata
-)
+data("default_tTEscanR_mRNA_data", package = "tTEscanR")
+data("default_tTEscanR_tRNA_data", package = "tTEscanR")
+data("default_tTEscanR_metadata", package = "tTEscanR")
 
 # Define the tTEscanR object
 tTEscanR_obj <- createObject(
     counts = list(
         mRNA = default_tTEscanR_mRNA_data, tRNA = default_tTEscanR_tRNA_data
     ),
-    meta.data = list(default_tTEscanR_metadata, "tissue"),
-    meta.data.ids = list("ConditionsLabels", "CorrectionFactor")
+    meta_data = default_tTEscanR_metadata,
+    sample_id = "conditions",
+    params = list("CorrectionFactor" = "tissue")
 )
 
 # Compute the codon and anticodon usage
@@ -120,8 +111,11 @@ tTEscanR_obj <- computeAnticodonUsage(object = tTEscanR_obj)
 tTEscanR_obj <- computeTheoreticalTE(
     object = tTEscanR_obj, level = "codon", compute_significance = TRUE
 )
-tTEresults_codon <- getMetadata(tTEscanR_obj, "tTEresults_codon")
-conditions_metadata <- getMetadata(tTEscanR_obj, "ConditionsLabels")
+tTE_results <- S4Vectors::metadata(tTEscanR_obj)[["tTE_results"]]
+tTEresults_codon <- tTE_results[["tTEresults_codon"]]
+conditions_metadata <- as.data.frame(
+    SummarizedExperiment::colData(tTEscanR_obj)
+)
 
 # Visualize the tTE scores
 plotTEscore(

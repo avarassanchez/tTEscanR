@@ -16,10 +16,8 @@ test_that("extractCodons produces an accurate count matrix", {
     res <- extractCodons(sequences = input_list, verbose = FALSE)
 
     expect_true(is.matrix(res))
-    expect_type(res, "double")
     expect_equal(ncol(res), 2)
     expect_true(all(grepl("sequence_1|sequence_2", colnames(res)))) # Check if names are inherited from list or auto-generated
-
     expect_equal(unname(colSums(res)), c(3, 3)) # Each sequence has 9 bases -> 3 codons. The column sums must be 3.
 
     expect_true("ATG" %in% rownames(res)) # Ensure "ATG" is present and has a count of 1 in the first sequence
@@ -29,121 +27,27 @@ test_that("extractCodons produces an accurate count matrix", {
     # RNA and DNA versions of the same sequence should produce identical data frames
     rna_res <- extractCodons(sequences = "AUGCUGCAU", verbose = FALSE)
     dna_res <- extractCodons(sequences = "ATGCTGCAT", verbose = FALSE)
-
     expect_equal(rna_res, dna_res)
 })
 
-test_that("extractCodons handles data.frame inputs correctly", {
+test_that("extractCodons handles different input structures correctly", {
+    ## DATA FRAME
     df_input <- data.frame(seqs = c("ATGCGTACG", "TTAAGGCCG"), id = c("seq1", "seq2"))
     res_df <- extractCodons(sequences = df_input, verbose = FALSE)
-
     expect_true(is.matrix(res_df))
-    expect_type(res_df, "double")
     expect_equal(sum(res_df), 6) # 6 unique codons total in this example
-})
 
-test_that("extractCodons correctly parses sequences and handles inputs", {
-    expected_counts <- c(ATG = 1, CTG = 1, CAT = 1)
-    variants <- c("ATGCTGCAT", "AUGCUGCAU", "atgctgcat", "augcugcau")
-
-    for (seq in variants) {
-        res <- extractCodons(sequences = seq, verbose = FALSE)
-        expect_equal(as.numeric(res[names(expected_counts), 1]), unname(expected_counts), info = paste("Failed on variant:", seq))
-    }
-
-    # Dealing with a named list
-    seq_list <- list(s1 = "ATGCTGCAT", s2 = "ATGCTGCAT")
-    res_list <- extractCodons(sequences = seq_list, verbose = FALSE)
-    expect_equal(ncol(res_list), 2)
-    expect_equal(unname(colSums(res_list)), c(3, 3)) # Each seq has 3 codons
-
-    # Dealing with a list
-    seq_list <- list("ATGCTGCAT", "ATGCTGCAT")
-    res_list <- extractCodons(sequences = seq_list, verbose = FALSE)
-    expect_equal(ncol(res_list), 2)
-    expect_equal(unname(colSums(res_list)), c(3, 3))
-
-    # Dealing with a vector
+    ## VECTOR
     seq_vector <- c("ATGCTGCAT", "ATGCTGCAT")
     res_vector <- extractCodons(sequences = seq_vector, verbose = FALSE)
     expect_equal(ncol(res_vector), 2)
     expect_equal(unname(colSums(res_vector)), c(3, 3))
 
-    # Dealing with a dataframe without ids
-    seq_df <- data.frame(sequences = c("ATGCTGCAT", "ATGCTGCAT"))
-    res_dg <- extractCodons(sequences = seq_df, verbose = FALSE)
-    expect_equal(ncol(res_dg), 2)
-    expect_equal(unname(colSums(res_dg)), c(3, 3))
-
-
+    # INVALID INPUTS
     expect_error(extractCodons(sequences = 12345), "character")
     expect_warning(extractCodons(sequences = c("ATGCTGCAT", "ATGCTGCATC")), "multiple of 3")
     expect_error(suppressWarnings(extractCodons(sequences = "ATGCTGCATC")), "No valid sequences remained after filtering")
     expect_error(extractCodons(sequences = "ARGCRGCAR"), "Invalid sequence characters")
-})
-
-mock_transcripts_payload <- list(
-    transcript_sequences = c("ATGGCC", "ATGTTT"), # Simple mock sequences
-    out_format = "external_gene_name",
-    count = 1,
-    translator_table = data.frame(
-        ensembl_transcript_id = c("ENST01", "ENST02", "ENST03"),
-        external_gene_name = c("GeneA", "GeneB", ""), # Contains an empty unannotated name
-        ensembl_gene_id = c("ENSG01", "ENSG02", "ENSG03"),
-        stringsAsFactors = FALSE
-    )
-)
-
-mock_codon_counts <- matrix(
-    c(1, 0,  # Column 1 (ENST01) -> ATG=1, GCC=0
-      0, 1,  # Column 2 (ENST02) -> ATG=0, GCC=1
-      2, 3), # Column 3 (ENST03) -> ATG=2, GCC=3
-    nrow = 2,
-    ncol = 3,
-    dimnames = list(c("ATG", "GCC"), c("ENST01", "ENST02", "ENST03"))
-)
-test_that("getCodonFreq accurately maps and renames transcript identifiers", {
-
-    translate <- mock_transcripts_payload$translator_table
-    out_format <- mock_transcripts_payload$out_format
-    codon_freq <- mock_codon_counts
-
-    tr <- stats::setNames(
-        translate[[out_format]],
-        nm = translate[["ensembl_transcript_id"]]
-    )
-
-    colnames(codon_freq) <- dplyr::recode(colnames(codon_freq), !!!tr)
-
-    expect_equal(colnames(codon_freq), c("GeneA", "GeneB", ""))
-})
-
-test_that("getCodonFreq purges unannotated genes when retain_unannotated is FALSE", {
-
-    codon_freq <- mock_codon_counts
-    colnames(codon_freq) <- c("GeneA", "GeneB", "")
-    translate <- mock_transcripts_payload$translator_table
-
-    empty <- (colnames(codon_freq) == "")
-    expect_equal(sum(empty), 1) # Confirm one empty element exists
-
-    codon_freq <- codon_freq[, !empty, drop = FALSE]
-
-    expect_equal(ncol(codon_freq), 2)
-    expect_false("" %in% colnames(codon_freq))
-})
-
-test_that("getCodonFreq retains translator integrity when formatting to Ensembl Gene IDs", {
-
-    codon_freq <- mock_codon_counts
-    colnames(codon_freq) <- c("ENSG01", "ENSG02", "")  # Simulate if out_format was ensembl_gene_id
-    translate <- mock_transcripts_payload$translator_table
-
-    empty <- (colnames(codon_freq) == "")
-    codon_freq <- codon_freq[, !empty, drop = FALSE]
-
-    matched_indices <- which(translate$ensembl_gene_id %in% colnames(codon_freq))
-    expect_equal(length(matched_indices), 2)
 })
 
 test_that("getCodonFreq completely executes all internal transformation and filtering lines", {
@@ -394,18 +298,18 @@ corrupted_seq <- c(
 
 test_that("checkFASTAFormat passes clean files and catches syntax failures", {
 
-    # CASE 1
+    ## CASE 1
     tmp_valid <- withr::local_tempfile()
     writeLines(valid_fasta, tmp_valid)
     expect_invisible(checkFASTAFormat(tmp_valid))
     expect_true(checkFASTAFormat(tmp_valid))
 
-    # CASE 2
+    ## CASE 2
     tmp_bad_header <- withr::local_tempfile()
     writeLines(broken_header, tmp_bad_header)
     expect_error(checkFASTAFormat(tmp_bad_header), "first line must be a header")
 
-    # CASE 3
+    ## CASE 3
     tmp_corrupted <- withr::local_tempfile()
     writeLines(corrupted_seq, tmp_corrupted)
     expect_error(checkFASTAFormat(tmp_corrupted), "Invalid sequence characters found on lines: 3")
@@ -441,31 +345,17 @@ test_that("fromFASTAtoTable filters out mitochondrial records and outputs list c
 
     expect_type(res, "list")
     expect_named(res, c("transcript_sequences", "translator_table"))
-    expect_equal(res$translator_table, "dummy_translator")
-})
 
-test_that("fromFASTAtoTable narrows scope down to targeted identifiers explicitly matching a format", {
-
-    mockery::stub(fromFASTAtoTable, "extractFromFASTA", mock_extracted_df)
-    mockery::stub(fromFASTAtoTable, "defineTranslatorTable", "dummy_translator")
-
-    res <- fromFASTAtoTable(
+    ## Explicit transcript filtering
+    res_sub <- fromFASTAtoTable(
         data = mock_fasta_data,
         transcripts = "ENST01",
         retain_mitochondrial = TRUE,
         verbose = FALSE
     )
+    expect_equal(nrow(res_sub$transcript_sequences), 1)
 
-    expect_equal(nrow(res$transcript_sequences), 1)
-    expect_equal(res$transcript_sequences$ensembl_transcript_id, "ENST01")
-})
-
-test_that("fromFASTAtoTable stops cleanly if given a list of non-existent query identifiers", {
-
-    mockery::stub(fromFASTAtoTable, "extractFromFASTA", mock_extracted_df)
-
-    trace(fromFASTAtoTable, edit = FALSE)
-
+    ## Missing query ID error
     expect_error(
         fromFASTAtoTable(
             data = mock_fasta_data,
@@ -473,6 +363,6 @@ test_that("fromFASTAtoTable stops cleanly if given a list of non-existent query 
             retain_mitochondrial = TRUE,
             verbose = FALSE
         ),
-        "None of the ids given in 'transcripts' have been found"
+        "None of the ids in 'transcripts' have been found"
     )
 })

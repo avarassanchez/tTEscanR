@@ -14,9 +14,7 @@ plotProportion(
   color_palette = NULL,
   num_limits = NULL,
   num_rings = 5,
-  save_format = NULL,
-  out_name = NULL,
-  out_directory = NULL,
+  filename = NULL,
   zoom = FALSE,
   show_legend = "none",
   add_titles = TRUE,
@@ -52,14 +50,7 @@ values in \code{var_numerical}.}
 \item{num_rings}{Optional; a number specifying the amount of rings to
 display if \code{plot} is \code{"radar"}. Defaults to 5.}
 
-\item{save_format}{Optional; either \code{"png"} or \code{"pdf"} to specify
-the format to save the plot.}
-
-\item{out_name}{Optional; name for the saved plot (if \code{save_format}
-specified).}
-
-\item{out_directory}{Optional; path to the directory where the plot will be
-saved (if \code{save_format} specified).}
+\item{filename}{Optional; name for the plot to be saved.}
 
 \item{zoom}{Logical; if \code{TRUE}, centers the plot display to the values
 in \code{data}.Defaults to \code{TRUE}.}
@@ -97,13 +88,15 @@ ensure consistency between the name of the columns in \code{data} and the
 parameters \code{var_numerical}, \code{var_categorical} and \code{var_color}.
 }
 \examples{
-data(default_tTEscanR_mRNA_data, default_tTEscanR_metadata)
+data("default_tTEscanR_mRNA_data", package = "tTEscanR")
+data("default_tTEscanR_metadata", package = "tTEscanR")
 
 # Define the object and compute the codon usage
 tTEscanR_obj <- createObject(
     counts = default_tTEscanR_mRNA_data, assay = "mRNA",
-    meta.data = list(default_tTEscanR_metadata, "tissue"),
-    meta.data.ids = list("ConditionsLabels", "CorrectionFactor")
+    meta_data = default_tTEscanR_metadata,
+    sample_id = "conditions",
+    params = list("CorrectionFactor" = "tissue")
 )
 tTEscanR_obj <- computeCodonUsage(
     object = tTEscanR_obj, species = "hg38",
@@ -111,9 +104,8 @@ tTEscanR_obj <- computeCodonUsage(
 )
 
 # Compute and extract the mean codon usage
-additional_metrics <- getMetadata(
-    tTEscanR_obj, "CodonUsage_AdditionalMetrics"
-)
+meta <- S4Vectors::metadata(tTEscanR_obj)
+additional_metrics <- meta[["CodonUsage_AdditionalMetrics"]]
 mean_codon_usage <- additional_metrics$MeanCodonUsage
 mean_codon_usage$codon <- mean_codon_usage$feature
 

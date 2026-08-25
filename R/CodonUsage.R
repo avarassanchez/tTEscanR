@@ -1,16 +1,13 @@
 #' Compute Codon Usage from mRNA Gene Expression Data
 #' @description
-#' This function estimates \strong{codon usage profiles} based on gene-level
-#' mRNA expression data stored in a \code{tTEscanR_Object}. It optionally
-#' accepts pre-computed codon frequency tables or uses internally generated
-#' default tables when not provided. When enabled, it can evaluate the
-#' correlation between background codon composition and observed mean codon
-#' usage. If the additional metrics are to be computed the input
-#' \code{tTEscanR_Object} needs to The default \code{codon_freq} were built
-#' using the canonical filter to select one transcript if several were
-#' available for the same gene.
+#' Estimates \strong{codon usage profiles} based on gene-level mRNA expression
+#' data. It optionally accepts pre-computed codon frequency tables or uses
+#' internally generated default tables when not provided. When enabled, it can
+#' evaluate the correlation between background codon composition and observed
+#' mean codon usage.
 #'
-#' @param object A \code{tTEscanR_Object} containing a mRNA assay.
+#' @param object A \code{\link[MultiAssayExperiment]{MultiAssayExperiment}}
+#'     containing a mRNA assay.
 #' @param codon_freq Optional; a user-provided codon frequency-per-gene table.
 #'     If necessary, it can be computed using \code{\link{getCodonFreq}}.
 #' @param species Optional; either \code{"hg38"} (human) or \code{"mm39"}
@@ -29,19 +26,22 @@
 #' @param verbose Logical; if \code{TRUE}, displays information messages.
 #'     Defaults to \code{TRUE}.
 #'
-#' @return An updated \code{tTEscanR_Object} containing a new layer of
-#'     information \code{"CodonUsage"} in the \code{assays} slot representing
-#'     the codon usage. Additional computations will be stored in the
-#'     \code{meta.data} slot as \code{"CodonUsage_AdditionalMetrics"}.
+#' @return An updated \code{\link[MultiAssayExperiment]{MultiAssayExperiment}}
+#'     containing a new layer of information in the \code{assays}
+#'     representing the \code{"CodonUsage"}. Additional computations will be
+#'     stored in the \code{param} slot as \code{"CodonUsage_AdditionalMetrics"}.
 #' @export
 #'
 #' @examples
-#' data(default_tTEscanR_mRNA_data, default_tTEscanR_metadata)
+#' data("default_tTEscanR_mRNA_data", package = "tTEscanR")
+#' data("default_tTEscanR_metadata", package = "tTEscanR")
+#'
 #' tTEscanR_obj <- createObject(
 #'     counts = default_tTEscanR_mRNA_data,
 #'     assay = "mRNA",
-#'     meta.data = list(default_tTEscanR_metadata, "tissue"),
-#'     meta.data.ids = list("ConditionsLabels", "CorrectionFactor")
+#'     meta_data = default_tTEscanR_metadata,
+#'     sample_id = "conditions",
+#'     params = list("CorrectionFactor" = "tissue")
 #' )
 #' tTEscanR_obj <- computeCodonUsage(
 #'     object = tTEscanR_obj, species = "hg38",
@@ -81,53 +81,45 @@ computeCodonUsage <- function(object, codon_freq = NULL, species = NULL,
         )
         count <- 5
     }
-    if (verbose) message(as.character(count), ". Updating the tTEscanR object.")
+    if (verbose) message(count, ". Updating the tTEscanR object.")
     object <- updateObject(
         object = object, counts = codon_usage, assay = "CodonUsage",
-        meta.data = list(common), verbose = FALSE,
-        meta.data.ids = list("mRNAsInCommon"), overwrite = overwrite
+        params = list("mRNAsInCommon" = common), verbose = FALSE,
+        overwrite = overwrite
     )
     if (verbose) {
-        message(as.character(count), ". COMPLETED")
+        message(count, ". COMPLETED")
         message("--- The codon usage has been successfully computed ---\n")
     }
-    return(object) # tTEscanR object was validated in updateObject()
+    return(object)
 }
 
 getAdditionalMetrics <- function(object, overwrite, codon_usage, codon_freq,
     corr, verbose) {
-    isInObject(
-        object = object, slot = "meta.data",
-        section = "ConditionsLabels", verbose = FALSE
-    )
-    meta <- getMetadata(object, "ConditionsLabels")
+    ## Check the correction factor
+    checkParamPresent(object = object, param_name = "CorrectionFactor")
+    batch <- S4Vectors::metadata(object)[["CorrectionFactor"]]
+
+    ## Check the metadata in the object
+    meta <- MultiAssayExperiment::colData(object)
+    if (S4Vectors::isEmpty(meta)) {
+        stop("The 'object' does not contain metadata.")
+    }
     checkDataFrame(data = meta)
-    isInObject(
-        object = object, slot = "meta.data",
-        section = "CorrectionFactor", verbose = FALSE
-    )
-    batch <- getMetadata(object, "CorrectionFactor")
+
     if (!(batch %in% colnames(meta))) {
         stop("The correction factor was not found in the metadata.")
     }
     if (verbose) {
         message(
-            "- The 'ConditionsLabels' and 'CorrectionFactor' have",
+            "- The metadata and correction factor have",
             " been properly loaded.\n", "4 . Computing the additional metrics."
         )
     }
-    id_col <- isInObject(
-        object = object, slot = "meta.data", section = "DataMetadataIndex",
-        verbose = FALSE, compute_assay = TRUE
-    )
-    id <- if (isFALSE(id_col)) {
-        NULL
-    } else {
-        getMetadata(object, "DataMetadataIndex")
-    }
+
     additional_metrics <- computeMetricsCodonUsage(
         codon_usage = codon_usage, codon_freq = codon_freq, metadata = meta,
-        id_col = id, corr_method = corr, batch = batch, verbose = verbose
+        corr_method = corr, batch = batch, verbose = verbose
     )
     if (verbose) {
         message(
@@ -136,8 +128,9 @@ getAdditionalMetrics <- function(object, overwrite, codon_usage, codon_freq,
         )
     } # Nested list
     object <- updateObject(
-        object = object, main_name = "CodonUsage_AdditionalMetrics",
-        meta.data = additional_metrics, overwrite = overwrite, verbose = FALSE
+        object = object,
+        params = list("CodonUsage_AdditionalMetrics" = additional_metrics),
+        overwrite = overwrite, verbose = FALSE
     )
     if (verbose) message("4 . COMPLETED")
     return(object)
@@ -145,25 +138,26 @@ getAdditionalMetrics <- function(object, overwrite, codon_usage, codon_freq,
 
 #' Compute Anticodon Usage from tRNA Gene Expression Data
 #' @description
-#' This function calculates \strong{anticodon usage profiles} from tRNA gene
-#' expression data stored in a \code{tTEscanR_Object}. It summarizes the
-#' expression of tRNAs by their anticodon identity, which can be used to
-#' estimate the tRNA supply landscape. The tRNA gene names need to be properly
-#' annotated for proper recognition. Expected format: tRNA-Asn-GTT-5-1.
+#' Calculates \strong{anticodon usage profiles} from tRNA gene
+#' abundance data. It summarizes the abundance of tRNAs by their anticodon
+#' identity, which can be used to estimate the tRNA supply landscape. The tRNA
+#' gene names need to be properly annotated for proper recognition.
 #'
-#' @param object A \code{tTEscanR_Object} containing a tRNA assay.
+#' @param object A \code{\link[MultiAssayExperiment]{MultiAssayExperiment}}
+#'     containing a tRNA assay.
 #' @param overwrite Logical; if \code{TRUE}, overwrites any existing assay and
 #'     metadata in the \code{object}. Defaults to \code{FALSE}.
 #' @param verbose Logical; if \code{TRUE}, displays information messages.
 #'     Defaults to \code{TRUE}.
 #'
-#' @return An updated \code{tTEscanR_Object} containing a new layer of
-#'     information \code{"AnticodonUsage"} in the \code{assays} slot
-#'     representing the anticodon usage.
+#' @return An updated \code{\link[MultiAssayExperiment]{MultiAssayExperiment}}
+#'     containing a new layer of information in the \code{assays}
+#'     representing the \code{"AnticodonUsage"}.
 #' @export
 #'
 #' @examples
-#' data(default_tTEscanR_tRNA_data)
+#' data("default_tTEscanR_tRNA_data", package = "tTEscanR")
+#'
 #' tTEscanR_obj <- createObject(
 #'     counts = default_tTEscanR_tRNA_data,
 #'     assay = "tRNA"
@@ -176,15 +170,10 @@ computeAnticodonUsage <- function(object, overwrite = FALSE, verbose = TRUE) {
     tRNA_data <- extract_tRNA_data$tRNA_data
     tRNA_genes <- extract_tRNA_data$tRNA_genes
     if (verbose) {
-        message(
-            "1 . COMPLETED\n",
-            "2 . Extracting the anticodons of each tRNA gene."
-        )
+        message("1 . COMPLETED")
+        message("2 . Extracting the anticodons of each tRNA gene.")
     }
-    anticodons <- vapply(
-        strsplit(tRNA_genes, "-"), "[[", 3,
-        FUN.VALUE = character(1)
-    )
+    anticodons <- sub("^[^-]+-[^-]+-([^-]+).*", "\\1", tRNA_genes)
     unique_anticodons <- sort(unique(anticodons))
     if (verbose) {
         message(
@@ -192,20 +181,24 @@ computeAnticodonUsage <- function(object, overwrite = FALSE, verbose = TRUE) {
             "3 . Pooling the counts from each tRNA gene with common anticodons."
         )
     }
-    ## Initialize an mapping matrix - 1 to add the gene and 0 to ignore it
+    ## Initialize mapping matrix
     map_factor <- factor(anticodons, levels = unique_anticodons)
-    M <- Matrix::sparse.model.matrix(~ 0 + map_factor)
-    M <- Matrix::t(M) # Set the anticodons as rows
-    rownames(M) <- gsub("map_factor", "", rownames(M)) # Clean the rownames
+    i_indices  <- as.integer(map_factor)  # Row positions (anticodons)
+    j_indices  <- seq_along(anticodons)   # Column positions (tRNA genes)
+    M <- Matrix::sparseMatrix(
+        i = i_indices, j = j_indices,
+        x = 1,
+        dims = c(length(unique_anticodons), length(anticodons)),
+        dimnames = list(unique_anticodons, colnames(tRNA_genes))
+    )
     anticodon_usage <- as.matrix(M %*% tRNA_data) # Multiply tRNA same anticodon
-    rownames(anticodon_usage) <- unique_anticodons
-    colnames(anticodon_usage) <- colnames(tRNA_data)
+
     checkDataFrame(data = anticodon_usage) # anticodons x conditions
     if (verbose) message("3 . COMPLETED\n", "4 . Updating the tTEscanR object.")
     object <- updateObject(
         object = object, counts = anticodon_usage, assay = "AnticodonUsage",
-        verbose = FALSE, meta.data = anticodons,
-        meta.data.ids = "tRNAsAnticodons", overwrite = overwrite
+        verbose = FALSE, params = list("tRNAsAnticodons" = anticodons),
+        overwrite = overwrite
     )
     if (verbose) {
         message(
@@ -213,23 +206,19 @@ computeAnticodonUsage <- function(object, overwrite = FALSE, verbose = TRUE) {
             "computed ---\n"
         )
     }
-    return(object) # tTEscanR object was validated in updateObject()
+    return(object)
 }
 
 generalChecksUsage <- function(step, section, object, codon_freq = NULL,
     species = NULL, verbose) {
     if (verbose) message("\n--- Computation of the ", step, " usage ---")
     if (verbose) message("1 . Checking the format of the input data.")
-    if (!inherits(object, "tTEscanR_Object")) {
-        stop("'object' must be a tTEscanR object.")
-    }
-    if (verbose) message("- The input consists of a proper tTEscanR object.")
+    checkObject(object = object, verbose = verbose)
 
-    isInObject( # Check that the data is in object with proper format
-        object = object, slot = "assays", section = section, verbose = FALSE
-    )
+    ## Check that the data is in object with proper format
+    checkAssayPresent(object = object, assay_name = section)
+    data <- SummarizedExperiment::assay(object, section)
 
-    data <- getAssay(object, section)
     if (step == "anticodon") {
         data <- as.matrix(data)
         tRNA_genes <- rownames(data)

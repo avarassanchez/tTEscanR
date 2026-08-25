@@ -7,8 +7,8 @@
 #' and internal species-specific for human (\code{"hg38"}) and mouse
 #' (\code{"mm39"}) are supported.
 #'
-#' @param object A \code{tTEscanR_Object} containing a mRNA and CodonUsage
-#'      assay.
+#' @param object A \code{\link[MultiAssayExperiment]{MultiAssayExperiment}}
+#'      containing a \code{"mRNA"} and \code{"CodonUsage"} assay.
 #' @param N Numeric; number of top genes to consider in the codon pool
 #'      contribution. Defaults to 10.
 #' @param corr_method A correlation method accepted by \code{\link{cor}}.
@@ -20,22 +20,22 @@
 #'      is \code{TRUE}). Supported values include \code{"hg38"} (human) and
 #'      \code{"mm39"} (mouse).
 #' @param overwrite Logical; if \code{TRUE}, overwrites any existing anticodon
-#'      usage assay and metadata in the \code{tTEscanR_Object}. Defaults to
-#'      \code{FALSE}.
+#'      usage assay and metadata in the \code{object}. Defaults to \code{FALSE}.
 #' @param verbose Logical; if \code{TRUE}, displays information messages.
 #'      Defaults to \code{TRUE}.
 #'
-#' @return An updated \code{tTEscanR_Object} containing new layers of
-#'      information in the \code{meta.data} slot, representing the codon pool
-#'      contribution.
+#' @return An updated \code{\link[MultiAssayExperiment]{MultiAssayExperiment}}
+#'      containing new layers of information in the \code{params} slot,
+#'      representing the codon pool contribution,
+#'      \code{"CodonPoolContribution_Results"}.
 #' @export
 #'
 #' @examples
 #' data(default_tTEscanR_mRNA_data, default_tTEscanR_metadata)
 #' tTEscanR_obj <- createObject(
 #'     counts = list(mRNA = default_tTEscanR_mRNA_data),
-#'     meta.data = list(default_tTEscanR_metadata, "tissue"),
-#'     meta.data.ids = list("ConditionsLabels", "CorrectionFactor")
+#'     meta_data = default_tTEscanR_metadata, sample_id = "conditions",
+#'     params = list("CorrectionFactor" = "tissue")
 #' )
 #' tTEscanR_obj <- computeCodonUsage(
 #'     object = tTEscanR_obj, species = "hg38", additional_metrics = FALSE
@@ -65,8 +65,8 @@ showPoolContribution <- function(object, codon_freq = NULL, species = NULL,
     codon_freq <- codon_freq[, mRNAs_in_common, drop = FALSE]
     if (verbose) message("4 . Computing each gene's codon pool contribution.")
     pool_cont <- getOrCompute(
-        object, "meta.data", "CodonPoolContribution_Results",
-        "CodonPoolContribution", verbose, function() {
+        object, "meta.data", "CodonPoolContribution_Results", verbose,
+        function() {
             contrib <- as.matrix(scmRNA) * colSums(codon_freq)
             t(t(contrib) / colSums(contrib))
         }
@@ -77,14 +77,14 @@ showPoolContribution <- function(object, codon_freq = NULL, species = NULL,
     )
     if (verbose) message("6 . Updating the object")
     res <- list()
-    name <- names(object@assays)
+    name <- names(SummarizedExperiment::assay(object))
     if (!"SizeCorrectedCodonUsage" %in% name) res$SizeCorrectedCodonUsage <- scc
     if (!"SizeCorrected_mRNA" %in% name) res$SizeCorrected_mRNA <- scmRNA
     object <- updateObject(
         overwrite = overwrite, object = object,
         counts = if (length(res) > 0) unname(res) else NULL,
         assay = if (length(res) > 0) names(res) else NULL,
-        main_name = "CodonPoolContribution_Results", meta.data = new_meta
+        params = list("CodonPoolContribution_Results" = new_meta)
     )
     if (verbose) {
         message("6 . COMPLETED")
@@ -98,7 +98,7 @@ getData <- function(object, codon, mRNA, meta, batch, verbose) {
         message("3 . Calculating each condition's correlation to the mean.")
     }
     codon_sc <- getOrCompute(
-        object, "assays", "SizeCorrectedCodonUsage", NULL, verbose, function() {
+        object, "assays", "SizeCorrectedCodonUsage", verbose, function() {
             computeSizeCorrection(
                 data = codon, metadata = meta, batch = batch, verbose = FALSE
             )
@@ -106,7 +106,7 @@ getData <- function(object, codon, mRNA, meta, batch, verbose) {
     )
 
     data_mRNA <- getOrCompute(
-        object, "assays", "SizeCorrected_mRNA", NULL, verbose, function() {
+        object, "assays", "SizeCorrected_mRNA", verbose, function() {
             computeSizeCorrection(
                 data = mRNA, metadata = meta, batch = batch, verbose = FALSE
             )
@@ -130,7 +130,7 @@ helperPoolContribution <- function(corr, codon, mean, mRNA, codon_freq,
         mean_codon_usage = mean
     )
 
-    res <- analizeTopGeneImpact(
+    res <- analyzeTopGeneImpact(
         data = mRNA, codon_freq = codon_freq, corr_method = corr,
         pool_contribution = pool_cont, mean_codon_usage = mean, N = N
     )
@@ -186,34 +186,29 @@ addMeta <- function(meta, impact, corr, N) {
 
 extractSection <- function(object, verbose) {
     if (verbose) message("1 . Evaluating the input tTEscanR object.")
-    if (!inherits(object, "tTEscanR_Object")) {
-        stop("'object' must be a tTEscanR object.")
+    checkObject(object = object, verbose = verbose)
+
+    checkAssayPresent(object = object, assay_name = "mRNA")
+    checkAssayPresent(object = object, assay_name = "CodonUsage")
+
+    codon_usage <- SummarizedExperiment::assay(object, "CodonUsage")
+    raw_mRNA <- SummarizedExperiment::assay(object, "mRNA")
+
+    checkParamPresent(object = object, param_name = "CorrectionFactor")
+    batch <- S4Vectors::metadata(object)[["CorrectionFactor"]]
+
+    metadata <- MultiAssayExperiment::colData(object)
+    if (S4Vectors::isEmpty(metadata)) {
+        stop("The 'object' does not contain metadata.")
     }
 
-    for (i in c("mRNA", "CodonUsage")) {
-        isInObject(
-            object = object, slot = "assays", section = i, verbose = verbose
-        )
-    }
-
-    codon_usage <- getAssay(object, "CodonUsage")
-    raw_mRNA <- getAssay(object, "mRNA")
-
-    for (i in c("ConditionsLabels", "CorrectionFactor")) {
-        isInObject(
-            object = object, slot = "meta.data", section = i, verbose = verbose
-        )
-    }
-
-    batch <- getMetadata(object, "CorrectionFactor")
-    metadata <- getMetadata(object, "ConditionsLabels")
     if (!(batch %in% colnames(metadata))) {
         stop("The correction factor was not found in the metadata.")
     }
 
     if (verbose) message("- Extracting/Computing the mean codon usage.")
     mean_codon_usage <- getOrCompute(
-        object, "meta.data", "CodonUsage_AdditionalMetrics", "MeanCodonUsage",
+        object, "meta_data", "CodonUsage_AdditionalMetrics",
         verbose, function() {
             computeMeanUsage(
                 data = codon_usage, assay = "CodonUsage", mode = "raw",
@@ -221,6 +216,10 @@ extractSection <- function(object, verbose) {
             )
         }
     )
+    if (inherits(mean_codon_usage, "list")) {
+        mean_codon_usage <- mean_codon_usage[["MeanCodonUsage"]]
+    }
+
     if (verbose) message("1 . COMPLETED")
     return(list(
         cu = codon_usage, raw_mRNA = raw_mRNA,
@@ -228,19 +227,28 @@ extractSection <- function(object, verbose) {
     ))
 }
 
-getOrCompute <- function(object, slot, section, subset = NULL, verbose,
-    compute_fun) {
-    exists <- isInObject(
-        object, slot, section, subset,
-        compute_assay = TRUE, verbose = FALSE
-    )
-    if (isTRUE(exists)) {
-        if (is.null(subset)) {
-            return(slot(object, slot)[[section]])
+getOrCompute <- function(object, slot, section, verbose, compute_fun) {
+    if (slot == "meta_data") {
+        exists <- checkParamPresent(
+            object = object, param_name = section, compute = TRUE
+        )
+        if (isTRUE(exists)) {
+            data <- S4Vectors::metadata(object)[[section]]
+            return(data)
         }
-        return(slot(object, slot)[[section]][[subset]])
     }
-    if (verbose) message("- Computing missing component: ", section, subset)
+
+    if (slot == "assays") {
+        exists <- checkAssayPresent(
+            object = object, assay_name = section, compute = TRUE
+        )
+        if (isTRUE(exists)) {
+            data <- SummarizedExperiment::assay(object, section)
+            return(data)
+        }
+    }
+
+    if (verbose) message("- Computing missing component: ", section)
     return(compute_fun())
 }
 
@@ -258,28 +266,40 @@ computeIndividualGeneCorrelation <- function(codon_usage, mean_codon_usage,
     return(correlation_to_mean_codon_usage)
 }
 
-analizeTopGeneImpact <- function(data, codon_freq, pool_contribution,
+analyzeTopGeneImpact <- function(data, codon_freq, pool_contribution,
     mean_codon_usage, N, corr_method) {
-    # Identifying top N contributors based on the pool contribution
-    top_contributors <- apply(pool_contribution, 2, function(x) {
-        top_values <- sort(x, decreasing = TRUE)[seq_len(N)] # [1:N]
-        return(list(sum = sum(top_values), names = names(top_values)))
-    })
-
-    sums <- vapply(top_contributors, `[[`, "sum", FUN.VALUE = numeric(1))
-    top_N_names <- do.call(cbind, lapply(top_contributors, `[[`, "names"))
-    colnames(top_N_names) <- colnames(data)
-    rownames(top_N_names) <- paste("top", seq_len(N), "gene", sep = "")
+    data_mat <- as.matrix(data)
+    pool_mat <- as.matrix(pool_contribution)
+    n_rows   <- nrow(pool_mat)
+    n_cols   <- ncol(pool_mat)
+    ## Identifying top N contributors based on the pool contribution
+    ranks <- matrixStats::colRanks(
+            pool_mat, ties.method = "first", preserveShape = TRUE
+        )
+    row_m <- row(ranks)
+    target_ranks <- seq(n_rows, n_rows - N + 1)
+    top_idx <- matrix(
+        vapply(
+            target_ranks, function(r) row_m[ranks == r],
+            FUN.VALUE = integer(n_cols)
+        ), nrow = N, ncol = n_cols, byrow = TRUE
+    )
+    gene_names  <- rownames(pool_mat)
+    top_N_names <- matrix(
+        gene_names[top_idx], nrow = N, ncol = n_cols,
+        dimnames = list(paste0("top", seq_len(N), "gene"), colnames(data))
+    )
+    row_col_idx <- cbind(as.vector(top_idx), rep(seq_len(n_cols), each = N))
+    top_vals_mat <- matrix(pool_mat[row_col_idx], nrow = N, ncol = n_cols)
+    sums <- matrixStats::colSums2(top_vals_mat)
 
     ## Calculating correlation without top N genes
-    data_copy <- as.matrix(data)
-    for (i in seq_len(ncol(data_copy))) {
-        data_copy[top_N_names[, i], i] <- 0
-    }
-
+    data_copy <- data_mat
+    data_copy[row_col_idx] <- 0
     removed_top_N_genes_usage <- as.matrix(codon_freq) %*% data_copy
-    removed_top_N_genes_usage <- t(
-        t(removed_top_N_genes_usage) / colSums(removed_top_N_genes_usage)
+    col_sums <- matrixStats::colSums2(removed_top_N_genes_usage)
+    removed_top_N_genes_usage <- sweep(
+        removed_top_N_genes_usage, 2, col_sums, FUN = "/"
     )
 
     corr_no_top <- computeIndividualGeneCorrelation(
@@ -290,7 +310,6 @@ analizeTopGeneImpact <- function(data, codon_freq, pool_contribution,
         condition = colnames(data), sum_top_contribution = sums,
         codon_diversity = 1 - sums, correlation = corr_no_top
     )
-
     return(list(
         summary = impact_summary, top_contributors = top_N_names,
         removed_contr = removed_top_N_genes_usage

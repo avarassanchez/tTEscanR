@@ -1,11 +1,11 @@
 #' Compute Amino Acid (AA) Demand or Supply
 #' @description
-#' This function calculates the amino acid (AA) demand and/or supply from a
-#' codon and/or anticodon usage matrices of a \code{tTEscanR_Object}. It
-#' aggregates the contribution of their features based on the standard genetic
-#' code (mapping codons/anticodons to AA), The resulting values reflect total
-#' usage (demand) or availability (supply) of each amino acid, depending on the
-#' input type.
+#' Calculates the amino acid (AA) demand and/or supply from a
+#' codon and/or anticodon usage matrices of a mRNA expression and/or tRNA
+#' abundance count matrix. It aggregates the contribution of their features
+#' based on the standard genetic code (mapping codons/anticodons to AA). The
+#' resulting values reflect total usage (demand) or availability (supply) of
+#' each amino acid, depending on the input type.
 #'
 #' @details
 #' In order to generalize the analysis to any organism available in Ensembl,
@@ -26,8 +26,8 @@
 #' "Mesodinium Nuclear”, "Peritrich Nuclear”, "Blastocrithidia Nuclear”,
 #' "Balanophoraceae Plastid”, "Cephalodiscidae Mitochondrial"
 #'
-#' @param object A \code{tTEscanR_Object} containing codon and/or anticodon
-#'     usage assays to be analyzed.
+#' @param object A \code{\link[MultiAssayExperiment]{MultiAssayExperiment}}
+#'     containing codon and/or anticodon usage assays to be analyzed.
 #' @param level Either \code{"demand"}, \code{"supply"} or \code{"both"} to
 #'     indicate which analysis to perform.
 #' @param genetic_code A \code{character} string to specify the genetic code to
@@ -37,14 +37,15 @@
 #' @param verbose Logical; if \code{TRUE}, displays information messages.
 #'     Defaults to \code{TRUE}
 #'
-#' @return An updated \code{tTEscanR_Object} containing a new layer of
-#'     information in the \code{assays} slot representing the AA demand and/or
-#'     supply.
+#' @return An updated \code{\link[MultiAssayExperiment]{MultiAssayExperiment}}
+#'     containing a new layer of information in the \code{assays}
+#'     representing the \code{"AADemand"} and/or \code{"AASupply"}.
 #' @export
 #'
 #' @examples
-#' data(default_tTEscanR_tRNA_data)
-#' tTEscanR_obj <-createObject(
+#' data("default_tTEscanR_tRNA_data", package = "tTEscanR")
+#'
+#' tTEscanR_obj <- createObject(
 #'     counts = default_tTEscanR_tRNA_data,
 #'     assay = "tRNA"
 #' )
@@ -101,9 +102,9 @@ generalChecksAAUsage <- function(object, level, verbose) {
             " ---", "\n1 . Checking the format of the input data."
         )
     }
-    if (!(inherits(object, "tTEscanR_Object"))) {
-        stop("'object' must be a tTEscanR object.")
-    }
+
+    checkObject(object = object, verbose = verbose)
+
     if (is.null(level) || !level %in% names(assay_map_AA)) {
         stop("Specify a valid 'level' input parameter: demand, supply, both.")
     }
@@ -146,11 +147,9 @@ groupAA <- function(data, codons, genetic_code) {
 retrieveAAUsageData <- function(object, data_section, data_function,
     genetic_code) {
     ## Check if the required assays are present in the tTEscanR object
-    isInObject(
-        object = object, slot = "assays",
-        section = data_section, verbose = FALSE
-    )
-    raw_data <- getAssay(object, data_section)
+    ## Check that the data is in object with proper format
+    checkAssayPresent(object = object, assay_name = data_section)
+    raw_data <- SummarizedExperiment::assay(object, data_section)
     checkDataFrame(data = raw_data) # Check that data is in a suitable format
 
     if (data_function == "sense") { # Extract AA from the codons - AADemand

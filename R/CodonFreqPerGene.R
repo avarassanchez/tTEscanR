@@ -32,71 +32,76 @@
 #'     table (if available).
 #' @export
 #'
+#' @examples
+#' \donttest{
+#' codon_freq_results_canonical_hg38 <- getCodonFreq(
+#'     dataset_name = "hsapiens_gene_ensembl", filter = "canonical",
+#'     retain_geneversion = TRUE, retain_mitochondrial = FALSE,
+#'     out_format = "external_gene_name"
+#' )
+#' }
 getCodonFreq <- function(dataset_name = NULL, genes_file = NULL, verbose = TRUE,
     transcripts = NULL, retain_mitochondrial = FALSE,
     filter = c("canonical", "length"), retain_unannotated = FALSE,
     retain_geneversion = TRUE, out_format = c(
         "external_gene_name", "ensembl_transcript_id", "ensembl_gene_id")) {
     extract_data <- getTranscripts(
-        dataset_name = dataset_name, transcripts = transcripts, filter = filter,
-        out_format = out_format, verbose = verbose, genes_file = genes_file,
+        dataset_name = dataset_name, transcripts = transcripts,
+        filter = match.arg(filter), out_format = match.arg(out_format),
+        verbose = verbose, genes_file = genes_file,
         retain_version = retain_geneversion, retain_mt = retain_mitochondrial
     )
-    translate <- extract_data$translator_table
+    trans <- extract_data$translator_table
     out_format <- extract_data$out_format
     count <- extract_data$count # Variable to keep the steps properly labelled
-    if (verbose) {
-        message(as.character(count), ". Analyzing the codon composition.")
-    }
-    codon_freq <- extractCodons(sequences = extract_data$transcript_sequences)
-    checkDataFrame(data = codon_freq, required_names = TRUE)
-    if (verbose) message("- Protein-coding transcripts: ", ncol(codon_freq))
-    if (out_format != "ensembl_transcript_id") {
+    if (verbose) message(count, ". Analyzing the codon composition.")
+    freq <- extractCodons(sequences = extract_data$transcript_sequences)
+    checkDataFrame(data = freq, required_names = TRUE)
+    if (verbose) message("- Protein-coding transcripts: ", ncol(freq))
+    if (out_format != "ensembl_transcript_id" && !is.null(trans)) {
         if (verbose) message("- Changing transcript ids format to ", out_format)
-        tr <- stats::setNames(
-            translate[[out_format]],
-            nm = translate[["ensembl_transcript_id"]]
+        tr_map <- stats::setNames(
+            as.character(trans[[out_format]]),
+            nm = as.character(trans[["ensembl_transcript_id"]])
         )
-        colnames(codon_freq) <- dplyr::recode(colnames(codon_freq), !!!tr)
+        idx <- match(colnames(freq), names(tr_map))
+        matched <- !is.na(idx)
+        new_colnames <- colnames(freq)
+        new_colnames[matched] <- tr_map[idx[matched]]
+        colnames(freq) <- new_colnames
     }
-    if (verbose) message(as.character(count), ". COMPLETED")
+    if (verbose) message(count, ". COMPLETED")
     count <- count + 1
-    if (verbose) {
-        message(as.character(count), ". Validating the codon frequency matrix.")
-    }
-    empty <- (colnames(codon_freq) == "")
-    if (any(empty) && isFALSE(retain_unannotated)) {
+    if (verbose) message(count, ". Validating the codon frequency matrix.")
+    empty <- is.na(colnames(freq)) | colnames(freq) == ""
+    if (any(empty) && !retain_unannotated) {
         if (verbose) {
             message("- Removing ", sum(empty), " genes without external names.")
         }
-        codon_freq <- codon_freq[, !empty]
-        translate <- translate[
-            which(translate$external_gene_name %in% colnames(codon_freq)),
-        ]
+        freq <- freq[, !empty, drop = FALSE]
+        if (!is.null(trans) && "external_gene_name" %in% colnames(trans)) {
+            trans <- trans[
+                which(trans$external_gene_name %in% colnames(freq)), ,
+                drop = FALSE
+            ]
+        }
     }
-    checkDataFrame(data = codon_freq, required_names = TRUE)
-    if (verbose) message(as.character(count), ". COMPLETED")
-    return(list(
-        codon_freq_per_gene_matrix = codon_freq, translator_table = translate
-    ))
+    checkDataFrame(data = freq, required_names = TRUE)
+    if (verbose) message(count, ". COMPLETED")
+    return(list(codon_freq_per_gene_matrix = freq, translator_table = trans))
 }
 
 getTranscripts <- function(dataset_name, transcripts, retain_mt,
-    filter = c("canonical", "length"), verbose, retain_version, genes_file,
-    out_format = c(
-        "external_gene_name", "ensembl_transcript_id", "ensembl_gene_id"
-    )) {
+    filter, verbose, retain_version, genes_file, out_format) {
     if (verbose) message("1 . Checking the format of the input data.")
-    if ((!is.null(dataset_name) && !is.null(genes_file)) ||
-        (is.null(dataset_name) && is.null(genes_file))) {
+    if (is.null(dataset_name) == is.null(genes_file))  {
         stop(
             "Specify either 'dataset_name' or 'genes_files' to proceed.",
             "\nNote: Both input parameters can not be specified together."
         )
     }
-    out_format <- match.arg(out_format)
+
     if (!is.null(dataset_name)) { # Obtain sequence of the genes/transcripts
-        if (is.null(transcripts)) filter <- match.arg(filter)
         if (verbose) message("1 . COMPLETED")
         ensembl_results <- callingEnsembl(
             dataset_name = dataset_name, transcripts = transcripts,
@@ -105,6 +110,7 @@ getTranscripts <- function(dataset_name, transcripts, retain_mt,
         ) # Performs steps 2 and 3
         transcript_seq <- ensembl_results$transcript_seq # List transcripts ids
         translator_table <- ensembl_results$translator_table # Ids and names
+
         if (is.null(translator_table)) {
             if (out_format != "ensembl_transcript_id" && verbose) {
                 message("- The 'out_format' will be 'ensembl_transcript_id'.")
@@ -112,6 +118,7 @@ getTranscripts <- function(dataset_name, transcripts, retain_mt,
             out_format <- "ensembl_transcript_id"
         }
         count <- 4
+
     } else { # The input is a FASTA file with the transcript sequences
         checkFASTAFormat(genes_file) # Assessing the format of the input file
         genes_data <- Biostrings::readDNAStringSet(genes_file) # Get FASTA seqs
@@ -151,28 +158,18 @@ getTranscripts <- function(dataset_name, transcripts, retain_mt,
 extractCodons <- function(sequences, verbose = TRUE) {
     if (verbose) message("- Extracting the nucleotide sequences:")
     bases <- c("A", "C", "G", "T")
-    all_64_codons <- apply(
-        expand.grid(bases, bases, bases), 1, paste,
-        collapse = ""
-    )
+    grid <- expand.grid(bases, bases, bases, KEEP.OUT.ATTRS = FALSE)
+    all_64_codons <- do.call(paste0, grid)
 
-    extract_values <- helperExtractCodons(
+    codon_freq_per_gene_matrix <- helperExtractCodons(
         sequences = sequences, all_64_codons = all_64_codons
     )
-    counts_list <- extract_values$counts_list
-    transcript_names <- extract_values$transcript_names
-    if (verbose) message("\n- Extraction completed.\n- Assembling matrix...")
 
-    ## Filter out the skipped sequences
-    valid_indices <- !vapply(counts_list, is.null, FUN.VALUE = numeric(1))
-    if (!any(valid_indices)) {
+    if (ncol(codon_freq_per_gene_matrix) == 0) {
         stop("No valid sequences remained after filtering.")
     }
 
-    ## Give proper format to the matrix (do.call cbind is incredibly fast here!)
-    codon_freq_per_gene_matrix <- do.call(cbind, counts_list[valid_indices])
-    rownames(codon_freq_per_gene_matrix) <- all_64_codons
-    colnames(codon_freq_per_gene_matrix) <- transcript_names[valid_indices]
+    if (verbose) message("\n- Extraction completed.")
 
     return(codon_freq_per_gene_matrix)
 }
@@ -180,49 +177,47 @@ extractCodons <- function(sequences, verbose = TRUE) {
 helperExtractCodons <- function(sequences, all_64_codons) {
     is_tabular <- is.data.frame(sequences) || is.matrix(sequences)
     n <- if (is_tabular) nrow(sequences) else length(sequences)
-    transcript_names <- character(n)
-    counts_list <- vector("list", n)
-
-    pb <- utils::txtProgressBar(min = 0, max = n, style = 3)
-    for (i in seq_len(n)) { # Iterates over each sequence
-        if (is_tabular) {
-            sequence <- as.character(sequences[i, 1])
-            if (ncol(sequences) >= 2) {
-                transcript_id <- as.character(sequences[i, 2])
-            } else {
-                transcript_id <- paste("sequence", i, sep = "_")
-            }
+    if (is_tabular) {
+        seq_vec <- as.character(sequences[, 1])
+        transcript_names <- if (ncol(sequences) >= 2) {
+            as.character(sequences[, 2])
         } else {
-            sequence <- as.character(sequences[i])
-            transcript_id <- paste("sequence", i, sep = "_")
+            paste("sequence", seq_len(n), sep = "_")
         }
-        transcript_names[i] <- transcript_id
-
-        ## Ensure the validity of the sequence
-        sequence <- toupper(sequence)
-        sequence <- gsub("U", "T", sequence)
-        valid_nucleotides <- grepl("^[ATGCN]+$", sequence)
-        if (isFALSE(valid_nucleotides)) {
-            stop(
-                "Invalid sequence characters found in sequence: ", transcript_id
-            )
-        }
-        if (nchar(sequence) %% 3 != 0) { # Strict multiple of 3 check
-            warning(sprintf(
-                "Transcript %s length is not a multiple of 3. Skipping.",
-                transcript_id
-            ))
-            utils::setTxtProgressBar(pb, i)
-            next # Skip this sequence, but don't stop the whole function
-        }
-        ## Generate the table with the counts
-        triplets <- substring(
-            sequence, seq(1, nchar(sequence) - 2, 3), seq(3, nchar(sequence), 3)
-        )
-        codon_counts <- table(factor(triplets, levels = all_64_codons))
-        counts_list[[i]] <- as.numeric(codon_counts)
-        utils::setTxtProgressBar(pb, i)
+    } else {
+        seq_vec <- as.character(sequences)
+        transcript_names <- paste("sequence", seq_len(n), sep = "_")
     }
-    close(pb)
-    return(list(counts_list = counts_list, transcript_names = transcript_names))
+
+    ## Ensure the validity of the sequence
+    seq_vec <- chartr("U", "T", toupper(seq_vec))
+    invalid_chars <- !grepl("^[ATGCN]*$", seq_vec)
+    if (any(invalid_chars)) {
+        stop(
+            "Invalid sequence characters found in sequence: ",
+            transcript_names[invalid_chars][1]
+        )
+    }
+    seq_lens <- nchar(seq_vec)
+    invalid_len <- (seq_lens %% 3 != 0) | (seq_lens == 0)
+    if (any(invalid_len)) {
+        warning(sprintf(
+                "Skipping transcripts with length not a multiple of 3: %s",
+                paste0(transcript_names[invalid_len], collapse = ","))
+        )
+    }
+    valid_mask <- !invalid_len
+    if (!any(valid_mask)) {
+        return(
+            matrix(
+                numeric(0), nrow = 64, ncol = 0,
+                dimnames = list(all_64_codons, character(0))
+            )
+        )
+    }
+    dna_seqs <- Biostrings::DNAStringSet(seq_vec[valid_mask])
+    counts_mat <- Biostrings::trinucleotideFrequency(dna_seqs, step = 3)
+    counts_mat <- t(counts_mat[, all_64_codons, drop = FALSE])
+    colnames(counts_mat) <- transcript_names[valid_mask]
+    return(counts_mat)
 }

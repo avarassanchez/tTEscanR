@@ -17,7 +17,8 @@ NULL
 #' @export
 #'
 #' @examples
-#' data(default_tTEscanR_mRNA_data)
+#' data("default_tTEscanR_mRNA_data", package = "tTEscanR")
+#'
 #' tTEscanR_obj <- createObject(
 #'     counts = default_tTEscanR_mRNA_data,
 #'     assay = "mRNA"
@@ -26,10 +27,8 @@ NULL
 #'     object = tTEscanR_obj, species = "hg38",
 #'     additional_metrics = FALSE, reduce = 1000
 #' )
-#' exonic_background <- computeExonicBackground(data = getAssay(
-#'     tTEscanR_obj,
-#'     "CodonUsage"
-#' ))
+#' codon_usage <- SummarizedExperiment::assay(tTEscanR_obj, "CodonUsage")
+#' exonic_background <- computeExonicBackground(data = codon_usage)
 computeExonicBackground <- function(data) {
     row_totals <- rowSums(data)
     total <- sum(row_totals)
@@ -66,7 +65,9 @@ computeExonicBackground <- function(data) {
 #' @export
 #'
 #' @examples
-#' data(default_tTEscanR_mRNA_data, default_tTEscanR_metadata)
+#' data("default_tTEscanR_mRNA_data", package = "tTEscanR")
+#' data("default_tTEscanR_metadata", package = "tTEscanR")
+#'
 #' tTEscanR_obj <- createObject(
 #'     counts = default_tTEscanR_mRNA_data,
 #'     assay = "mRNA"
@@ -75,7 +76,7 @@ computeExonicBackground <- function(data) {
 #'     object = tTEscanR_obj, species = "hg38",
 #'     additional_metrics = FALSE, reduce = 1000
 #' )
-#' codon_usage <- getAssay(tTEscanR_obj, "CodonUsage")
+#' codon_usage <- SummarizedExperiment::assay(tTEscanR_obj, "CodonUsage")
 #' exonic_background <- computeExonicBackground(data = codon_usage)
 #' # Input: expression count matrix, need to provide metadata & batch parameters
 #' mean_codon_usage <- computeMeanUsage(
@@ -136,9 +137,6 @@ computeCorrelationBackground <- function(mean, background,
 #' @param metadata Optional; a \code{data.frame} with the meta-information
 #'     related with the conditions in \code{data}. There has to be one column
 #'     with the same labels as the column names.
-#' @param id_col Optional; a factor based on \code{metadata} columns to define
-#'     the variable to use to link it with the \code{data}. If \code{NULL} the
-#'     column with the highest agreement will be automatically selected.
 #' @param batch Optional; a factor based on \code{metadata} columns to define
 #'     the variable to correct for. Required if \code{mode} is \code{"raw"}
 #'     and \code{data} is not a \code{tTEscanR_Object}.
@@ -152,15 +150,15 @@ computeCorrelationBackground <- function(mean, background,
 #' @export
 #'
 #' @examples
-#' data(default_tTEscanR_tRNA_data, default_tTEscanR_metadata)
+#' data("default_tTEscanR_tRNA_data", package = "tTEscanR")
+#' data("default_tTEscanR_metadata", package = "tTEscanR")
+#'
 #' tTEscanR_obj <- createObject(
 #'     counts = default_tTEscanR_tRNA_data,
 #'     assay = "tRNA",
-#'     meta.data = list(default_tTEscanR_metadata, "tissue"),
-#'     meta.data.ids = list(
-#'         "ConditionsLabels",
-#'         "CorrectionFactor"
-#'     )
+#'     meta_data = default_tTEscanR_metadata,
+#'     sample_id = "conditions",
+#'     params = list("CorrectionFactor" = "tissue")
 #' )
 #' # Input: tTEscanR object containing metadata and batch parameters
 #' tTEscanR_obj <- computeAnticodonUsage(object = tTEscanR_obj)
@@ -168,14 +166,13 @@ computeCorrelationBackground <- function(mean, background,
 #'     data = tTEscanR_obj,
 #'     assay = "AnticodonUsage"
 #' )
-computeMeanUsage <- function(data, assay = NULL, metadata = NULL, id_col = NULL,
-    batch = NULL, mode = c("raw", "size-corrected", "long_format"),
-    verbose = TRUE) {
+computeMeanUsage <- function(data, assay = NULL, metadata = NULL, batch = NULL,
+    mode = c("raw", "size-corrected", "long_format"), verbose = TRUE) {
     mode <- match.arg(mode)
-    is_object <- inherits(data, "tTEscanR_Object")
+    is_object <- inherits(data, "MultiAssayExperiment")
     extract_data <- generalChecksMeanUsage( # Performs step A
         data = data, assay = assay, metadata = metadata, batch = batch,
-        verbose = verbose
+        is_object = is_object, verbose = verbose
     )
     mat <- extract_data$raw_mat
     var_name <- extract_data$var_name
@@ -183,7 +180,7 @@ computeMeanUsage <- function(data, assay = NULL, metadata = NULL, id_col = NULL,
     if (verbose) message("B . Calculating the mean usage across conditions.")
     if (mode == "raw") { # Data has not been size-corrected not norm.
         mat <- modeRaw(
-            id_col = id_col, metadata = extract_data$metadata,
+            metadata = extract_data$metadata,
             raw_mat = mat, batch = extract_data$batch, verbose = verbose
         )
         mode <- "size-corrected"
@@ -208,9 +205,10 @@ computeMeanUsage <- function(data, assay = NULL, metadata = NULL, id_col = NULL,
     checkDataFrame(usage_results, required_names = FALSE)
     if (verbose) message("B . COMPLETED")
     if (is_object) { # Update the input tTEscanR object
+        usage_name <- paste(assay, "MeanUsage", sep = "_")
         data <- updateObject(
-            object = data, meta.data = usage_results, verbose = FALSE,
-            meta.data.ids = paste(assay, "MeanUsage", sep = "_")
+            object = data, params = list(usage_name = usage_results),
+            verbose = FALSE
         )
         return(data)
     } else {
@@ -218,16 +216,16 @@ computeMeanUsage <- function(data, assay = NULL, metadata = NULL, id_col = NULL,
     }
 }
 
-generalChecksMeanUsage <- function(data, assay, metadata, batch, verbose) {
+generalChecksMeanUsage <- function(data, assay, metadata, batch, is_object,
+    verbose) {
     assay_map <- list( # Links data to retrieve
         CodonUsage = "codon", AnticodonUsage = "anticodon",
         AADemand = "AA", AASupply = "AA"
     )
     if (verbose) message("A . Evaluating the input.")
-    is_object <- inherits(data, "tTEscanR_Object")
     if (is_object) { # Dealing with a tTEscanR object
 
-        if (verbose) message("- The input is a tTEscanR object.")
+        if (verbose) message("- The input is a MultiAssayExperiment object.")
         if (!assay %in% names(assay_map)) {
             stop(
                 "Invalid 'assay'.\n", "Please specify a valid 'assay' input ",
@@ -235,21 +233,15 @@ generalChecksMeanUsage <- function(data, assay, metadata, batch, verbose) {
             )
         }
 
-        isInObject(
-            object = data, slot = "assays", section = assay, verbose = FALSE
-        )
-        isInObject(
-            object = data, slot = "meta.data",
-            section = "CorrectionFactor", verbose = FALSE
-        )
-        isInObject(
-            object = data, slot = "meta.data",
-            section = "ConditionsLabels", verbose = FALSE
-        )
+        checkAssayPresent(object = data, assay_name = assay)
+        checkParamPresent(object = data, param_name = "CorrectionFactor")
+        metadata <- MultiAssayExperiment::colData(data)
+        if (S4Vectors::isEmpty(metadata)) {
+            stop("The object 'data' does not contain metadata.")
+        }
 
-        raw_mat <- getAssay(data, assay)
-        metadata <- getMetadata(data, "ConditionsLabels")
-        batch <- getMetadata(data, "CorrectionFactor")
+        raw_mat <- SummarizedExperiment::assay(data, assay)
+        batch <- S4Vectors::metadata(data)[["CorrectionFactor"]]
         var_name <- assay_map[[assay]]
     } else { # Dealing with a dataset
         raw_mat <- data
@@ -263,27 +255,14 @@ generalChecksMeanUsage <- function(data, assay, metadata, batch, verbose) {
     ))
 }
 
-modeRaw <- function(id_col, metadata, raw_mat, batch, verbose) {
+modeRaw <- function(metadata, raw_mat, batch, verbose) {
     if (verbose) {
-        message(
-            "- Size correcting the matrix to account for sequencing depth."
-        )
-    }
-
-    if (!is.null(id_col)) {
-        if (!id_col %in% colnames(metadata)) is_col <- NULL
-        if (verbose) {
-            message(
-                "The 'id_col' was not found in the 'metadata'. ",
-                "Automatic detection will be implemented."
-            )
-        }
+        message("- Size-correcting the matrix to account for sequencing depth.")
     }
 
     # Filter the data and the metadata based on their matching entries
-    filtered <- filterByMetadata(
-        data = raw_mat, metadata = metadata, id_col = id_col
-    )
+    filtered <- filterByMetadata(data = raw_mat, metadata = metadata)
+
     raw_mat <- computeSizeCorrection(
         data = filtered[[1]], verbose = FALSE,
         metadata = filtered[[2]], batch = batch
@@ -293,7 +272,7 @@ modeRaw <- function(id_col, metadata, raw_mat, batch, verbose) {
 }
 
 computeMetricsCodonUsage <- function(codon_usage, codon_freq, metadata,
-    id_col = NULL, batch = NULL, corr_method, verbose) {
+    batch = NULL, corr_method, verbose) {
     ## CODON EXONIC BACKGROUND
     if (verbose) message("- Computing the codon exonic background.")
     codon_exonic_back <- computeExonicBackground(data = codon_freq)
@@ -309,7 +288,7 @@ computeMetricsCodonUsage <- function(codon_usage, codon_freq, metadata,
     if (verbose) message("- Computing the mean codon usage.")
     mean_codon_usage <- computeMeanUsage(
         data = codon_usage, metadata = metadata,
-        id_col = id_col, batch = batch, verbose = FALSE
+        batch = batch, verbose = FALSE
     )
     if (is.null(mean_codon_usage)) {
         stop(

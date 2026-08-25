@@ -7,8 +7,9 @@
 runPipeline(
   mRNA_data,
   tRNA_data,
-  metadata,
+  meta_data,
   batch,
+  sample_id = NULL,
   corr_method = "spearman",
   additional_metrics = TRUE,
   runDESeq = TRUE,
@@ -16,10 +17,9 @@ runPipeline(
   codon_freq = NULL,
   species = NULL,
   genetic_code = "Standard",
-  dim_reduct = NULL,
   reduce = 100,
-  color_factor = NULL,
-  verbose = TRUE
+  verbose = TRUE,
+  ...
 )
 }
 \arguments{
@@ -29,12 +29,15 @@ runPipeline(
 \item{tRNA_data}{A count matrix of tRNA genes (rows) per conditions
 (columns).}
 
-\item{metadata}{A \code{data.frame} with the meta-information related with
+\item{meta_data}{A \code{data.frame} with the meta-information related with
 the conditions in \code{mRNA_data} or \code{tRNA_data}. Just the
 intersecting conditions will be considered.}
 
-\item{batch}{A factor based on \code{metadata} columns to define the
+\item{batch}{A factor based on \code{meta_data} columns to define the
 variable to correct for when size correcting the count matrices.}
+
+\item{sample_id}{Optional; a character string naming the column in
+\code{meta.data} to use as sample row names.}
 
 \item{corr_method}{A correlation method accepted by \code{\link{cor}}.
 Defaults to \code{"spearman"}.}
@@ -61,22 +64,19 @@ between both inputs.}
 \item{genetic_code}{A \code{character} string to specify the genetic code
 to be used. Defaults to \code{"Standard"}.}
 
-\item{dim_reduct}{Either \code{"PCA"}, \code{"UMAP"} or \code{"tSNE"} to
-specify the dimensionality reduction approach to be executed if
-\code{runDESeq} is \code{TRUE}. Defaults to \code{"PCA"}.}
-
 \item{reduce}{Numeric; a scaling factor used to normalize large expression
 values that exceed R's handling capacity. Defaults to 100.}
 
-\item{color_factor}{A factor based on \code{metadata} columns to define the
-colors in the plots. Required if \code{runDESeq} is \code{TRUE}.}
-
 \item{verbose}{Logical; if \code{TRUE}, displays information messages.
 Defaults to \code{TRUE}.}
+
+\item{...}{Additional arguments passed directly to
+\code{\link{runDEAnalysis}} (e.g., \code{dim_reduct},
+\code{compute_pairwise}, \code{color_factor}).}
 }
 \value{
-A \code{tTEscanR_Object} with the assays and metadata computed
-through the tTE pipeline.
+A \code{\link[MultiAssayExperiment]{MultiAssayExperiment}} with the
+assays and metadata computed through the tTE pipeline.
 }
 \description{
 This function wraps up all the independent functions of theoretical
@@ -86,15 +86,15 @@ demand and supply. With matching condition in the former matrices the
 theoretical translation efficiency would be computed.
 }
 \examples{
-data(
-    default_tTEscanR_mRNA_data, default_tTEscanR_tRNA_data,
-    default_tTEscanR_metadata
-)
+data("default_tTEscanR_mRNA_data", package = "tTEscanR")
+data("default_tTEscanR_tRNA_data", package = "tTEscanR")
+data("default_tTEscanR_metadata", package = "tTEscanR")
+
 tTEscanR_obj <- runPipeline(
     mRNA_data = default_tTEscanR_mRNA_data,
     tRNA_data = default_tTEscanR_tRNA_data,
-    metadata = default_tTEscanR_metadata,
+    meta_data = default_tTEscanR_metadata,
     species = "hg38", batch = "tissue", additional_metrics = FALSE,
-    compute_significance = FALSE, runDESeq = FALSE
+    sample_id = "conditions", compute_significance = FALSE, runDESeq = FALSE
 )
 }

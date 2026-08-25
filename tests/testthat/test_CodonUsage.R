@@ -1,132 +1,88 @@
+data("default_tTEscanR_mRNA_data", package = "tTEscanR")
+data("default_tTEscanR_tRNA_data", package = "tTEscanR")
+data("default_tTEscanR_metadata", package = "tTEscanR")
+
 test_that("The different corr_method possibilities - inside computeCodonUsage()", {
-    data(default_tTEscanR_mRNA_data, default_tTEscanR_metadata)
+    tTEobject <- createObject(counts = default_tTEscanR_mRNA_data, assay = "mRNA", meta_data = default_tTEscanR_metadata, sample_id = "conditions", params = list("CorrectionFactor" = "tissue"))
 
-    tTEobject <- createObject(counts = default_tTEscanR_mRNA_data, assay = "mRNA", meta.data = list(default_tTEscanR_metadata, "tissue"), meta.data.ids = list("ConditionsLabels", "CorrectionFactor"))
+    ## CASE 1: valid parameter combinations
+    expect_no_error(suppressWarnings(computeCodonUsage(object = tTEobject, codon_freq = NULL, species = "hg38", additional_metrics = FALSE, verbose = FALSE)))
+    expect_no_error(suppressWarnings(computeCodonUsage(object = tTEobject, codon_freq = NULL, species = "hg38", additional_metrics = TRUE, corr_method = "spearman", verbose = FALSE)))
+    expect_no_error(suppressWarnings(computeCodonUsage(object = tTEobject, codon_freq = NULL, species = "hg38", additional_metrics = TRUE, corr_method = "pearson", verbose = FALSE)))
 
-    # CASE 1: no error - default parameters without computing additional metrics
+    ## CASE 2:Invalid corr_method parameter (1 assertion tests argument validation)
+    expect_error(suppressWarnings(computeCodonUsage(object = tTEobject, codon_freq = NULL, species = "hg38", additional_metrics = TRUE, corr_method = "invalid_method", verbose = FALSE)))
+
     expect_no_error(suppressWarnings(computeCodonUsage(object = tTEobject, codon_freq = NULL, species = "hg38", additional_metrics = FALSE, verbose = FALSE)))
     expect_no_error(suppressWarnings(computeCodonUsage(object = tTEobject, codon_freq = NULL, species = "hg38", additional_metrics = FALSE, corr_method = "spearman", verbose = FALSE))) # corr_method will be ignored as it is only required if additional_metrics = TRUE
-
-    # CASE 2: no error - default parameters and computing additional metrics
-    expect_no_error(suppressWarnings(computeCodonUsage(object = tTEobject, codon_freq = NULL, species = "hg38", additional_metrics = TRUE, verbose = FALSE))) # the default corr_method will be used
-    expect_no_error(suppressWarnings(computeCodonUsage(object = tTEobject, codon_freq = NULL, species = "hg38", additional_metrics = TRUE, corr_method = "spearman", verbose = FALSE)))
-
-    # CASE 3: no error - trying other corr_method parameters
-    expect_no_error(suppressWarnings(computeCodonUsage(object = tTEobject, codon_freq = NULL, species = "hg38", additional_metrics = TRUE, corr_method = "pearson", verbose = FALSE)))
-    expect_no_error(suppressWarnings(computeCodonUsage(object = tTEobject, codon_freq = NULL, species = "hg38", additional_metrics = TRUE, corr_method = "kendall", verbose = FALSE)))
-
-    # CASE 4: error - trying non-existent corr_method parameters
-    expect_error(suppressWarnings(computeCodonUsage(object = tTEobject, codon_freq = NULL, species = "hg38", additional_metrics = TRUE, corr_method = "spearmans", verbose = FALSE)))
-    expect_error(suppressWarnings(computeCodonUsage(object = tTEobject, codon_freq = NULL, species = "hg38", additional_metrics = TRUE, corr_method = "pearsons", verbose = FALSE)))
-    expect_error(suppressWarnings(computeCodonUsage(object = tTEobject, codon_freq = NULL, species = "hg38", additional_metrics = TRUE, corr_method = "kendalls", verbose = FALSE)))
 })
 
 test_that("The different corr_method possibilities - inside computeMetricsCodonUsage()", {
-    data(default_tTEscanR_mRNA_data, default_tTEscanR_metadata)
-
-    tTEobject <- createObject(counts = default_tTEscanR_mRNA_data, assay = "mRNA", meta.data = default_tTEscanR_metadata, meta.data.ids = "ConditionsLabels")
+    tTEobject <- createObject(counts = default_tTEscanR_mRNA_data, assay = "mRNA", meta_data = default_tTEscanR_metadata, sample_id = "conditions")
     tTEobject <- computeCodonUsage(object = tTEobject, codon_freq = NULL, species = "hg38", additional_metrics = FALSE)
 
-    # CASE 1: no error - default
-    expect_no_error(suppressWarnings(computeMetricsCodonUsage(
-        codon_usage = tTEobject@assays$CodonUsage, codon_freq = codon_freq_table_canonical_hg38,
-        metadata = tTEobject@meta.data$ConditionsLabels, corr_method = "spearman", batch = "tissue", verbose = FALSE
-    )))
-    # CASE 2: no error - trying other corr_method parameters
-    expect_no_error(suppressWarnings(computeMetricsCodonUsage(
-        codon_usage = tTEobject@assays$CodonUsage, codon_freq = codon_freq_table_canonical_hg38,
-        metadata = tTEobject@meta.data$ConditionsLabels, corr_method = "pearson", batch = "tissue", verbose = FALSE
-    )))
+    meta <- SummarizedExperiment::colData(tTEobject)
+    codon_usage <- SummarizedExperiment::assay(tTEobject, "CodonUsage")
 
-    expect_no_error(suppressWarnings(computeMetricsCodonUsage(codon_usage = tTEobject@assays$CodonUsage, codon_freq = codon_freq_table_canonical_hg38, metadata = tTEobject@meta.data$ConditionsLabels, corr_method = "kendall", batch = "tissue", verbose = FALSE)))
+    ## CASE 1: Valid methods
+    expect_no_error(suppressWarnings(computeMetricsCodonUsage(codon_usage = codon_usage, codon_freq = codon_freq_table_canonical_hg38, metadata = meta, corr_method = "spearman", batch = "tissue", verbose = FALSE)))
+    expect_no_error(suppressWarnings(computeMetricsCodonUsage(codon_usage = codon_usage, codon_freq = codon_freq_table_canonical_hg38, metadata = meta, corr_method = "kendall", batch = "tissue", verbose = FALSE)))
 
-    # CASE 3: error - trying non-existent corr_method parameters
-    expect_error(suppressWarnings(computeMetricsCodonUsage(
-        codon_usage = tTEobject@assays$CodonUsage, codon_freq = codon_freq_table_canonical_hg38,
-        metadata = tTEobject@meta.data$ConditionsLabels, corr_method = "spearmans", verbose = FALSE
-    )))
-    expect_error(suppressWarnings(computeMetricsCodonUsage(
-        codon_usage = tTEobject@assays$CodonUsage, codon_freq = codon_freq_table_canonical_hg38,
-        metadata = tTEobject@meta.data$ConditionsLabels, corr_method = "pearsons", verbose = FALSE
-    )))
-    expect_error(suppressWarnings(computeMetricsCodonUsage(
-        codon_usage = tTEobject@assays$CodonUsage, codon_freq = codon_freq_table_canonical_hg38,
-        metadata = tTEobject@meta.data$ConditionsLabels, corr_method = "kendalls", verbose = FALSE
-    )))
-    # CASE 4: error - no specification of batch
-    expect_error(suppressWarnings(computeMetricsCodonUsage(
-        codon_usage = tTEobject@assays$CodonUsage, codon_freq = codon_freq_table_canonical_hg38,
-        metadata = tTEobject@meta.data$ConditionsLabels, corr_method = "spearman", verbose = FALSE
-    )))
+    ## CASE 2: Invalid method and missing required batch parameter
+    expect_error(suppressWarnings(computeMetricsCodonUsage(codon_usage = codon_usage, codon_freq = codon_freq_table_canonical_hg38, metadata = meta, corr_method = "invalid_method", verbose = FALSE)))
+    expect_error(suppressWarnings(computeMetricsCodonUsage(codon_usage = codon_usage, codon_freq = codon_freq_table_canonical_hg38, metadata = meta, corr_method = "spearman", verbose = FALSE)))
 })
 
 test_that("The different corr_method possibilities - inside computeCorrelationBackground()", {
-    data(default_tTEscanR_mRNA_data, default_tTEscanR_metadata)
-
     tTEobject <- createObject(counts = default_tTEscanR_mRNA_data, assay = "mRNA")
     tTEobject <- computeCodonUsage(object = tTEobject, codon_freq = NULL, species = "hg38", additional_metrics = FALSE)
 
-    mean_codon_usage <- suppressWarnings(computeMeanUsage(data = tTEobject@assays$CodonUsage, metadata = default_tTEscanR_metadata, batch = "tissue", mode = "raw"))
-    exonic_background <- suppressWarnings(computeExonicBackground(data = tTEobject@assays$CodonUsage))
+    codon_usage <- SummarizedExperiment::assay(tTEobject, "CodonUsage")
+    mean_codon_usage <- suppressWarnings(computeMeanUsage(data = codon_usage, metadata = default_tTEscanR_metadata, batch = "tissue", mode = "raw"))
+    exonic_background <- suppressWarnings(computeExonicBackground(data = codon_usage))
 
-    # CASE 1: no error - default
+    ## CASE 1: Valid methods
     expect_no_error(suppressWarnings(computeCorrelationBackground(mean = mean_codon_usage, background = exonic_background, corr_method = "spearman")))
-    expect_no_error(suppressWarnings(computeCorrelationBackground(mean = mean_codon_usage, background = exonic_background)))
-
-    # CASE 2: no error - trying other corr_method parameters
     expect_no_error(suppressWarnings(computeCorrelationBackground(mean = mean_codon_usage, background = exonic_background, corr_method = "pearson")))
-    expect_no_error(suppressWarnings(computeCorrelationBackground(mean = mean_codon_usage, background = exonic_background, corr_method = "kendall")))
 
-    # CASE 3: error - trying non-existent corr_method parameters
-    expect_error(suppressWarnings(computeCorrelationBackground(mean = mean_codon_usage, background = exonic_background, corr_method = "spearmans")))
-    expect_error(suppressWarnings(computeCorrelationBackground(mean = mean_codon_usage, background = exonic_background, corr_method = "pearsons")))
-    expect_error(suppressWarnings(computeCorrelationBackground(mean = mean_codon_usage, background = exonic_background, corr_method = "kendalls")))
+    ## CASE 2: Invalid method
+    expect_error(suppressWarnings(computeCorrelationBackground(mean = mean_codon_usage, background = exonic_background, corr_method = "invalid_method")))
 })
 
 test_that("The different parameters to perform the mean codon usage - computeMeanUsage()", {
-    data(default_tTEscanR_mRNA_data, default_tTEscanR_metadata)
-
-    tTEobject <- createObject(counts = default_tTEscanR_mRNA_data, assay = "mRNA", meta.data = list(default_tTEscanR_metadata, "tissue"), meta.data.ids = list("ConditionsLabels", "CorrectionFactor"))
+    tTEobject <- createObject(counts = default_tTEscanR_mRNA_data, assay = "mRNA", meta_data = default_tTEscanR_metadata, sample_id = "conditions", params = list("CorrectionFactor" = "tissue"))
     tTEobject <- computeCodonUsage(object = tTEobject, codon_freq = NULL, species = "hg38", additional_metrics = FALSE)
 
-    # CASE 1: no error - using object
+    meta <- SummarizedExperiment::colData(tTEobject)
+    codon_usage <- SummarizedExperiment::assay(tTEobject, "CodonUsage")
+
+    # CASE 1: Valid object and inputs
     expect_no_error(suppressWarnings(computeMeanUsage(data = tTEobject, assay = "CodonUsage", mode = "raw")))
-    expect_no_error(suppressWarnings(computeMeanUsage(data = tTEobject, assay = "CodonUsage", mode = "raw", metadata = tTEobject@meta.data$ConditionsLabels, batch = "tissue"))) # metadata and batch will be ignored
+    expect_no_error(suppressWarnings(computeMeanUsage(data = tTEobject, assay = "CodonUsage", mode = "raw", metadata = meta, batch = "tissue"))) # metadata and batch will be ignored
 
-    # CASE 2: error - using object wrong assay
-    expect_error(computeMeanUsage(data = tTEobject, assay = CodonUsage, mode = "raw", metadata = tTEobject@meta.data$ConditionsLabels, batch = "tissue")) # the assay needs to be a string
-    expect_error(computeMeanUsage(data = tTEobject, assay = "CodonUse", mode = "raw", metadata = tTEobject@meta.data$ConditionsLabels)) # non-existent assay
-    expect_error(computeMeanUsage(data = tTEobject, mode = "raw")) # assay not specified
+    # CASE 2: Invalid object/assay specifications
+    expect_error(computeMeanUsage(data = tTEobject, assay = CodonUsage, mode = "raw", metadata = meta, batch = "tissue"))
+    expect_error(computeMeanUsage(data = tTEobject, assay = "NonExistentAssay", mode = "raw", metadata = meta))
+    expect_error(computeMeanUsage(data = tTEobject, mode = "raw"))
 
-    # CASE 3: no error - using a dataset
-    expect_no_error(suppressWarnings(computeMeanUsage(data = tTEobject@assays$CodonUsage, mode = "raw", metadata = tTEobject@meta.data$ConditionsLabels, batch = "tissue")))
-
-    # CASE 4: error - no specifying the batch or metadata
-    expect_error(suppressWarnings(computeMeanUsage(data = tTEobject@assays$CodonUsage, mode = "raw", metadata = tTEobject@meta.data$ConditionsLabels)))
-    expect_error(suppressWarnings(computeMeanUsage(data = tTEobject@assays$CodonUsage, mode = "raw", batch = "tissue")))
+    # CASE 3: missing specifying the batch or metadata
+    expect_error(suppressWarnings(computeMeanUsage(data = codon_usage, mode = "raw", metadata = meta)))
+    expect_error(suppressWarnings(computeMeanUsage(data = codon_usage, mode = "raw", batch = "tissue")))
 })
 
 test_that("The mean usage across different features - computeMeanUsage()", {
-    data(default_tTEscanR_mRNA_data, default_tTEscanR_tRNA_data, default_tTEscanR_metadata)
-
-    tTEobject <- createObject(counts = list(default_tTEscanR_mRNA_data, default_tTEscanR_tRNA_data), assay = list("mRNA", "tRNA"), meta.data = list(default_tTEscanR_metadata, "tissue"), meta.data.ids = list("ConditionsLabels", "CorrectionFactor"))
+    tTEobject <- suppressWarnings(createObject(counts = list(default_tTEscanR_mRNA_data, default_tTEscanR_tRNA_data),
+                                               assay = list("mRNA", "tRNA"), meta_data = default_tTEscanR_metadata,
+                                               sample_id = "conditions", params = list("CorrectionFactor" = "tissue")))
     tTEobject <- computeCodonUsage(object = tTEobject, codon_freq = NULL, species = "hg38", additional_metrics = FALSE)
     tTEobject <- computeAnticodonUsage(object = tTEobject)
     tTEobject <- computeAAUsage(object = tTEobject, level = "both")
 
-    # CASE 1: no error - CODON
-    expect_no_error(suppressWarnings(computeMeanUsage(data = tTEobject, assay = "CodonUsage", mode = "raw")))
-    expect_no_error(suppressWarnings(computeMeanUsage(data = tTEobject@assays$CodonUsage, mode = "raw", metadata = tTEobject@meta.data$ConditionsLabels, batch = "tissue")))
+    meta <- SummarizedExperiment::colData(tTEobject)
+    features <- c("AnticodonUsage", "AADemand", "AASupply")
 
-    # CASE 2: no error - ANTICODON
-    expect_no_error(suppressWarnings(computeMeanUsage(data = tTEobject, assay = "AnticodonUsage", mode = "raw")))
-    expect_no_error(suppressWarnings(computeMeanUsage(data = tTEobject@assays$AnticodonUsage, mode = "raw", metadata = tTEobject@meta.data$ConditionsLabels, batch = "tissue")))
-
-    # CASE 3: no error - AA DEMAND
-    expect_no_error(suppressWarnings(computeMeanUsage(data = tTEobject, assay = "AADemand", mode = "raw")))
-    expect_no_error(suppressWarnings(computeMeanUsage(data = tTEobject@assays$AADemand, mode = "raw", metadata = tTEobject@meta.data$ConditionsLabels, batch = "tissue")))
-
-    # CASE 4: no error - AA SUPPLY
-    expect_no_error(suppressWarnings(computeMeanUsage(data = tTEobject, assay = "AASupply", mode = "raw")))
-    expect_no_error(suppressWarnings(computeMeanUsage(data = tTEobject@assays$AASupply, mode = "raw", metadata = tTEobject@meta.data$ConditionsLabels, batch = "tissue")))
+    for (feature in features) {
+        expect_no_error(suppressWarnings(computeMeanUsage(data = tTEobject, assay = feature, mode = "raw")))
+        expect_no_error(suppressWarnings(computeMeanUsage(data = SummarizedExperiment::assay(tTEobject, feature), mode = "raw", metadata = meta, batch = "tissue")))
+    }
 })

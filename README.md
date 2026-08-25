@@ -17,8 +17,15 @@ Additionally, **tTEscanR** includes an advanced visualization module that genera
 
 The **tTEscanR** source code is entirely written in R. The latest full distribution release can be downloaded from GitHub:
 
+```r
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+    install.packages("BiocManager")
+}
+
+BiocManager::install("tTEscanR")
+```
+
 ```{r}
-install.packages("/avarassanchez/tTEscanR")
 library(tTEscanR)
 ```
 
@@ -28,7 +35,7 @@ The **input** data for **tTEscanR** should be preprocessed according to the step
 
 ## 3. Workflow functionalities
 
-The **tTEscanR** package provides a strucutred framework for analyzing codon-anticodon pools in the context of transaltion efficiency.
+The **tTEscanR** package provides a structured framework for analyzing codon-anticodon pools in the context of translation efficiency.
 <img width="1950" height="2084" alt="schema_tTEscanR_figure1" src="https://github.com/user-attachments/assets/45d40d3e-57be-4f23-b5da-4a6c810d18c1" />
 
 ### 3.1. Core functions

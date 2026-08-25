@@ -1,114 +1,58 @@
-test_that("runPipeline executes successfully with default parameters", {
-    data(default_tTEscanR_mRNA_data, default_tTEscanR_tRNA_data, default_tTEscanR_metadata)
+data("default_tTEscanR_mRNA_data", package = "tTEscanR")
+data("default_tTEscanR_tRNA_data", package = "tTEscanR")
+data("default_tTEscanR_metadata", package = "tTEscanR")
 
-    expect_error(
-        res <- runPipeline(
-            mRNA_data = default_tTEscanR_mRNA_data,
-            tRNA_data = default_tTEscanR_tRNA_data,
-            metadata = default_tTEscanR_metadata,
-            verbose = TRUE
-        ),
-        "argument \"batch\" is missing, with no default"
+test_that("runPipeline validates required arguments before execution", {
+    ## Baseline pipeline arguments
+    base_args <- list(
+        mRNA_data = default_tTEscanR_mRNA_data,
+        tRNA_data = default_tTEscanR_tRNA_data,
+        meta_data = default_tTEscanR_metadata,
+        sample_id = "conditions",
+        verbose = FALSE
     )
 
-    expect_error(
-        res <- runPipeline(
-            mRNA_data = default_tTEscanR_mRNA_data,
-            tRNA_data = default_tTEscanR_tRNA_data,
-            metadata = default_tTEscanR_metadata,
-            batch = "tissue",
-            verbose = TRUE
-        ),
-        "No 'codon_freq' provided and no 'species' specified"
-    )
+    ## CASE 1: Missing required batch parameter
+    expect_error(do.call(runPipeline, base_args), "argument \"batch\" is missing")
 
-    expect_error(
-        res <- runPipeline(
-            mRNA_data = default_tTEscanR_mRNA_data,
-            tRNA_data = default_tTEscanR_tRNA_data,
-            metadata = default_tTEscanR_metadata,
-            batch = "tissue",
-            species = "hg19",
-            verbose = TRUE
-        ),
-        "Incorrect 'species'"
-    )
+    ## CASE 2: Missing species specification
+    expect_error(do.call(runPipeline, c(base_args, list(batch = "tissue"))), "No 'codon_freq' provided and no 'species' specified")
 
-    expect_error(
-        res <- runPipeline(
-            mRNA_data = default_tTEscanR_mRNA_data,
-            tRNA_data = default_tTEscanR_tRNA_data,
-            metadata = default_tTEscanR_metadata,
-            batch = "tissues",
-            species = "hg38",
-            verbose = TRUE
-        ),
-        "The correction factor was not found in the metadata"
-    )
+    ## CASE 3: Invalid species value
+    expect_error(do.call(runPipeline, c(base_args, list(batch = "tissue", species = "hg19"))), "Incorrect 'species'")
 
-    expect_no_error(
-        res <- runPipeline(
-            mRNA_data = default_tTEscanR_mRNA_data,
-            tRNA_data = default_tTEscanR_tRNA_data,
-            metadata = default_tTEscanR_metadata,
-            batch = "tissue",
-            species = "hg38",
-            verbose = TRUE
-        )
-    )
-    expect_false(is.null(res))
-    expect_s4_class(res, "tTEscanR_Object")
+    ## CASE 4: Invalid batch column name (not in metadata)
+    expect_error(do.call(runPipeline, c(base_args, list(batch = "tissues", species = "hg38"))), "correction factor was not found")
+ })
 
-    expect_no_error(
-        res <- runPipeline(
-            mRNA_data = default_tTEscanR_mRNA_data,
-            tRNA_data = default_tTEscanR_tRNA_data,
-            metadata = default_tTEscanR_metadata,
-            batch = "tissue",
-            species = "hg38",
-            verbose = FALSE
-        )
-    )
-    expect_false(is.null(res))
-    expect_s4_class(res, "tTEscanR_Object")
+test_that("runPipeline executes successfully across full and lightweight configurations", {
+    ## CASE 1: Full execution with default DESeq and additional metrics
+    res_full <- suppressWarnings(runPipeline(
+        mRNA_data = default_tTEscanR_mRNA_data,
+        tRNA_data = default_tTEscanR_tRNA_data,
+        meta_data = default_tTEscanR_metadata,
+        batch = "tissue",
+        species = "hg38",
+        sample_id = "conditions",
+        compute_pairwise = FALSE,
+        verbose = TRUE
+    ))
 
-    expect_no_error(
-        res <- runPipeline(
-            mRNA_data = default_tTEscanR_mRNA_data,
-            tRNA_data = default_tTEscanR_tRNA_data,
-            metadata = default_tTEscanR_metadata,
-            batch = "tissue",
-            species = "hg38",
-            runDESeq = FALSE,
-            verbose = FALSE
-        )
-    )
-    expect_false(is.null(res))
-    expect_s4_class(res, "tTEscanR_Object")
+    expect_s4_class(res_full, "MultiAssayExperiment")
 
-    expect_no_error(
-        res <- runPipeline(
-            mRNA_data = default_tTEscanR_mRNA_data,
-            tRNA_data = default_tTEscanR_tRNA_data,
-            metadata = default_tTEscanR_metadata,
-            batch = "tissue",
-            species = "hg38",
-            additional_metrics = FALSE,
-            verbose = FALSE
-        )
-    )
-    expect_false(is.null(res))
-    expect_s4_class(res, "tTEscanR_Object")
+    ## CASE 2: Fast execution with optional modules toggled off (runDESeq = FALSE, additional_metrics = FALSE)
+    res_fast <- suppressWarnings(runPipeline(
+        mRNA_data = default_tTEscanR_mRNA_data,
+        tRNA_data = default_tTEscanR_tRNA_data,
+        meta_data = default_tTEscanR_metadata,
+        batch = "tissue",
+        species = "hg38",
+        sample_id = "conditions",
+        runDESeq = FALSE,
+        additional_metrics = FALSE,
+        compute_pairwise = FALSE,
+        verbose = FALSE
+    ))
 
-    expect_error(
-        res <- runPipeline(
-            mRNA_data = default_tTEscanR_mRNA_data,
-            tRNA_data = default_tTEscanR_tRNA_data,
-            metadata = default_tTEscanR_metadata,
-            species = "hg38",
-            additional_metrics = FALSE,
-            runDESeq = FALSE,
-            verbose = FALSE
-        )
-    ) # batch parameter needed to compute the tTE score
+    expect_s4_class(res_fast, "MultiAssayExperiment")
 })

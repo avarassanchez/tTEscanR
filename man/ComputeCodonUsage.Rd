@@ -16,7 +16,8 @@ computeCodonUsage(
 )
 }
 \arguments{
-\item{object}{A \code{tTEscanR_Object} containing a mRNA assay.}
+\item{object}{A \code{\link[MultiAssayExperiment]{MultiAssayExperiment}}
+containing a mRNA assay.}
 
 \item{codon_freq}{Optional; a user-provided codon frequency-per-gene table.
 If necessary, it can be computed using \code{\link{getCodonFreq}}.}
@@ -43,29 +44,28 @@ metadata in the \code{object}. Defaults to \code{FALSE}.}
 Defaults to \code{TRUE}.}
 }
 \value{
-An updated \code{tTEscanR_Object} containing a new layer of
-information \code{"CodonUsage"} in the \code{assays} slot representing
-the codon usage. Additional computations will be stored in the
-\code{meta.data} slot as \code{"CodonUsage_AdditionalMetrics"}.
+An updated \code{\link[MultiAssayExperiment]{MultiAssayExperiment}}
+containing a new layer of information in the \code{assays}
+representing the \code{"CodonUsage"}. Additional computations will be
+stored in the \code{param} slot as \code{"CodonUsage_AdditionalMetrics"}.
 }
 \description{
-This function estimates \strong{codon usage profiles} based on gene-level
-mRNA expression data stored in a \code{tTEscanR_Object}. It optionally
-accepts pre-computed codon frequency tables or uses internally generated
-default tables when not provided. When enabled, it can evaluate the
-correlation between background codon composition and observed mean codon
-usage. If the additional metrics are to be computed the input
-\code{tTEscanR_Object} needs to The default \code{codon_freq} were built
-using the canonical filter to select one transcript if several were
-available for the same gene.
+Estimates \strong{codon usage profiles} based on gene-level mRNA expression
+data. It optionally accepts pre-computed codon frequency tables or uses
+internally generated default tables when not provided. When enabled, it can
+evaluate the correlation between background codon composition and observed
+mean codon usage.
 }
 \examples{
-data(default_tTEscanR_mRNA_data, default_tTEscanR_metadata)
+data("default_tTEscanR_mRNA_data", package = "tTEscanR")
+data("default_tTEscanR_metadata", package = "tTEscanR")
+
 tTEscanR_obj <- createObject(
     counts = default_tTEscanR_mRNA_data,
     assay = "mRNA",
-    meta.data = list(default_tTEscanR_metadata, "tissue"),
-    meta.data.ids = list("ConditionsLabels", "CorrectionFactor")
+    meta_data = default_tTEscanR_metadata,
+    sample_id = "conditions",
+    params = list("CorrectionFactor" = "tissue")
 )
 tTEscanR_obj <- computeCodonUsage(
     object = tTEscanR_obj, species = "hg38",

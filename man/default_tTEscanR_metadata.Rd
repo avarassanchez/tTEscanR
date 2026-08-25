@@ -5,19 +5,37 @@
 \alias{default_tTEscanR_metadata}
 \title{Metadata of mRNA and tRNA data}
 \format{
-A data frame with samples as rows and annotation columns such as:
+Manually data.frame generated to define experimental variables for
+the sample column identifiers present in the expression datasets derived
+from Gao et al. (2022), Cao et al. (2020), and Domcke et al. (2020). The
+columns included are:
 \describe{
 \item{tissue}{The sequencing batch or sample origin}
 \item{cell.type}{The experimental group or cell type}
-\item{conditions}{The combination of the previous items as will be referred
-in the columns of the count matrices}
+\item{conditions}{The combination of the previous items as will be
+referred in the columns of the count matrices}
 }
 }
 \usage{
 data(default_tTEscanR_metadata)
 }
 \description{
-This dataset contains the extra information to indicate the conditions of
-the data
+Metadata table generated from the cell-types included in
+\code{"default_tTEscanR_mRNA_data"} and \code{"default_tTEscanR_tRNA_data"}
+used in package vignettes and examples.
+}
+\references{
+Gao W, Gallardo-Dodd CJ, Kutter C (2022). "Cell type-specific analysis by
+single-cell profiling identifies a stable mammalian tRNA-mRNA interface and
+increased translation efficiency in neurons." \emph{Genome Research},
+32(1), 97–110. \doi{10.1101/gr.275944.121}
+
+Cao J, O'Day DR, Pliner HA, et al. (2020). "A human cell atlas of fetal
+gene expression." \emph{Science}, 370(6518), eaba7721.
+\doi{10.1126/science.aba7721}
+
+Domcke S, Hill AJ, Daza RM, et al. (2020). "A human cell atlas of fetal
+chromatin accessibility." \emph{Science}, 370(6518), eaba7612.
+\doi{10.1126/science.aba7612}
 }
 \keyword{datasets}

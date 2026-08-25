@@ -15,7 +15,14 @@ bibliography: references.bib
 ---
 
 ```{r file_settings, include = FALSE}
-knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+knitr::opts_chunk$set(
+    collapse = TRUE,
+    comment = "#>",
+    fig.width = 6,
+    fig.height = 4,
+    dpi = 96,
+    dev = "png"
+)
 ```
 
 ```{r notes_format, echo = FALSE, results = 'asis'}
@@ -51,8 +58,15 @@ to easily explore and understand their data. Additionally, it helps summarize
 complex findings in a visually accessible manner, enhancing the overall clarity 
 and impact of the analysis. 
 
-```{r setup, message = FALSE, warning = FALSE}
-# install.packages("/avarassanchez/tTEscanR")
+```{r setup, message = FALSE, warning = FALSE, eval = FALSE}
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+    install.packages("BiocManager")
+}
+
+BiocManager::install("tTEscanR")
+```
+
+```{r load_setup, message = FALSE, warning = FALSE}
 library(tTEscanR)
 ```
 
@@ -65,7 +79,7 @@ flexibility provided by various parameters, we will first run **tTEscanR**. In
 this tutorial, we will analyze a single-cell fetal human atlas described 
 in *[@Cao2020]* and *[@Domcke2020]*, and previously examined by *[@Gao2022]*. 
 A subset of this dataset is included as a default dataset in **tTEscanR** and 
-can be directly loaded to performm the analysis. A step-by-step explanation of 
+can be directly loaded to perform the analysis. A step-by-step explanation of 
 this pipeline is available in the **tTEscanR User Guide** vignette.
 
 ```{r load_datasets, message = FALSE, warning = FALSE}
@@ -80,8 +94,8 @@ data(
 tTEobject <- runPipeline(
     mRNA_data = default_tTEscanR_mRNA_data,
     tRNA_data = default_tTEscanR_tRNA_data,
-    metadata = default_tTEscanR_metadata,
-    species = "hg38", batch = "tissue",
+    meta_data = default_tTEscanR_metadata,
+    species = "hg38", batch = "tissue", sample_id = "conditions",
     runDESeq = FALSE, verbose = FALSE
 )
 ```
@@ -116,7 +130,8 @@ compare a target feature against the mean across conditions |
 | `plotCorrelation()` | Features correlation |
 | `plotPermutation()` | Compares the baseline codon exonic background 
 against the current codon usage |
-| `plotTEscore()` | Represents the tTE scores obtained from `Compute_tTE()` |
+| `plotTEscore()` | Represents the tTE scores obtained from 
+`computeTheoreticalTE()` |
 
 ## 2.1. Data transformation
 
@@ -138,12 +153,13 @@ column-wise sum).
 :::
 
 ```{r check_codon_usage, eval = FALSE}
-head(getAssay(tTEobject, "CodonUsage"))
+head(SummarizedExperiment::assay(tTEobject, "CodonUsage"))
 ```
 
 ```{r codon_usage_data_transform}
 long_format_codon_usage <- transformFormat(
-    data = getAssay(tTEobject, "CodonUsage"), normalize = TRUE,
+    data = SummarizedExperiment::assay(tTEobject, "CodonUsage"), 
+    normalize = TRUE,
     rownames_to_column = "codon", # features (row) of the CodonUsage matrix
     names_to = "condition", # conditions (col) of the CodonUsage matrix
     values_to = "usage"
@@ -152,7 +168,9 @@ long_format_codon_usage <- transformFormat(
 # long_format_codon_usage contains 3 columns: codon, condition, usage
 # We are going to divide the condition column into tissue and cell_type
 long_format_codon_usage <- long_format_codon_usage %>%
-    tidyr::separate(.data$condition, into = c("tissue", "cell_type"), sep = "-")
+    tidyr::separate(
+        .data$condition, into = c("tissue", "cell_type"), sep = "-"
+    )
 ```
 
 ```{r check_long_codon_usage, eval = FALSE}
@@ -161,7 +179,8 @@ head(long_format_codon_usage)
 
 ```{r aa_demand_data_transform}
 long_format_AA_demand <- transformFormat(
-    data = getAssay(tTEobject, "AADemand"), normalize = TRUE,
+    data = SummarizedExperiment::assay(tTEobject, "AADemand"), 
+    normalize = TRUE,
     rownames_to_column = "AA", # features (row) of the AADemand matrix
     names_to = "condition", # conditions (col) of the AADemand matrix
     values_to = "demand"
@@ -194,11 +213,7 @@ by condition |
 highlight or label. |
 | `color_palette` | Optional; A vector of color codes to customize plot 
 appearance |
-| `save_format` | Optional; A character string indicating the format for saving 
-the plot. Supported formats: "png" or "pdf" |
-| `out_name` | Optional; Name for the saved plot (if `save_format` specified) |
-| `out_directory` | Optional; Path to the directory where the plot will be 
-saved (if `save_format` specified) |
+| `filename` | Optional; Name for the saved plot |
 | `show_legend` | A character string specifying the position of the legend. 
 Supported formats: "none" (default), "top", "bottom", "right" and "left" |
 | `add_titles` | Logical; if TRUE, includes titles in the plot. Defaults to 
@@ -248,11 +263,15 @@ plot mode.
 
 ```{r generate_subset_data}
 # Data subset: spleen tissue and selected cell types (lymphoid and myeloid)
-spleen_indexes <- grep("Spleen", long_format_codon_usage$tissue)
+spleen_indexes <- grep("Spleen", long_format_codon_usage$tissue, fixed = TRUE)
 long_format_cu_spleen <- long_format_codon_usage[spleen_indexes, ]
 
-lymphoid_indexes <- grep("Lymphoid", long_format_cu_spleen$cell_type)
-myeloid_indexes <- grep("Myeloid", long_format_cu_spleen$cell_type)
+lymphoid_indexes <- grep(
+    "Lymphoid", long_format_cu_spleen$cell_type, fixed = TRUE
+)
+myeloid_indexes <- grep(
+    "Myeloid", long_format_cu_spleen$cell_type, fixed = TRUE
+)
 
 cells_indexes <- c(lymphoid_indexes, myeloid_indexes)
 
@@ -284,8 +303,8 @@ between broader biological groups.
 
 ```{r generate_subset_data_2}
 # Data subset: specific codons in spleen and heart tissues
-spleen_indexes <- grep("Spleen", long_format_codon_usage$tissue)
-heart_indexes <- grep("Heart", long_format_codon_usage$tissue)
+spleen_indexes <- grep("Spleen", long_format_codon_usage$tissue, fixed = TRUE)
+heart_indexes <- grep("Heart", long_format_codon_usage$tissue, fixed = TRUE)
 
 tissue_indexes <- c(spleen_indexes, heart_indexes)
 
@@ -320,7 +339,7 @@ plotDistribution(
 
 The **`plotTargetComparison()`** function extends the functionality of 
 **`plotDistribution()`** by allowing direct comparison between a target 
-confition and the overall mean. This visualization helps identify how codon, 
+condition and the overall mean. This visualization helps identify how codon, 
 anticodon, or amino acid usage in the selected condition deviates from the 
 average profile.  
 
@@ -339,9 +358,9 @@ during the initial execution of **`runPipeline()`**.
 
 ```{r cerebellum_mean}
 # Data subset: mean codon usage across cerebellum cell types
-codon_usage <- getAssay(tTEobject, "CodonUsage")
-cerebellum_indexes <- grep("Cerebellum", colnames(codon_usage))
-cerebrum_indexes <- grep("Cerebrum", colnames(codon_usage))
+codon_usage <- SummarizedExperiment::assay(tTEobject, "CodonUsage")
+cerebellum_indexes <- grep("Cerebellum", colnames(codon_usage), fixed = TRUE)
+cerebrum_indexes <- grep("Cerebrum", colnames(codon_usage), fixed = TRUE)
 brain_indexes <- c(cerebellum_indexes, cerebrum_indexes)
 brain_codon_usage <- codon_usage[, brain_indexes]
 
@@ -367,7 +386,8 @@ across conditions as **grey bars**, and (iii) the difference between the two
 as **blue lines**.
 
 ```{r compare_to_mean_plot, fig.width = 7, fig.height = 4, fig.align = 'center'}
-additional_metrics <- getMetadata(tTEobject, "CodonUsage_AdditionalMetrics")
+meta <- S4Vectors::metadata(tTEobject)
+additional_metrics <- meta[["CodonUsage_AdditionalMetrics"]]
 plotTargetComparison(
     target_data = data.frame(mean_brain_codon_usage),
     overall_data = data.frame(additional_metrics$MeanCodonUsage),
@@ -379,7 +399,7 @@ plotTargetComparison(
 <hr>
 
 The **`plotProportion()`** function provides a summary visualization of a 
-specific metric's distribution across features or conditions. It supports 
+specific metrics' distribution across features or conditions. It supports 
 multiple display modes, including *bar*, *radar* or *donut* plots, allowing 
 users to choose the most effective format for their data.
 
@@ -410,9 +430,9 @@ plotProportion(
 
 ```{r mean_AA_demand}
 # Data subset: mean codon usage across cerebellum cell types
-aa_demand <- getAssay(tTEobject, "AADemand")
-cerebellum_indexes_AA <- grep("Cerebellum", colnames(aa_demand))
-cerebrum_indexes_AA <- grep("Cerebrum", colnames(aa_demand))
+aa_demand <- SummarizedExperiment::assay(tTEobject, "AADemand")
+cerebellum_indexes_AA <- grep("Cerebellum", colnames(aa_demand), fixed = TRUE)
+cerebrum_indexes_AA <- grep("Cerebrum", colnames(aa_demand), fixed = TRUE)
 brain_indexes_AA <- c(cerebellum_indexes_AA, cerebrum_indexes_AA)
 brain_AAdemand <- aa_demand[, brain_indexes_AA]
 
@@ -446,9 +466,11 @@ distribution if the sample size is too small. Alternatively,
 :::
 
 ```{r extract_metadata}
-conditions_metadata <- getMetadata(tTEobject, "ConditionsLabels")
-tTEresults_codon <- getMetadata(tTEobject, "tTEresults_codon")
-tTEresults_AA <- getMetadata(tTEobject, "tTEresults_AA")
+tTEobject_meta <- S4Vectors::metadata(tTEobject)[["tTE_results"]]
+tTEresults_codon <- tTEobject_meta[["tTEresults_codon"]]
+tTEresults_AA <- tTEobject_meta[["tTEresults_AA"]]
+
+conditions_metadata <- as.data.frame(SummarizedExperiment::colData(tTEobject))
 ```
 
 ```{r tTE_scores_plot}
@@ -462,10 +484,10 @@ plotTEscore(
 # Targeted condition: lymphoid and myeloid cells
 conditions_metadata$group <- "other"
 conditions_metadata$group[
-    grep("Myeloid", conditions_metadata$conditions)
+    grep("Myeloid", conditions_metadata$conditions, fixed = TRUE)
 ] <- "myeloid"
 conditions_metadata$group[
-    grep("Lymphoid", conditions_metadata$conditions)
+    grep("Lymphoid", conditions_metadata$conditions, fixed = TRUE)
 ] <- "lymphoid"
 ```
 
@@ -506,10 +528,10 @@ not.
 # Targeted condition: neurons
 conditions_metadata$group <- "other"
 conditions_metadata$group[grep(
-    "neuron", conditions_metadata$conditions
+    "neuron", conditions_metadata$conditions, fixed = TRUE
 )] <- "neurons"
 conditions_metadata$group[grep(
-    "ENS neuron", conditions_metadata$conditions
+    "ENS neuron", conditions_metadata$conditions, fixed = TRUE
 )] <- "other"
 ```
 

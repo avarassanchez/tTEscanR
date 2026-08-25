@@ -7,7 +7,8 @@
 computeAnticodonUsage(object, overwrite = FALSE, verbose = TRUE)
 }
 \arguments{
-\item{object}{A \code{tTEscanR_Object} containing a tRNA assay.}
+\item{object}{A \code{\link[MultiAssayExperiment]{MultiAssayExperiment}}
+containing a tRNA assay.}
 
 \item{overwrite}{Logical; if \code{TRUE}, overwrites any existing assay and
 metadata in the \code{object}. Defaults to \code{FALSE}.}
@@ -16,19 +17,19 @@ metadata in the \code{object}. Defaults to \code{FALSE}.}
 Defaults to \code{TRUE}.}
 }
 \value{
-An updated \code{tTEscanR_Object} containing a new layer of
-information \code{"AnticodonUsage"} in the \code{assays} slot
-representing the anticodon usage.
+An updated \code{\link[MultiAssayExperiment]{MultiAssayExperiment}}
+containing a new layer of information in the \code{assays}
+representing the \code{"AnticodonUsage"}.
 }
 \description{
-This function calculates \strong{anticodon usage profiles} from tRNA gene
-expression data stored in a \code{tTEscanR_Object}. It summarizes the
-expression of tRNAs by their anticodon identity, which can be used to
-estimate the tRNA supply landscape. The tRNA gene names need to be properly
-annotated for proper recognition. Expected format: tRNA-Asn-GTT-5-1.
+Calculates \strong{anticodon usage profiles} from tRNA gene
+abundance data. It summarizes the abundance of tRNAs by their anticodon
+identity, which can be used to estimate the tRNA supply landscape. The tRNA
+gene names need to be properly annotated for proper recognition.
 }
 \examples{
-data(default_tTEscanR_tRNA_data)
+data("default_tTEscanR_tRNA_data", package = "tTEscanR")
+
 tTEscanR_obj <- createObject(
     counts = default_tTEscanR_tRNA_data,
     assay = "tRNA"
