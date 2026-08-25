@@ -119,7 +119,7 @@ getOutputName <- function(action, out_name, out_directory, save_format,
 
     output_file <- file.path(out_directory, out_name)
     if (verbose) {
-        message("- The generated ", action, " will be save in: ", output_file)
+        message("- The generated ", action, " will be saved in: ", output_file)
     }
     return(output_file) # Returns the output name.
 }

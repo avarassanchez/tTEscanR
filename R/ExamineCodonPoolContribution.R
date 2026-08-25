@@ -262,7 +262,7 @@ analizeTopGeneImpact <- function(data, codon_freq, pool_contribution,
     mean_codon_usage, N, corr_method) {
     # Identifying top N contributors based on the pool contribution
     top_contributors <- apply(pool_contribution, 2, function(x) {
-        top_values <- sort(x, decreasing = TRUE)[seq_len(N)] # [1:N]
+        top_values <- sort(x, partial = N, decreasing = TRUE)[seq_len(N)] # [1:N]
         return(list(sum = sum(top_values), names = names(top_values)))
     })
 
