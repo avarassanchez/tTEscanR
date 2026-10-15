@@ -250,7 +250,7 @@ generalChecksCodonUsage <- function(data, codon_freq, species, verbose) {
     ## Loading codon_freq & check consistency with mRNA_data
     available_formats <- c("dgCMatrix", "data.frame", "matrix")
     if (!is.null(codon_freq)) {
-        if (!any(class(codon_freq) %in% available_formats)) {
+        if (!inherits(codon_freq, available_formats)) {
             stop(
                 "Wrong 'codon_freq' format.\n Supported formats: dgCMatrix, ",
                 "data.frame, matrix"
