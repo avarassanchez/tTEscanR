@@ -36,7 +36,7 @@ The **input** data for **tTEscanR** should be preprocessed according to the step
 ## 3. Workflow functionalities
 
 The **tTEscanR** package provides a structured framework for analyzing codon-anticodon pools in the context of translation efficiency.
-<img width="1950" height="2084" alt="schema_tTEscanR_figure1" src="https://github.com/user-attachments/assets/45d40d3e-57be-4f23-b5da-4a6c810d18c1" />
+<img width="1950" height="2084" alt="schema_tTEscanR_figure1" src="https://github.com/user-attachments/files/33547911/tTEscnaR_diagram.pdf"/>
 
 ### 3.1. Core functions
 
@@ -195,5 +195,6 @@ tTEscanR_obj <- computeTheoreticalTE(object = tTEscanR_obj, level = "both")
 During the development of this package, generative AI tools (specifically ChatGPT and Gemini) were utilized to optimize specific code implementations and to assist in designing robust test cases for core functions. All AI-assisted code and unit tests were thoroughly reviewed, manually verified, and validated by the authors to ensure technical accuracy and compliance with Bioconductor standards.
 
 ## 5. References
+Varas-Sánchez A, Gallardo-Dodd CJ, Li Q, Gao W, Ringnér M, Kutter C. *tTEscanR: A user-friendly integrative R package for quantifying and visualizing translation efficiency from sequencing data in diverse biological systems.* bioRxiv. 2026;2026.09.08.750101. [doi:10.64898/2026.09.08.750101](https://doi.org/10.64898/2026.09.08.750101)
 
 Gao W, Gallardo-Dodd CJ, Kutter C. *Cell type-specific analysis by single-cell profiling identifies a stable mammalian tRNA-mRNA interface and increased translation efficiency in neurons.* Genome Res. 2022;32(1):97-110. [doi:10.1101/gr.275944.121](https://doi.org/10.1101/gr.275944.121)
